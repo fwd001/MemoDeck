@@ -94,16 +94,14 @@ const TYPE_REGISTRY = {
 
 新增题型只需在这里加一行，并在 `normalizeQuestion()` / `renderAnswer()` 里补分支。未知题型不会崩，会兜底显示题干和 `answer`。
 
-### 4.2 `leitner.js` —— 间隔重复
+### 4.2 `leitner.js` —— 记忆调度
 
 ```
-INTERVALS   = [5, 10, 18]   // 连续答对 1/2/3 次后，插入位置距队首的间隔
-MASTER_AT   = 4             // 连续答对 4 次判定掌握，移出队列
-MIN_FAIL_GAP= 5             // 答错后至少埋到 5 张之后（+0~2 随机）
+MIN_FAIL_GAP = 5   // 答错后至少埋到 5 张之后（+0~2 随机），保证隔四五道题才重现
 ```
 
-- `markPass(card)` → `streak + 1`；达 4 次返回 `{ mastered: true }` 并剔除；否则按 `INTERVALS[streak-1]` 重新插入队列。
-- `markFail(card)` → `streak = 0`，埋到 `5 + rand(0..2)` 张之后。
+- `markPass(card)` → 判定掌握，恒返回 `{ mastered: true, card }`，卡片移出队列（进度前移）。
+- `markFail(card)` → `streak = 0`，埋到 `5 + rand(0..2)` 张之后；当前卡被跳过，队首换成下一张。
 
 队列是纯数据（卡片数组 + 每张卡的 `streak`），不碰 DOM，因此可单测。
 
@@ -115,6 +113,8 @@ MIN_FAIL_GAP= 5             // 答错后至少埋到 5 张之后（+0~2 随机�
 | `examWrongbook:v1` | 错题条目数组 |
 
 错题条目带 `source` 字段（`practice` / `preview` / `exam`），错题本据此分三个来源 Tab 展示。
+
+**全局去重**：`wrongbook.add()` 以「题目 id + rawType」判重（不看来源），同一道题只保留一条；重复入库时把来源刷新为最新出错场景。**入库时机**：闯关「没记住」、考试答错时由 `app.js` 实时写入并刷新视图（不等流程跑完）。**移除时机**：仅限错题本内部——练习点「记住了」、重考答对、手动移除/清空。
 
 ### 4.4 `app.js` —— Vue 应用
 

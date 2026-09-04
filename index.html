@@ -17,7 +17,7 @@
         <div class="security-notice" data-page-node-id="Mrv4q3jJgXgwOcJ7MMtsT5">✅ 数据源：<b data-page-node-id="vVHRFuDZ64FYGcNuuUvs2w">{{ sourceMeta.label }}</b></div>
         <div class="header-actions" data-page-node-id="YaQbPOGu7RUtsxFh7ooj6I">
           <button class="btn gray small" @click="showDataPanel = !showDataPanel" data-page-node-id="ADm3OAfFfUQAtZpQFegAwW">⚙️ {{ showDataPanel ? '收起数据' : '数据管理' }}</button>
-          <button class="btn gray small" @click="showAiPanel = !showAiPanel" data-page-node-id="6PAg82MMpyd7YFlXLDN68H">🤖 AI 提示词</button>
+          <button class="btn gray small" @click="showAiModal = true" data-page-node-id="6PAg82MMpyd7YFlXLDN68H">🤖 AI 提示词</button>
           <a class="btn small" v-if="managerUrl" :href="managerUrl" target="_blank" rel="noopener" data-page-node-id="QyJdnpXDCAISdboEloWVDV">🛠 JSON 管理服务</a>
         </div>
       </header>
@@ -182,7 +182,11 @@
           </div>
           <div v-else data-page-node-id="euE0mXCA0r6bLFT8ooF7BT">
             <textarea v-if="catCurrent.rawType === 'essay'" class="cat-answer-input" v-model="catInput" placeholder="输入你的答案…" :disabled="catRevealed"></textarea>
-            <input v-else class="cat-answer-input" v-model="catInput" :placeholder="(catCurrent.rawType === 'fill_blank' || catCurrent.rawType === 'special_fill_blank') ? '输入答案（多空用 | 分隔）' : '输入你的答案…'" :disabled="catRevealed" data-page-node-id="8AlaOobL1GNa9waHkW7voF">
+            <input v-else ref="catFillInput" class="cat-answer-input" v-model="catInput" :placeholder="(catCurrent.rawType === 'fill_blank' || catCurrent.rawType === 'special_fill_blank') ? '输入答案（多空用 | 分隔）' : '输入你的答案…'" :disabled="catRevealed" data-page-node-id="8AlaOobL1GNa9waHkW7voF">
+            <div class="insert-sep-row" v-if="catCurrent.rawType === 'fill_blank' || catCurrent.rawType === 'special_fill_blank'">
+              <button class="btn-text small" @click="insertCatSep" :disabled="catRevealed">｜ 插入分隔符</button>
+              <span class="sub">填空有多个空时，答案之间用它隔开</span>
+            </div>
           </div>
 
           <div v-if="catRevealed && catFeedback" class="feedback" :class="catFeedback.correct ? 'ok' : 'no'" data-page-node-id="Qak2u4gygBtrpaMeBheH8V">
@@ -274,17 +278,20 @@
         </div>
       </section>
 
-      <section v-show="showAiPanel" class="panel ai-panel" data-page-node-id="hMFTAxHA7cpDw4IsskeYD2">
-        <div class="panel-head" data-page-node-id="yXGWeQRPSIcpAkZ375e8YQ">
-          <h3 style="margin:0;" data-page-node-id="FCVhEFIOCQ3B58yeaXCyYf">🤖 AI 题库转换提示词</h3>
-          <div style="display:flex; gap:8px;" data-page-node-id="tuMFZ94Eo2lDxsrNeARGZ0">
-            <button class="btn small" @click="copyAiPrompt" data-page-node-id="Akhyb3mGL1zMPXN4xiic9h">{{ aiCopied ? '✅ 已复制' : '📋 复制' }}</button>
-            <button class="btn gray small" @click="downloadAiPrompt" data-page-node-id="W3rFjRs7K81xTJvvY7Djk2">⬇️ 下载</button>
+      <div class="modal-mask" v-if="showAiModal" @click.self="showAiModal = false">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-label="AI 题库转换提示词">
+          <div class="modal-head">
+            <h3 style="margin:0;">🤖 AI 题库转换提示词</h3>
+            <button class="btn-text small" @click="showAiModal = false">✕ 关闭</button>
+          </div>
+          <p class="sub" style="margin:10px 0;">把下面的提示词发给任意 AI（ChatGPT / 文心一言 / 豆包 等），附上试卷照片或题目文本，即可生成题库 JSON。</p>
+          <textarea class="ai-prompt" readonly>{{ aiPrompt }}</textarea>
+          <div class="modal-foot">
+            <button class="btn" @click="copyAiPrompt">{{ aiCopied ? '✅ 已复制' : '📋 复制提示词' }}</button>
+            <button class="btn gray" @click="downloadAiPrompt">⬇️ 下载</button>
           </div>
         </div>
-        <p class="sub" data-page-node-id="BCyBlOQwbYUEZjPoYXMAgC">把下面的提示词发给任意 AI（ChatGPT / 文心一言 / 豆包 等），附上试卷照片或题目文本，即可生成题库 JSON。</p>
-        <textarea class="ai-prompt" readonly>{{ aiPrompt }}</textarea>
-      </section>
+      </div>
 
       <div class="toast" :class="{ err: !toastOk }" v-if="toastMsg" data-page-node-id="UCXrNkZJkIQM4IDnVlM3Dg">{{ toastMsg }}</div>
 

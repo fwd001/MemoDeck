@@ -186,67 +186,51 @@ test('未知题型兜底不报错', () => {
 });
 
 /* ================= Leitner ================= */
-console.log('\nLeitner 间隔重复');
+console.log('\nLeitner 记忆调度');
 
 const cards = n => Leitner.createQueue(Array.from({ length: n }, (_, i) => i));
 
-test('连续答对 4 次判定掌握并剔除', () => {
+test('答对一次即掌握并移出队列', () => {
   const q = Leitner.createQueue(['A']);
-  for (let i = 1; i <= 3; i++) {
-    const r = Leitner.markPass(q);
-    eq(r.mastered, false, `第 ${i} 次答对不应掌握`);
-    eq(r.card.streak, i, `第 ${i} 次后 streak 应为 ${i}`);
-  }
-  const r4 = Leitner.markPass(q);
-  eq(r4.mastered, true, '第 4 次答对应掌握');
+  const r = Leitner.markPass(q);
+  eq(r.mastered, true, '记住一次应判定掌握');
+  eq(r.card.streak, 1);
   eq(q.length, 0, '掌握后应移出队列');
 });
 
-test('答对后按 5 / 10 / 18 间隔重新插入', () => {
-  for (const [streak, expected] of [[1, 5], [2, 10], [3, 18]]) {
-    const q = cards(30);
-    const target = q[0].it;
-    for (let i = 0; i < streak; i++) {
-      Leitner.markPass(q);
-      // 把目标卡挪回队首，模拟「间隔到了，再次遇到它」
-      if (i < streak - 1) q.splice(0, 0, q.splice(q.findIndex(c => c.it === target), 1)[0]);
-    }
-    eq(q.findIndex(c => c.it === target), expected, `streak=${streak} 时应插入位置 ${expected}`);
-  }
+test('答对后进度前移，下一题成为队首', () => {
+  const q = Leitner.createQueue(['A', 'B', 'C']);
+  Leitner.markPass(q); // 掌握 A
+  eq(q.length, 2);
+  eq(q[0].it, 'B', '答对后不应重插当前卡，下一卡成为队首');
+  Leitner.markPass(q); // 掌握 B
+  eq(q.length, 1);
+  eq(q[0].it, 'C');
 });
 
-test('答错后 streak 清零且埋到 5~7 张之后', () => {
+test('答错后埋到 5~7 张之后，不会立刻重现', () => {
   const q = cards(30);
   const target = q[0].it;
   const r = Leitner.markFail(q);
   eq(r.card.streak, 0, '答错 streak 应清零');
+  eq(q[0].it, 1, '队首应换成原本第二张卡');
   const idx = q.findIndex(c => c.it === target);
   assert(idx >= Leitner.MIN_FAIL_GAP && idx <= Leitner.MIN_FAIL_GAP + 2,
     `应埋到 ${Leitner.MIN_FAIL_GAP}~${Leitner.MIN_FAIL_GAP + 2} 张之后，实际 ${idx}`);
 });
 
-test('答错会清掉之前累积的连续答对', () => {
-  const q = Leitner.createQueue(['A', 'B']);
-  Leitner.markPass(q); // A streak 1
-  const a = q.find(c => c.it === 'A');
-  eq(a.streak, 1);
-  q.splice(0, 0, q.splice(q.findIndex(c => c.it === 'A'), 1)[0]); // A 回到队首
+test('答错只埋当前题，其余卡片相对顺序不变', () => {
+  const q = cards(30);
+  const orderBefore = q.map(c => c.it).join(',');
   Leitner.markFail(q);
-  eq(q.find(c => c.it === 'A').streak, 0, '答错后 streak 应归零');
+  const withoutTarget = q.map(c => c.it).filter(x => x !== 0);
+  eq(withoutTarget.join(','), orderBefore.split(',').filter(x => x !== '0').join(','), '其余卡片顺序应保持');
 });
 
 test('空队列调用返回 null 不报错', () => {
   const q = [];
   eq(Leitner.markPass(q), null);
   eq(Leitner.markFail(q), null);
-});
-
-test('intervalFor 边界正确', () => {
-  eq(Leitner.intervalFor(0), 0);
-  eq(Leitner.intervalFor(1), 5);
-  eq(Leitner.intervalFor(2), 10);
-  eq(Leitner.intervalFor(3), 18);
-  eq(Leitner.intervalFor(99), 18, '超出 INTERVALS 长度应钳位到最后一项');
 });
 
 /* ================= Wrongbook ================= */
@@ -263,11 +247,24 @@ test('新增与列出', () => {
   eq(list[0].source, 'preview');
 });
 
-test('重复添加同一题应去重', () => {
+test('同题重复添加应全局去重（同来源）', () => {
   Wrongbook.clear();
   Wrongbook.add(ITEM, 'preview');
   Wrongbook.add(ITEM, 'preview');
   eq(Wrongbook.list().length, 1, '相同题目不应重复入库');
+});
+
+test('同题跨来源也应去重，且来源更新为最新', () => {
+  Wrongbook.clear();
+  Wrongbook.add(ITEM, 'preview');
+  const second = Wrongbook.add(ITEM, 'exam');
+  eq(second, false, '再次入库应返回 false（非新增）');
+  eq(Wrongbook.list().length, 1, '同一道题跨来源只保留一条');
+  eq(Wrongbook.list()[0].source, 'exam', '来源应更新为最新出错场景');
+  // 第三次从练习出错：来源再次刷新，条目仍只有一条
+  Wrongbook.add(ITEM, 'practice');
+  eq(Wrongbook.list().length, 1);
+  eq(Wrongbook.list()[0].source, 'practice');
 });
 
 test('按题目移除', () => {

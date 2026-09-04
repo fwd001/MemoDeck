@@ -6,7 +6,7 @@
 (function (global) {
   'use strict';
 
-  const { createApp, ref, reactive, computed } = global.Vue;
+  const { createApp, ref, reactive, computed, nextTick } = global.Vue;
   const Core = global.ExamCore;
   const Store = global.ExamStore;
   const Leitner = global.ExamLeitner;
@@ -54,6 +54,7 @@
       const catMultiSel = ref([]);
       const catRevealed = ref(false);
       const catFeedback = ref(null);                 // { correct }
+      const catFillInput = ref(null);                // 填空题多空答案输入框元素（插入分隔符用）
       const catStats = reactive({ total: 0, right: 0, wrong: 0 });
       const catFromWrongbook = ref(false); // 当前考试是否来自错题本（答对自动移除错题）
       const catSnapshots = ref({});        // 每题作答快照：{ index: {input,choice,multiSel,revealed,feedback} }
@@ -71,8 +72,8 @@
       const wrongPracticeQueue = ref([]);
       const wrongPracticeShow = ref(false);
 
-      /* ============ AI 提示词 ============ */
-      const showAiPanel = ref(false);
+      /* ============ AI 提示词（弹窗） ============ */
+      const showAiModal = ref(false);
       const aiCopied = ref(false);
 
       /* ============ 计算属性 ============ */
@@ -361,7 +362,11 @@
           Leitner.markPass(practiceQueue.value);
         } else {
           Leitner.markFail(practiceQueue.value);
-          if (cur) Wrongbook.add(cur, 'practice', null, false);
+          // 没记住：立即加入错题本（全局去重），实时刷新角标
+          if (cur) {
+            Wrongbook.add(cur, 'practice', null, false);
+            loadWrongbook();
+          }
         }
         practiceShowAnswer.value = false;
       }
@@ -412,6 +417,21 @@
         catRevealed.value = false;
         catFeedback.value = null;
       }
+      // 填空题多空答案：在光标处插入分隔符「|」，免去手动输入
+      function insertCatSep() {
+        const el = catFillInput.value;
+        const cur = catCurrent.value;
+        if (!cur || catRevealed.value) return;
+        const v = catInput.value || '';
+        const pos = (el && typeof el.selectionStart === 'number') ? el.selectionStart : v.length;
+        catInput.value = v.slice(0, pos) + '|' + v.slice(pos);
+        nextTick(() => {
+          if (el) {
+            el.focus();
+            try { el.setSelectionRange(pos + 1, pos + 1); } catch (e) {}
+          }
+        });
+      }
       function isObjective(rawType) {
         return rawType === 'true_false' || rawType === 'single_choice' || rawType === 'multi_choice';
       }
@@ -452,6 +472,9 @@
         } else {
           catStats.wrong++;
           catWrongItems.value.push(catCurrent.value);
+          // 答错：实时加入错题本（全局去重，跨来源），无需等考试结束即可见
+          Wrongbook.add(catCurrent.value, 'exam', null, false);
+          loadWrongbook();
         }
       }
       function catSelfJudge(correct) {
@@ -467,7 +490,7 @@
           const sec = Math.floor((Date.now() - catStartTime.value) / 1000);
           const m = Math.floor(sec / 60), s = sec % 60;
           catElapsed.value = m > 0 ? (m + ' 分 ' + s + ' 秒') : (s + ' 秒');
-          catWrongItems.value.forEach(it => Wrongbook.add(it, 'exam', null, false));
+          // 错题已在答题瞬间实时入库（finishCatAnswer），这里仅刷新一次视图
           loadWrongbook();
         }
       }
@@ -575,13 +598,14 @@
       }
       function wrongMark(remembered) {
         if (remembered) {
+          // 在错题本内点「记住了」：该题移出错题本（加强练习答对一次即清除）
           const r = Leitner.markPass(wrongPracticeQueue.value);
-          // 连续答对 4 次掌握：自动移出错题本
           if (r && r.mastered) {
             Wrongbook.removeByItem(r.card.it);
             loadWrongbook();
           }
         } else {
+          // 没记住：留在错题本，卡片埋到 5~7 张之后继续练
           Leitner.markFail(wrongPracticeQueue.value);
         }
         wrongPracticeShow.value = false;
@@ -640,7 +664,8 @@
         showCustomForm, customForm,
         wrongEntries, wrongTab, wrongCount, wrongFiltered, wrongItems, wrongBySource,
         wrongPracticeQueue, wrongPracticeShow,
-        showAiPanel, aiPrompt, aiCopied,
+        showAiModal, aiPrompt, aiCopied,
+        catFillInput, insertCatSep,
         fetchUrl, refresh, applyPaste, clearAndReload, onDragOver, onDragLeave, onDrop, onFileChange,
         downloadCurrent, copyCurrent, downloadRules, switchPaper, switchTab,
         resetPractice, mark, togglePreview, addPreviewToWrongbook,
