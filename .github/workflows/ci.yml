@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: 静态检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 检查 JS 语法
+        run: |
+          set -e
+          for f in config.js js/*.js; do
+            node --check "$f" && echo "  ok  $f"
+          done
+
+      # 见 docs/ARCHITECTURE.md「五、模板书写约定」
+      # 模板属性值内出现 > 或 => 时，会被某些 HTML 处理工具注入属性而破坏 Vue 表达式，
+      # 且生产版 Vue 会吞掉编译错误，直接白屏。这里把约定变成机器可校验的规则。
+      - name: 检查 Vue 模板表达式安全
+        run: |
+          set -e
+          if grep -nE '(v-[a-z-]+|@[a-zA-Z.-]+|:[a-zA-Z.-]+)="[^"]*(=>|>)"' index.html; then
+            echo ""
+            echo "✗ 模板属性值内不允许出现 > 或 =>，请抽成 computed 或 method。"
+            echo "  详见 docs/ARCHITECTURE.md"
+            exit 1
+          fi
+          echo "  ok  index.html 模板表达式安全"
+
+      - name: 检查关键文件完整
+        run: |
+          set -e
+          for f in index.html config.js default-bank.js css/style.css \
+                   js/core.js js/store.js js/leitner.js js/wrongbook.js \
+                   js/ai-prompt.js js/app.js vendor/vue.global.prod.js; do
+            test -f "$f" && echo "  ok  $f" || { echo "✗ 缺失 $f"; exit 1; }
+          done
+
+      - name: 检查文档链接可达
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+
+          root = pathlib.Path('.')
+          files = [root / 'README.md'] + sorted(root.glob('docs/*.md'))
+          broken, checked = [], 0
+
+          for f in files:
+              for target in re.findall(r'\]\((\.\.?/[^)#]+)\)', f.read_text(encoding='utf-8')):
+                  # 相对链接按「所在文件目录」解析，锚点忽略
+                  p = ((f.parent / target.split('#')[0]).resolve())
+                  checked += 1
+                  if p.exists():
+                      print(f'  ok  {f.name} -> {target}')
+                  else:
+                      print(f'  XX  {f.name} -> {target}')
+                      broken.append(str(p))
+
+          print(f'\n共检查 {checked} 条相对链接')
+          if broken:
+              sys.exit('✗ 存在断链：\n' + '\n'.join(broken))
+          print('✓ 全部可达')
+          PY

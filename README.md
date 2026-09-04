@@ -181,7 +181,7 @@ exam-memory/
 |---|---|---|
 | **双击 `index.html`** | 个人单机 | 零部署，完全离线 |
 | **本地服务器** | 开发验证 | `python3 -m http.server 8000` |
-| **GitHub Pages** | 公开分享 | 仓库 Settings 一键开启，或 GitHub Actions |
+| **GitHub Pages** | 公开分享 | 已内置 Actions 工作流，推到 `main` 自动部署 |
 | **Nginx / Apache** | 自建服务器 | 配置见部署指南，含 CORS |
 | **Vercel / Netlify** | 免运维托管 | 连接 Git 自动部署 |
 | **Docker** | 容器化 | `docker build -t exam-memory . && docker run -p 8080:80 exam-memory` |
@@ -236,6 +236,8 @@ exam-memory/
 ```bash
 python3 -m http.server 8000   # 打开 http://localhost:8000
 ```
+
+推送后会跑 CI，四道检查：JS 语法、Vue 模板表达式安全（防白屏）、关键文件完整、文档链接可达。本地可手动复现后两道的思路，规则见 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)。
 
 ---
 
