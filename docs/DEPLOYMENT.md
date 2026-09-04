@@ -78,9 +78,9 @@ php -S localhost:8000
 
 访问地址：`https://<用户名>.github.io/<仓库名>/`
 
-### 3.2 通过 GitHub Actions（可控性更好）
+### 3.2 通过 GitHub Actions（本仓库已内置，推荐）
 
-新建 `.github/workflows/deploy-pages.yml`：
+仓库已内置部署工作流 **`.github/workflows/deploy.yml`**；从零搭建时，在仓库根目录新建**同名文件**即可：
 
 ```yaml
 name: Deploy to GitHub Pages
@@ -115,9 +115,80 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-同时把仓库 **Settings → Pages → Source** 改为 `GitHub Actions`。
+**`path` 参数怎么填**（`upload-pages-artifact` 的 `with.path`）：
+
+| 静态文件位置 | path 取值 | 说明 |
+|---|---|---|
+| 仓库根目录 | `path: .` | 本仓库即此情况：`index.html`、`css/`、`js/`、`vendor/` 都在根目录 |
+| `public/` 子目录 | `path: public` | 常见于框架脚手架约定，把 `public/` 当作站点根 |
+
+`path` 指向的目录会被当作站点根目录整体上传（含 `index.html` 的位置决定访问入口）。
+
+**一次性的网页端开启（Settings → Pages）**：
+
+1. 打开仓库页 → **Settings**（齿轮，页面右上方）
+2. 左侧栏 **Code and automation** 组 → **Pages**
+3. **Build and deployment** 区块 → **Source** 下拉框，默认是 `Deploy from a branch`
+4. 把它切换为 **GitHub Actions**（选择即保存，无需额外点 Save）
+5. 此时 GitHub 会提示将使用仓库中的 Actions 工作流部署
+6. 触发一次部署（任选其一）：
+   - 往 `main` 推一个新提交（推送即自动触发）
+   - 或进入 **Actions** 页 → 选中 `Deploy to GitHub Pages` → 右侧 **Run workflow** 手动触发
+   - 或本地补一个空提交：`git commit --allow-empty -m "chore: 触发 Pages 部署" && git push`
+
+> 如果之前用「Deploy from a branch」部署过，切到 `GitHub Actions` 后旧的分支部署即失效，无需手动清理。
 
 > 注意：GitHub Pages 有 1GB 软限制、100GB/月流量软限制。本项目不到 1MB，毫无压力。
+
+### 3.3 验证与访问
+
+**默认访问 URL 格式**（GitHub 自动生成）：
+
+```
+https://<用户名>.github.io/<仓库名>/
+```
+
+- 项目站点（普通仓库）：`https://<用户名>.github.io/<仓库名>/`
+- 用户/组织站点（仓库名恰为 `<用户名>.github.io`）：`https://<用户名>.github.io/`（根路径）
+
+本项目对应地址：`https://fwd001.github.io/MemoDeck/`
+
+**在 Actions 运行记录里直接打开**：
+
+1. 打开仓库 **Actions** 页，左侧点 `Deploy to GitHub Pages` 工作流
+2. 点开最新一条绿色（成功）的运行记录
+3. 点顶部 `deploy` 任务进入任务明细
+4. 任务右侧面板的 **Deployment** 区块会显示 `github-pages` 环境及其 URL；点该 URL 或任务页面里的 **View deployment** 按钮即可直接打开网页
+5. 仓库首页右侧 **Environments** 里也能看到 `github-pages`，点 **View deployment** 同样可达
+
+第一次部署通常 1~2 分钟；若浏览器打开的是旧内容，强刷（Cmd/Ctrl + Shift + R）后再看。
+
+### 3.4 纯静态项目在子路径下的资源引用避坑
+
+项目站点运行在 `https://<用户名>.github.io/<仓库名>/` 这个**子路径**下，资源引用最容易踩两个坑：
+
+**① 不要以 `/` 开头的绝对路径引用本地资源**
+
+```html
+<!-- ✗ 错误：/css/style.css 会被解析到 https://<用户名>.github.io/css/style.css -->
+<link rel="stylesheet" href="/css/style.css">
+<!-- ✓ 正确：css/style.css 相对当前页解析到 /<仓库名>/css/style.css -->
+<link rel="stylesheet" href="css/style.css">
+```
+
+以 `/` 开头的写法只在「用户/组织根站点」才成立；放到子路径的项目站点一律 404。
+
+**② 相对路径要按「文件所在层级」写**
+
+| 场景 | 写法 |
+|---|---|
+| `index.html`（站点根）引用根级资源 | `css/style.css`、`js/app.js`、`./data.json` 均可 |
+| 内层页面（如 `docs/a.html`）引用根级资源 | `../css/style.css`（多一层目录多一个 `../`） |
+| JS 里 `fetch` 远程/本地 JSON | 与 HTML 相同规则：`fetch('./data.json')` 可，`fetch('/data.json')` 会 404 |
+
+**本项目的现状（已正确）**：`index.html` 里全部使用无前导斜杠的相对路径（`css/style.css`、`js/*.js`、`vendor/vue.global.prod.js`），因此同一套代码同时兼容 `file://` 双击直开、`localhost` 与 GitHub Pages 子路径三种场景，无需改动。后续新增资源（图片、字体、题库文件）也请沿用「相对路径、不加 `/`」的约定。
+
+**关于跨域**：远程题库请求的 CORS 已在服务端解决，前端无需代理；GitHub Pages 只托管静态文件、无法自定义响应头，因此**跨域策略只能在数据源服务器上配置**，部署到 Pages 不影响这一点。
 
 ---
 
