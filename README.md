@@ -159,6 +159,8 @@ memodeck/
 │   └── app.js              # Vue 应用：全部状态与交互
 ├── vendor/
 │   └── vue.global.prod.js  # 本地 Vue 3.5.13（离线依赖）
+├── test/
+│   └── core.test.js        # 纯逻辑单元测试（node test/core.test.js，零依赖）
 ├── docs/
 │   ├── USAGE.md            # 使用说明
 │   ├── ARCHITECTURE.md     # 架构设计（面向二次开发）
@@ -234,10 +236,15 @@ memodeck/
 本地验证：
 
 ```bash
+# 单元测：纯逻辑，零依赖、零框架、零构建
+node test/core.test.js
+
+# 浏览器：起个静态服务器
 python3 -m http.server 8000   # 打开 http://localhost:8000
 ```
 
-推送后会跑 CI，四道检查：JS 语法、Vue 模板表达式安全（防白屏）、关键文件完整、文档链接可达。本地可手动复现后两道的思路，规则见 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)。
+推送后会跑 CI，五道检查：单元测试、JS 语法、Vue 模板表达式安全（防白屏）、关键文件完整、文档链接可达。
+规则见 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)，本地可直接复现。
 
 ---
 

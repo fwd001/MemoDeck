@@ -52,6 +52,13 @@
 - 新增 README、[使用说明](./docs/USAGE.md)、[架构设计](./docs/ARCHITECTURE.md)、[部署指南](./docs/DEPLOYMENT.md)、[JSON 规范](./docs/EXAM_JSON_SPEC.md)
 - 新增 `Dockerfile`（nginx:alpine）、MIT LICENSE、`.gitignore`
 
+### 工程
+
+- 新增 `test/core.test.js`：22 项纯逻辑单元测试，覆盖题库归一化（三种输入格式）、题型渲染、
+  Leitner 间隔重复、错题本去重与移除。**零依赖、零框架、零构建**，`node test/core.test.js` 直接跑
+- 新增 `.github/workflows/deploy-pages.yml`：推到 `main` 自动部署 GitHub Pages
+- 新增 `.github/workflows/ci.yml`：单元测试 + JS 语法 + Vue 模板表达式安全 + 关键文件完整 + 文档链接可达
+
 ---
 
 ## 已知边界

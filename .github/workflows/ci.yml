@@ -16,10 +16,13 @@ jobs:
         with:
           node-version: '22'
 
+      - name: 运行单元测试
+        run: node test/core.test.js
+
       - name: 检查 JS 语法
         run: |
           set -e
-          for f in config.js js/*.js; do
+          for f in config.js js/*.js test/*.js; do
             node --check "$f" && echo "  ok  $f"
           done
 
