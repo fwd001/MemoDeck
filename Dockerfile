@@ -1,4 +1,4 @@
-# ExamMemory · 纯静态应用，基于 nginx:alpine（镜像约 10MB）
+# MemoDeck · 纯静态应用，基于 nginx:alpine（镜像约 10MB）
 FROM nginx:1.27-alpine
 
 # 整个目录即站点内容
