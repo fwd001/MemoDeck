@@ -1,4 +1,4 @@
-# ExamMemory · 架构设计
+# MemoDeck · 架构设计
 
 > 面向二次开发者的实现说明。只想用这个项目？请看 [README.md](../README.md) 和 [使用说明](./USAGE.md)。
 

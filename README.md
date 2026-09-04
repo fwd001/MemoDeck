@@ -1,6 +1,6 @@
 <div align="center">
 
-# ExamMemory
+# MemoDeck
 
 **考试记忆系统** · JSON 驱动的离线刷题工具
 
@@ -144,7 +144,7 @@ Vue 已本地化到 `vendor/`，零 CDN 依赖。飞机上、内网里、U 盘�
 ## 项目结构
 
 ```
-exam-memory/
+memodeck/
 ├── index.html              # HTML 骨架 + Vue 模板（in-DOM template）
 ├── config.js               # 运行配置（远程题库地址 / JSON 管理服务入口）
 ├── default-bank.js         # 内置兜底题库（离线首启用）
@@ -184,7 +184,7 @@ exam-memory/
 | **GitHub Pages** | 公开分享 | 已内置 Actions 工作流，推到 `main` 自动部署 |
 | **Nginx / Apache** | 自建服务器 | 配置见部署指南，含 CORS |
 | **Vercel / Netlify** | 免运维托管 | 连接 Git 自动部署 |
-| **Docker** | 容器化 | `docker build -t exam-memory . && docker run -p 8080:80 exam-memory` |
+| **Docker** | 容器化 | `docker build -t memodeck . && docker run -p 8080:80 memodeck` |
 
 详细步骤与配置片段见 [部署指南](./docs/DEPLOYMENT.md)。
 

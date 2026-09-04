@@ -1,5 +1,5 @@
 /**
- * 考试记忆系统 · 本地存储层
+ * MemoDeck · 本地存储层
  * 挂载到 window.ExamStore
  * 职责：题库缓存 + 错题本 的 localStorage 读写
  */

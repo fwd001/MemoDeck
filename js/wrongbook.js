@@ -1,5 +1,5 @@
 /**
- * 考试记忆系统 · 错题本
+ * MemoDeck · 错题本
  * 挂载到 window.ExamWrongbook
  * 错题来源：practice（记忆闯关）/ preview（摸底速览）/ exam（分类考试）
  */

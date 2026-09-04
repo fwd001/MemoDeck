@@ -1,5 +1,5 @@
 /**
- * 考试记忆系统 · Vue 应用逻辑
+ * MemoDeck · Vue 应用逻辑
  * 依赖：vendor/vue.global.prod.js（全局 Vue）、ExamCore / ExamStore / ExamLeitner / ExamWrongbook / ExamAIPrompt
  * 挂载：index.html 中的 #app（in-DOM template）
  */
@@ -329,8 +329,8 @@
       function downloadRules() {
         fetch('./docs/EXAM_JSON_SPEC.md', { cache: 'no-store' })
           .then(r => { if (!r.ok) throw new Error('not found'); return r.text(); })
-          .then(text => saveText('考试记忆系统-JSON规则.md', text))
-          .catch(() => saveText('考试记忆系统-JSON规则.md', global.FALLBACK_RULES || ''));
+          .then(text => saveText('MemoDeck-JSON规则.md', text))
+          .catch(() => saveText('MemoDeck-JSON规则.md', global.FALLBACK_RULES || ''));
       }
       function saveText(fileName, text) {
         const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
@@ -623,7 +623,7 @@
         }
       }
       function downloadAiPrompt() {
-        saveText('AI题库转换提示词.md', aiPrompt.value);
+        saveText('MemoDeck-AI题库转换提示词.md', aiPrompt.value);
       }
 
       /* ============ 初始化 ============ */

@@ -1,4 +1,4 @@
-# ExamMemory · 使用说明
+# MemoDeck · 使用说明
 
 面向使用者。开发者请看 [架构设计](./ARCHITECTURE.md)，题库格式看 [JSON 规范](./EXAM_JSON_SPEC.md)。
 

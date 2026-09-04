@@ -1,5 +1,5 @@
 /**
- * 考试记忆系统 · Leitner 间隔重复算法
+ * MemoDeck · Leitner 间隔重复算法
  * 挂载到 window.ExamLeitner
  *
  * 规则（需求 #13/#14）：

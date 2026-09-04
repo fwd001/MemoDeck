@@ -1,4 +1,4 @@
-# ExamMemory · 部署指南
+# MemoDeck · 部署指南
 
 本项目是**纯静态应用**，没有后端、没有构建步骤、没有依赖安装。任何能托管 HTML 文件的地方都能跑。
 
@@ -127,7 +127,7 @@ jobs:
 server {
     listen 80;
     server_name exam.example.com;
-    root /var/www/exam-memory;
+    root /var/www/memodeck;
     index index.html;
 
     # 单页应用：找不到文件时回退到 index.html（本项目用不上，但写了不亏）
@@ -155,7 +155,7 @@ server {
 部署：
 
 ```bash
-sudo rsync -av --delete ./ /var/www/exam-memory/
+sudo rsync -av --delete ./ /var/www/memodeck/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -258,10 +258,10 @@ npx vercel --prod
 
 ```bash
 # 构建
-docker build -t exam-memory .
+docker build -t memodeck .
 
 # 运行
-docker run -d --name exam-memory -p 8080:80 exam-memory
+docker run -d --name memodeck -p 8080:80 memodeck
 ```
 
 打开 <http://localhost:8080>。
@@ -269,16 +269,16 @@ docker run -d --name exam-memory -p 8080:80 exam-memory
 挂载自己的题库：
 
 ```bash
-docker run -d --name exam-memory -p 8080:80 \
+docker run -d --name memodeck -p 8080:80 \
   -v "$(pwd)/data.json:/usr/share/nginx/html/data.json:ro" \
-  exam-memory
+  memodeck
 ```
 
 或用 `docker-compose.yml`：
 
 ```yaml
 services:
-  exam-memory:
+  memodeck:
     build: .
     ports:
       - "8080:80"
@@ -306,7 +306,7 @@ services:
 
 | 检查项 | 期望 |
 |---|---|
-| 打开首页 | 显示「考试记忆系统」，无白屏 |
+| 打开首页 | 显示「MemoDeck」，无白屏 |
 | 浏览器控制台 | 无 404、无报错 |
 | 数据源标签 | 显示「内置题库」或你的 `data.json` |
 | 点「📘 JSON 规则」 | 能下载到规范文档 |

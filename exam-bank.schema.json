@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://example.org/exam-bank.schema.json",
   "title": "试卷 JSON View 标准 (exam-bank)",
-  "description": "考试记忆系统的试卷数据格式（通用题库，可扩展）。viewVersion=1.0.0",
+  "description": "MemoDeck 的试卷数据格式（通用题库，可扩展）。viewVersion=1.0.0",
   "type": "object",
   "required": ["view", "papers"],
   "properties": {

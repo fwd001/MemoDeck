@@ -1,15 +1,13 @@
 /**
- * 考试记忆系统 · AI 题库转换提示词
+ * MemoDeck · AI 题库转换提示词
  * 挂载到 window.ExamAIPrompt
  * 用途：把「照片 / 文本」转换为 exam-bank v1.0 JSON
  */
 (function (global) {
   'use strict';
 
-  const TITLE = '考试记忆系统 · AI 题库转换提示词';
-
   const PROMPT = `# 角色
-你是一名专业的「题库数据整理助手」。请把用户提供的【照片】或【文本】内容，转换为「考试记忆系统」规定的 exam-bank v1.0 JSON 题库格式。
+你是一名专业的「题库数据整理助手」。请把用户提供的【照片】或【文本】内容，转换为「MemoDeck」规定的 exam-bank v1.0 JSON 题库格式。
 
 # 输入
 - 用户会提供：试卷照片、截图，或纯文本题目。
@@ -55,5 +53,5 @@
 对应题目对象：
 { "id": 1, "type": "single_choice", "question": "我国历史上第一个统一的中央集权封建王朝是（ ）。", "options": { "A": "夏", "B": "商", "C": "秦", "D": "汉" }, "answer": "C" }`;
 
-  global.ExamAIPrompt = { TITLE, PROMPT };
+  global.ExamAIPrompt = { PROMPT };
 })(window);
