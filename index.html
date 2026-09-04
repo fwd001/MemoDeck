@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="36Jw9LzK2Gir3nWyo4pJTu">
+<head data-page-node-id="MNFhwRmdbaYUermUtiNpps">
+  <meta charset="UTF-8" data-page-node-id="OlMBpN8N2UtLpfsYD3Cubk">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="HXZTFtP6uSpzFbc3NPwLSu">
+  <title>考试记忆系统</title>
+  <link rel="stylesheet" href="css/style.css" data-page-node-id="B9Pi6Gn5PcPSbj9UZ5hGgy">
+  <style>[v-cloak] { display: none; }</style>
+</head>
+<body data-page-node-id="ehA3MmGuKV43KASNoXNBUS">
+  <div id="app" v-cloak data-page-node-id="Ywf2rsZANRqvMn9LebkiU6">
+    <div class="container" data-page-node-id="S97Fr7foFHikZ7NFVqL3d5">
+
+      <header class="header" data-page-node-id="EFLZMv7OA7MFAScBE6raNR">
+        <h1 data-page-node-id="DvZGvDTGM5V8GQoopCB3C9">📚 考试记忆系统</h1>
+        <div class="sub" data-page-node-id="xnFkHgG7hJ6aYsD1NpKVBe">试卷 JSON View 标准 v1.0 · 纯离线 · 远程导入 · 本地缓存</div>
+        <div class="security-notice" data-page-node-id="Mrv4q3jJgXgwOcJ7MMtsT5">✅ 数据源：<b data-page-node-id="vVHRFuDZ64FYGcNuuUvs2w">{{ sourceMeta.label }}</b></div>
+        <div class="header-actions" data-page-node-id="YaQbPOGu7RUtsxFh7ooj6I">
+          <button class="btn gray small" @click="showDataPanel = !showDataPanel" data-page-node-id="ADm3OAfFfUQAtZpQFegAwW">⚙️ {{ showDataPanel ? '收起数据' : '数据管理' }}</button>
+          <button class="btn gray small" @click="showAiPanel = !showAiPanel" data-page-node-id="6PAg82MMpyd7YFlXLDN68H">🤖 AI 提示词</button>
+          <a class="btn small" v-if="managerUrl" :href="managerUrl" target="_blank" rel="noopener" data-page-node-id="QyJdnpXDCAISdboEloWVDV">🛠 JSON 管理服务</a>
+        </div>
+      </header>
+
+      <section class="panel" v-show="showDataPanel" @dragover="onDragOver" @dragleave="onDragLeave" @drop="onDrop" data-page-node-id="kq4staVWQAdth3bwAELW6G">
+        <div class="panel-head" data-page-node-id="KeUnELi8VkIw6j5wFMFXj7">
+          <div data-page-node-id="PfB0V0ZAZPkZ28K1ghqpJj">
+            <span class="src-badge" :class="sourceMeta.cls" data-page-node-id="3tTkP6e3NaVBKJGqZryTAE">{{ sourceMeta.label }}</span>
+            <span v-if="currentBank.meta.title" class="sub" style="margin-left:8px;" data-page-node-id="dGxnqjMpdyVQjCpmwUwgTR">{{ currentBank.meta.title }}</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;" data-page-node-id="JG4IxVqUV1qphWy0SBs4m3">
+            <button class="btn btn-text small" @click="downloadCurrent" data-page-node-id="2JeD6sTEUlbcAaSRbnQPFE">⬇️ 下载 JSON</button>
+            <button class="btn btn-text small" @click="copyCurrent" data-page-node-id="YyUf7xqN6Zx62P6emPDAi2">📋 复制 JSON</button>
+            <button class="btn btn-text small" @click="downloadRules" data-page-node-id="Z5eqAFRzwu1yqwXieB8rxK">📘 JSON 规则</button>
+          </div>
+        </div>
+        <div class="src-meta" v-if="sourceMeta.detail" data-page-node-id="FmrohDbBw5g7UEd4gsNM82">{{ sourceMeta.detail }}</div>
+
+        <div class="src-actions" data-page-node-id="wwrdF9y0XDoEFK9asseFwS">
+          <input type="text" v-model="remoteUrl" placeholder="输入远程 JSON 链接，例如 https://example.com/data.json" @keyup.enter="fetchUrl" data-page-node-id="D0pYYYiWiT5suGgQEjnFEB">
+          <button class="btn" @click="fetchUrl" :disabled="dataBusy" data-page-node-id="8LY1p6rhIJk7LCzVCcB1q5">🌐 远程导入</button>
+          <button class="btn gray" @click="refresh" :disabled="!sourceMeta.url" data-page-node-id="91BXQJDRFhsB4XSlXOBD0F">🔄 刷新</button>
+          <button class="btn danger" @click="clearAndReload" data-page-node-id="GRcArj0GuZYqaT2qBs1bOH">🧹 清空缓存并重载</button>
+        </div>
+
+        <div class="drop-zone" :class="{ active: dragActive }" data-page-node-id="v0d7xYLNSCyqfZQUvTfCJD">
+          拖拽 JSON 文件到此处即可导入，或
+          <label style="cursor:pointer; color:var(--primary); font-weight:500;" data-page-node-id="a5zfkDCVsyyOnPz8vLYgix">点击选择文件
+            <input type="file" accept=".json,application/json" style="display:none" @change="onFileChange" data-page-node-id="v6lgfF1FbHf8vfurdHqISS">
+          </label>
+        </div>
+
+        <details style="margin-top:12px;" data-page-node-id="rAf5qE4YX8Lv2aZli1nXSf">
+          <summary class="sub" style="cursor:pointer;" data-page-node-id="MfjAxsBgfDO9CEy3lKLVUX">📋 或粘贴 JSON 文本录入</summary>
+          <textarea class="paste-box" v-model="pasteText" placeholder='在此粘贴 {"view":"exam-bank", ...} JSON'></textarea>
+          <div class="src-actions" style="margin-top:8px;" data-page-node-id="ULRUPFOlr3yFdz99AE5mX8">
+            <button class="btn" @click="applyPaste" data-page-node-id="6JwzcoQMeVUs4RMFdsJnjG">📥 应用粘贴的 JSON</button>
+          </div>
+        </details>
+
+        <div class="err" v-if="dataError" data-page-node-id="Wr1fOu19RAtFsB6k7EqG1C">{{ dataError }}</div>
+
+        <div class="expose-row" data-page-node-id="Jid9OvJsIn1gXMh4RH3tI7">
+          <span class="lbl" data-page-node-id="ZgqVsm1mWbPOdbN1AeF0ym">当前卷：</span>
+          <span class="paper-switch" v-if="hasMultiplePapers" data-page-node-id="RDnaYHtUjKsjPEuysl7UMV">
+            <select v-model="currentPaperId" @change="switchPaper" data-page-node-id="0WcHhLdxuysN4LBVlFYdTE">
+              <option v-for="p in papers" :key="p.id" :value="String(p.id)" data-page-node-id="SaekTXVIA6sOxgRjQBJ1uw">{{ p.name }}</option>
+            </select>
+          </span>
+          <span v-else class="lbl" data-page-node-id="6MoRyEPQUyLuGnLUpPnfNc">{{ papers.length ? papers[0].name : '（无数据）' }}</span>
+          <span class="lbl" style="margin-left:10px;" data-page-node-id="Ig9XOI5se5bSbStCvzOojG">共 {{ totalQuestions }} 题</span>
+        </div>
+      </section>
+
+      <nav class="tab-nav" data-page-node-id="zX6eBx3fqsZiPVEFhAb6C2">
+        <button v-for="t in tabs" :key="t.key" :class="{ active: activeTab === t.key }" @click="switchTab(t.key)" data-page-node-id="aaqeiYaZ5GAlDKsrz9xBX9">
+          {{ t.icon }} {{ t.label }}
+          <span v-if="t.key === 'wrongbook' && wrongCount" class="badge" data-page-node-id="syUH7p6VqS2q0vpgrO63nG">{{ wrongCount }}</span>
+        </button>
+      </nav>
+
+      <section v-show="activeTab === 'practice'" data-page-node-id="ao54HB8yDlqdnry3l3IR59">
+        <div class="empty-hint" v-if="!bank.length" data-page-node-id="uBWDMVBDXUv1AxBWRvBVpp">暂无题目。请通过上方数据面板导入 JSON。</div>
+        <template v-else-if="practiceQueue.length" data-page-node-id="EiAlfjORcyJP9EsP4lrC5H">
+          <div class="progress-bar-container" data-page-node-id="EV0P2fSifCHZI7C2V5lsGb"><div class="progress-bar" :style="{ width: practiceProgress + '%' }" data-page-node-id="llMNd0V4xnIRAqMHI64hjo"></div></div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:14px; color:var(--text-muted); font-size:14px;" data-page-node-id="rGss1eN4FNilDSELHdGL8I">
+            <span data-page-node-id="d1XXzKWE0XrXpxWGI8F0af">剩余卡片：{{ practiceQueue.length }} 张</span>
+            <span data-page-node-id="Mc9qejE1qASdewC328GMUJ">已掌握：{{ practiceMastered }} / {{ totalQuestions }}</span>
+          </div>
+          <div class="card" data-page-node-id="b1Ltk2bhRIcv62QikfV6W6">
+            <div class="tag" data-page-node-id="WABuUqKK791e0eFjGhbxks">{{ practiceCard.typeLabel }}</div>
+            <div class="question" data-page-node-id="BurxIENwzKNO6oi30hGdEj">{{ practiceCard.q }}</div>
+            <answer-view v-if="practiceShowAnswer" :item="practiceCard" data-page-node-id="l127A3mPFhViSrc619xihw"></answer-view>
+            <div class="btn-group" v-if="!practiceShowAnswer" data-page-node-id="qVQTEKWBZSJsfgm0FuljzJ">
+              <button class="btn wide" @click="practiceShowAnswer = true" data-page-node-id="SkCqAP0BzwF2cCd1QfJuaj">👀 想好了，看答案</button>
+            </div>
+            <div class="btn-group" v-else data-page-node-id="88i2kIiFJrOyo6TFu4N89g">
+              <button class="btn bad" @click="mark(false)" data-page-node-id="YT44hxNLKTXFUUVNq7gEEb">{{ failLabel }}</button>
+              <button class="btn good" @click="mark(true)" data-page-node-id="AlxhhdUweGxMVoWRPv3xGy">{{ passLabel }}</button>
+            </div>
+          </div>
+        </template>
+        <div v-else class="card done-box" data-page-node-id="6fYa30Q7B9I3KG343rFzjO">
+          <h2 data-page-node-id="kzgk4BfItFWbZFlEwdHyHE">🎉 太棒了！全部通关！</h2>
+          <p data-page-node-id="MPAZjjKw8OQ00xqSpCJ692">你已经完美攻克了所有知识点。</p>
+          <button class="btn wide" style="max-width:200px; margin:16px auto 0;" @click="resetPractice" data-page-node-id="iGPfC00zglhorFofyl9PfS">🔄 再刷一遍</button>
+        </div>
+      </section>
+
+      <section v-show="activeTab === 'exam'" data-page-node-id="npPAwCE5yjY9iFVt9CBtbP">
+        <div class="empty-hint" v-if="!bank.length" data-page-node-id="7n5Gxvlh7B2vzeaJaid3Pu">暂无题目。请通过上方数据面板导入 JSON。</div>
+        <template v-else data-page-node-id="c4IrWp8HfGT3Wue6qq5aLr">
+          <div class="exam-item" v-for="(item, index) in bank" :key="index" data-page-node-id="jv7DFLF6BGqASZNmywIp3w">
+            <span class="exam-tag" data-page-node-id="OBOZQ5Hrp1roHpQbFDGYUg">{{ item.typeLabel }}</span>
+            <span class="exam-meta" data-page-node-id="ZFrHgcn27kGEJONjS5qojN">{{ item.paper }}</span>
+            <div class="exam-q" data-page-node-id="FKqhHecVCICWp9pCVrORpE">{{ index + 1 }}. {{ item.q }}</div>
+            <div class="btn-row" data-page-node-id="RAQKLMBsRwm3Xrmn4dsGq8">
+              <button class="btn small" @click="togglePreview(index)" data-page-node-id="87GZGVtuHzvHNSuhZPu2BG">{{ previewRevealed[index] ? '🙈 隐藏答案' : '👀 查看答案' }}</button>
+              <button class="btn small gray" @click="addPreviewToWrongbook(item)" data-page-node-id="Qu0DO9gYmO56pE9ccPY7rw">➕ 加入错题本</button>
+            </div>
+            <answer-view v-if="previewRevealed[index]" :item="item" data-page-node-id="p5AuPElzjcrzWJ3tWMV0iH"></answer-view>
+          </div>
+        </template>
+      </section>
+
+      <section v-show="activeTab === 'category'" data-page-node-id="GrAc6M4GH3Hz0QFQqvj0CH">
+        <div class="panel" v-if="catStage === 'setup'" data-page-node-id="4iwibywnmFfvx5StrvIp9A">
+          <h3 style="margin:0 0 4px;" data-page-node-id="Ykwdm3ykvlu9PK4du3WrKc">🎯 分类考试</h3>
+          <p class="sub" style="margin:0 0 10px;" data-page-node-id="TVHDDWiwUkdcWZY5Nk3Zv9">选择题型（可多选/全选），随机出题，实时判分。</p>
+          <div class="type-select" v-if="catTypes.length" data-page-node-id="IcYWZHzn74IyBWLyWi36jq">
+            <button class="type-chip" :class="{ on: catSelected.includes(t.rawType) }" v-for="t in catTypes" :key="t.rawType" @click="toggleCatType(t.rawType)" data-page-node-id="pLFHExhYBpzN21dGiXJMEH">
+              {{ t.label }}<span class="cnt" data-page-node-id="tP55jHT639cTQ4pnSM5bDf">{{ t.count }}</span>
+            </button>
+          </div>
+          <div class="empty-hint" v-else data-page-node-id="3DdDur9OS3p2pa2T1H5CGr">题库为空，请先导入数据。</div>
+          <div class="select-row" v-if="catTypes.length" data-page-node-id="xk6tI9HkSXHRzemSPgDYhN">
+            <button class="btn-text small" @click="selectAllTypes" data-page-node-id="IYgsQgFSYge9Djw6xkwSCd">{{ catAllSelected ? '取消全选' : '全选' }}</button>
+            <button class="btn" @click="startCat" data-page-node-id="HGr9Pg7PAlj2Ga088Hmmhs">🚀 开始考试</button>
+          </div>
+          <div class="err" v-if="catError" data-page-node-id="FkfMIxkOrR8HWFDQZ3knlV">{{ catError }}</div>
+
+          <details style="margin-top:14px;" data-page-node-id="hJzXIWHvsOmCO0pCThqOCc">
+            <summary class="sub" style="cursor:pointer;" data-page-node-id="iB93yjXmzVsVkqgdmcapDQ">➕ 手动添加题目</summary>
+            <div style="margin-top:10px;" data-page-node-id="f1vEq6oyAo1FJz7Iw14Jdc">
+              <textarea class="cat-answer-input" v-model="customForm.question" placeholder="题干（填空用 ____ 表示空位）"></textarea>
+              <div class="select-row" data-page-node-id="xQdcdhb8oo0VlFJRKOguWY">
+                <select style="min-height:40px; padding:6px 10px; border:1px solid #d5dbe3; border-radius:8px; font-size:15px; font-family:inherit;" v-model="customForm.type" data-page-node-id="cvgcsw36MCDWDEiZQAYSjn">
+                  <option value="single_choice" data-page-node-id="Rkwoob8XJ7FOEe3LQmRobE">单选题</option>
+                  <option value="multi_choice" data-page-node-id="pAFGFNOXtaUoGnetSWUWIQ">多选题</option>
+                  <option value="true_false" data-page-node-id="BinPkoMi5dF0Uwmo4DkCGa">判断题</option>
+                  <option value="fill_blank" data-page-node-id="iunVewwqRslpHLevkRwNZg">填空题</option>
+                  <option value="essay" data-page-node-id="myalwurk8vIESVJP5YA5F3">问答题</option>
+                </select>
+              </div>
+              <textarea v-if="customForm.type === 'single_choice' || customForm.type === 'multi_choice'" class="cat-answer-input" v-model="customForm.options" placeholder="选项（每行一个）：A. 选项一&#10;B. 选项二" style="min-height:80px;"></textarea>
+              <input v-else class="cat-answer-input" v-model="customForm.answer" :placeholder="customForm.type === 'fill_blank' ? '答案（多空用 | 分隔，如：鸦片|1840）' : (customForm.type === 'true_false' ? '答案：对 或 错' : '参考答案')" data-page-node-id="H7BVnOq1SqoKWr4JHkRuDU">
+              <div v-if="customForm.type === 'single_choice' || customForm.type === 'multi_choice'" class="select-row" data-page-node-id="aRMdBD26Urp83t2rbetU1w">
+                <input class="cat-answer-input" v-model="customForm.answer" :placeholder="customForm.type === 'single_choice' ? '正确答案字母，如：C' : '正确答案字母（逗号分隔），如：A,C'" data-page-node-id="9OlNuUzrkRZlUnXoK8BYhr">
+              </div>
+              <button class="btn" style="margin-top:8px;" @click="addCustomQuestion" data-page-node-id="Bs245uzYb2lwdXNYA5Itpu">✅ 添加题目</button>
+            </div>
+          </details>
+        </div>
+
+        <div class="card" v-else-if="catStage === 'test' && catCurrent" style="justify-content:flex-start;" data-page-node-id="VGriChPH6tE8FwtXMCjW12">
+          <div class="tag" data-page-node-id="u622UFlZ8RPdlCF6DFnz1Y">{{ catCurrent.typeLabel }}</div>
+          <div style="display:flex; justify-content:space-between; margin-top:10px; color:var(--text-muted); font-size:14px;" data-page-node-id="E6hCfwyMfZLfZtUUSeKJBr">
+            <span data-page-node-id="f2z1IpdTDBKgVgUZKG8dnS">第 {{ catIndex + 1 }} / {{ catStats.total }} 题</span>
+            <span data-page-node-id="TAagDesHu0I1u9r6ZBxYZC">已答对 {{ catStats.right }} 题</span>
+            <button class="btn-text small" @click="catRestart" style="margin-left:auto;">✕ 退出考试</button>
+          </div>
+          <div class="question" data-page-node-id="Ye64nJTk6tcENyaXJJVRYD">{{ catCurrent.question }}</div>
+
+          <div v-if="catCurrent.rawType === 'single_choice' || catCurrent.rawType === 'multi_choice'" data-page-node-id="ItqgrrAfv3rEgeHQT3eVs6">
+            <button class="option-btn" :class="{ on: isCatOptionOn(k) }" v-for="(v, k) in catCurrent.options" :key="k" @click="catOptionClick(k)" :disabled="catRevealed" data-page-node-id="jQPZjhveYy0NCwRzbn5HCH">
+              <span class="opt-key" data-page-node-id="wcMLtlI0NBN3lB7qjg0Lpz">{{ k }}</span>{{ v }}
+            </button>
+          </div>
+          <div class="btn-group" v-else-if="catCurrent.rawType === 'true_false'" style="justify-content:flex-start;" data-page-node-id="QXVzf3APy2aT0HjPmRVU8f">
+            <button class="btn good" :class="{ picked: catChoice === 'true' }" @click="catChoice = 'true'" :disabled="catRevealed" data-page-node-id="zJ07b4kbgFWKlvq1oWbwaX">✓ 正确</button>
+            <button class="btn bad" :class="{ picked: catChoice === 'false' }" @click="catChoice = 'false'" :disabled="catRevealed" data-page-node-id="tSECWO7OquXzDCj62SvbGl">✗ 错误</button>
+          </div>
+          <div v-else data-page-node-id="euE0mXCA0r6bLFT8ooF7BT">
+            <textarea v-if="catCurrent.rawType === 'essay'" class="cat-answer-input" v-model="catInput" placeholder="输入你的答案…" :disabled="catRevealed"></textarea>
+            <input v-else class="cat-answer-input" v-model="catInput" :placeholder="(catCurrent.rawType === 'fill_blank' || catCurrent.rawType === 'special_fill_blank') ? '输入答案（多空用 | 分隔）' : '输入你的答案…'" :disabled="catRevealed" data-page-node-id="8AlaOobL1GNa9waHkW7voF">
+          </div>
+
+          <div v-if="catRevealed && catFeedback" class="feedback" :class="catFeedback.correct ? 'ok' : 'no'" data-page-node-id="Qak2u4gygBtrpaMeBheH8V">
+            <div class="fb-title" data-page-node-id="eFzIUAUbJnZOv0r27TokjN">{{ catFeedback.correct ? '✅ 回答正确！' : '❌ 回答错误' }}</div>
+          </div>
+
+          <answer-view v-if="catRevealed && catFeedback && !catFeedback.correct && isObjective(catCurrent.rawType)" :item="catCurrent" style="margin-top:12px;"></answer-view>
+
+          <div v-if="catRevealed && !catFeedback && !isObjective(catCurrent.rawType)" data-page-node-id="y1S7992JBDHKa6wBDtL0kA">
+            <answer-view :item="catCurrent" style="margin-top:12px;" data-page-node-id="wDUz80k9IjPxE7sLuBH4B7"></answer-view>
+            <div class="btn-group" data-page-node-id="rcGNUzY1IONxctBaOABjTu">
+              <button class="btn bad" @click="catSelfJudge(false)" data-page-node-id="7DnHfBg8FzamWri8J3CPFD">✗ 我答错了</button>
+              <button class="btn good" @click="catSelfJudge(true)" data-page-node-id="B1rQKuw3oDCGRmgiAbEZSe">✓ 我答对了</button>
+            </div>
+          </div>
+
+          <div class="btn-group" v-if="!catRevealed" data-page-node-id="lfzhOQWANhoFLgwcuuk3UU">
+            <button class="btn gray" @click="catPrev" v-if="hasPrevCat">← 上一题</button>
+            <button class="btn wide" @click="catSubmit" data-page-node-id="5WxY7i422mWOxQPHAfD4iA">提交答案</button>
+          </div>
+          <div class="btn-group" v-else-if="catFeedback" data-page-node-id="IFkYuR38e3bYZfJwedxq97">
+            <button class="btn gray" @click="catPrev" v-if="hasPrevCat">← 上一题</button>
+            <button class="btn wide" @click="catNext" data-page-node-id="3EYCJtEYFrVpl79jWvNgqv">{{ catNextLabel }}</button>
+          </div>
+        </div>
+
+        <div class="card done-box" v-else-if="catStage === 'done'" data-page-node-id="oaQPE4gemOXcYGGkY0fEaj">
+          <h2 data-page-node-id="F0AscaKo77XvdG6jLSHha6">🏁 考试结束</h2>
+          <div class="score-board" data-page-node-id="QCUhvYPmUTmsPw8zJe5Sgp">
+            <div class="score-card" data-page-node-id="VybcmHS1Bvc3Gf2vDvcxs6"><div class="num" data-page-node-id="rLwP6kRxmD4DNzionmuIc8">{{ catStats.total }}</div><div class="lbl" data-page-node-id="MM9Le4bbgQtRxwmxgZ10Ni">总题数</div></div>
+            <div class="score-card" data-page-node-id="oC5f3Z03iTNABDDQLZHuDB"><div class="num ok" data-page-node-id="CcskZ7ETOKr2Kcc95r2Smd">{{ catStats.right }}</div><div class="lbl" data-page-node-id="4dfeGlZbIP6nCdDKVFQUef">答对</div></div>
+            <div class="score-card" data-page-node-id="OJhSfJHwKpZ2ri9w8erI3h"><div class="num no" data-page-node-id="ALaNEBWw8YZt6RAoibA4XE">{{ catStats.wrong }}</div><div class="lbl" data-page-node-id="sbBk30iQB2wAB6sCxhmOVm">答错</div></div>
+            <div class="score-card"><div class="num" style="font-size:18px;">{{ catElapsed }}</div><div class="lbl">用时</div></div>
+          </div>
+          <p v-if="catWrongItems.length" data-page-node-id="wFsb1PECEUkSVbPXQCwJCs">答错 {{ catWrongItems.length }} 题，已自动加入错题本。</p>
+          <p v-else data-page-node-id="VFTe4biaDkOG9a8acP56U7">全部答对，没有错题 🎉</p>
+          <div class="btn-group" data-page-node-id="kICPPUJNMWK5tIxly2wX25">
+            <button class="btn gray" @click="catRestart" data-page-node-id="WMQcbELVPsBcwvzpXct1Fr">🔙 重新选题</button>
+            <button class="btn" @click="switchTab('wrongbook')" data-page-node-id="3ykAUZCQqAql9jlltzeyNf">📕 查看错题本</button>
+          </div>
+        </div>
+      </section>
+
+      <section v-show="activeTab === 'wrongbook'" data-page-node-id="h3wJFyShntHoTFVyGHWi7f">
+        <div class="panel" data-page-node-id="8tvcNyR0y1jnhr3BUkYwiM">
+          <div class="panel-head" data-page-node-id="LPlQsjuvfcxa2woZ0BNoa9">
+            <h3 style="margin:0;" data-page-node-id="VbUFEhDLou6QWoCyW9Fzr2">📕 错题本</h3>
+            <button class="btn danger small" @click="wrongClear()" v-if="wrongCount" data-page-node-id="oApBxqYficjAunonN7FY13">🗑 清空全部</button>
+          </div>
+          <div class="wb-tabs" data-page-node-id="uZoGosohrXhBmcO6jf4I6G">
+            <button :class="{ on: wrongTab === 'practice' }" @click="wrongTab = 'practice'" data-page-node-id="JqCWAc5Vs9yruR7s5tykUj">记忆闯关错题 ({{ wrongBySource.practice.length }})</button>
+            <button :class="{ on: wrongTab === 'preview' }" @click="wrongTab = 'preview'" data-page-node-id="NXT3xyJdQoKyox5TYGBtRe">摸底速览错题 ({{ wrongBySource.preview.length }})</button>
+            <button :class="{ on: wrongTab === 'exam' }" @click="wrongTab = 'exam'" data-page-node-id="jNwsFZytB3QVJpFbpFwAlh">考试错题 ({{ wrongBySource.exam.length }})</button>
+            <button :class="{ on: wrongTab === 'all' }" @click="wrongTab = 'all'" data-page-node-id="WUAFhFtSgZQNa9QwnUa2gl">全部 ({{ wrongCount }})</button>
+          </div>
+          <div class="select-row" v-if="wrongFiltered.length" data-page-node-id="RmsAM4ewJfmU3CrMYeDUI0">
+            <button class="btn" @click="startWrongPractice(wrongItems)" data-page-node-id="2vMfTA6qC4Fw6qbBTvA8Jj">🕹️ 加强练习</button>
+            <button class="btn" @click="startWrongExam(wrongItems)" data-page-node-id="qPihAdGaWHWebOlCRz2qiY">🎯 重新考试</button>
+          </div>
+        </div>
+
+        <div class="panel" v-if="wrongPracticeQueue.length" data-page-node-id="xie57isxlkObdz4AQQEGFt">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; color:var(--text-muted); font-size:14px;" data-page-node-id="7HUzYdxkBkHaJ5DBiLnJpo">
+            <span data-page-node-id="4IslGaq6FtXi7VBtRAkZvk">错题练习 · 剩余 {{ wrongPracticeQueue.length }} 张</span>
+            <button class="btn-text small" @click="wrongPracticeQueue = []" data-page-node-id="0qZBOo4C9syLwLLMSTmByU">结束练习</button>
+          </div>
+          <div class="card" data-page-node-id="7WntdpB9o7HZmuCMcrEaZe">
+            <div class="tag" data-page-node-id="sfgMpOGZFI5ZzgPWFGZmO1">{{ wrongPracticeQueue[0].it.typeLabel }}</div>
+            <div class="question" data-page-node-id="H3fN6GbEs2xKdNwV08utlw">{{ wrongPracticeQueue[0].it.q }}</div>
+            <answer-view v-if="wrongPracticeShow" :item="wrongPracticeQueue[0].it" data-page-node-id="6xZZJ1YTntuZezdqA73otv"></answer-view>
+            <div class="btn-group" v-if="!wrongPracticeShow" data-page-node-id="xDkhHvVh9zl7OOt2sFTB6s">
+              <button class="btn wide" @click="wrongPracticeShow = true" data-page-node-id="oidQzaXCayAz5L6ocjQb5N">👀 看答案</button>
+            </div>
+            <div class="btn-group" v-else data-page-node-id="XGrevI8BJdpHOLbvnnpg4T">
+              <button class="btn bad" @click="wrongMark(false)" data-page-node-id="e2TXKEoZWV1bhL08G1FpOe">😥 没记住</button>
+              <button class="btn good" @click="wrongMark(true)" data-page-node-id="De1RM6G8oO9XUMXdFwdfWq">😎 记住了</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-hint" v-if="!wrongFiltered.length && !wrongPracticeQueue.length" data-page-node-id="AGE1CGMduyfQP4DfTHwR7t">该分类暂无错题。</div>
+        <div class="wb-item" v-for="e in wrongFiltered" :key="e.id" data-page-node-id="emOBICXxj7iiaRvrF1Fgdt">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;" data-page-node-id="9ElfIQSbeO2HOIytesCC3D">
+            <span class="src-tag" :class="e.source" data-page-node-id="W6zbEYqnHdXWrtsSIJssHA">{{ sourceLabel(e.source) }}</span>
+            <button class="btn-text small" @click="wrongRemove(e.id)" data-page-node-id="mfPZb6gNdQXpvOGVOiGTcB">✕ 移除</button>
+          </div>
+          <div class="exam-q" style="margin-top:8px;" data-page-node-id="4ho5RfokMY0M1oJgqUFTxR">{{ e.item.q }}</div>
+          <answer-view :item="e.item" style="margin-top:10px;" data-page-node-id="Jls3wZDcCp8skXK4ZLHNR1"></answer-view>
+        </div>
+      </section>
+
+      <section v-show="showAiPanel" class="panel ai-panel" data-page-node-id="hMFTAxHA7cpDw4IsskeYD2">
+        <div class="panel-head" data-page-node-id="yXGWeQRPSIcpAkZ375e8YQ">
+          <h3 style="margin:0;" data-page-node-id="FCVhEFIOCQ3B58yeaXCyYf">🤖 AI 题库转换提示词</h3>
+          <div style="display:flex; gap:8px;" data-page-node-id="tuMFZ94Eo2lDxsrNeARGZ0">
+            <button class="btn small" @click="copyAiPrompt" data-page-node-id="Akhyb3mGL1zMPXN4xiic9h">{{ aiCopied ? '✅ 已复制' : '📋 复制' }}</button>
+            <button class="btn gray small" @click="downloadAiPrompt" data-page-node-id="W3rFjRs7K81xTJvvY7Djk2">⬇️ 下载</button>
+          </div>
+        </div>
+        <p class="sub" data-page-node-id="BCyBlOQwbYUEZjPoYXMAgC">把下面的提示词发给任意 AI（ChatGPT / 文心一言 / 豆包 等），附上试卷照片或题目文本，即可生成题库 JSON。</p>
+        <textarea class="ai-prompt" readonly>{{ aiPrompt }}</textarea>
+      </section>
+
+      <div class="toast" :class="{ err: !toastOk }" v-if="toastMsg" data-page-node-id="UCXrNkZJkIQM4IDnVlM3Dg">{{ toastMsg }}</div>
+
+    </div>
+  </div>
+
+  <!-- 内置默认题库（离线兜底） -->
+  <script src="default-bank.js"></script>
+  <!-- 本地 Vue（纯离线） -->
+  <script src="vendor/vue.global.prod.js"></script>
+  <!-- 运行配置（可自定义远程题库地址 / JSON 管理服务入口） -->
+  <script src="config.js"></script>
+  <!-- 分模块 JS -->
+  <script src="js/core.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/leitner.js"></script>
+  <script src="js/wrongbook.js"></script>
+  <script src="js/ai-prompt.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- JSON 规则兜底摘要 -->
+  <script>
+    window.FALLBACK_RULES = [
+      '# 考试记忆系统 · JSON 数据规则（exam-bank v1.0）',
+      '# 完整规则见项目内 docs/EXAM_JSON_SPEC.md',
+      '',
+      '## 顶层结构',
+      '{ "view": "exam-bank", "viewVersion": "1.0.0", "meta": {"title":"题库名"}, "features": {...}, "papers": [ {"id":"卷1","name":"试卷名","questions":[...]} ] }',
+      '',
+      '## 题目（type 决定结构）',
+      'fill_blank 填空题：question + blanks:[{index,answer}]',
+      'true_false 判断题：question + answer:true/false',
+      'single_choice 单选题：question + options:{A,B,C} + answer:"A"',
+      'multi_choice 多选题：question + options + answer:["A","B"]',
+      'essay 问答题：question + answer:"文本"',
+      'special_fill_blank 专项题：question + blanks',
+      '',
+      '## 说明',
+      '- 一份文件可含多份卷子（papers 数组），可任意扩展。',
+      '- 未知题型会兜底显示题干与 answer，不会报错。',
+      '- 兼容旧格式（顶层卷子键 + 分题型对象）。'
+    ].join('\n');
+  </script>
+</body>
+</html>

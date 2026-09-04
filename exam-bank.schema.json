@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.org/exam-bank.schema.json",
+  "title": "试卷 JSON View 标准 (exam-bank)",
+  "description": "考试记忆系统的试卷数据格式（通用题库，可扩展）。viewVersion=1.0.0",
+  "type": "object",
+  "required": ["view", "papers"],
+  "properties": {
+    "view": { "const": "exam-bank", "description": "视图标识，固定为 exam-bank" },
+    "viewVersion": { "type": "string", "description": "标准版本号，如 1.0.0" },
+    "meta": {
+      "type": "object",
+      "description": "自由元信息，可扩展",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "author": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "language": { "type": "string" },
+        "source": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "features": {
+      "type": "object",
+      "description": "声明应用运行的功能与配置，可扩展",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "label": { "type": "string" },
+          "icon": { "type": "string" },
+          "config": { "type": "object", "additionalProperties": true }
+        },
+        "required": ["enabled"],
+        "additionalProperties": true
+      }
+    },
+    "papers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/paper" }
+    }
+  },
+  "additionalProperties": true,
+  "definitions": {
+    "paper": {
+      "type": "object",
+      "required": ["id", "name", "questions"],
+      "properties": {
+        "id": { "type": ["string", "number"] },
+        "name": { "type": "string" },
+        "order": { "type": "number" },
+        "questions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/question" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "question": {
+      "type": "object",
+      "required": ["id", "type", "question"],
+      "properties": {
+        "id": { "type": ["string", "number"] },
+        "type": { "type": "string" },
+        "question": { "type": "string" },
+        "group": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "explanation": { "type": "string" }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "enum": ["fill_blank", "special_fill_blank"] } } }, "then": { "required": ["blanks"], "properties": { "blanks": { "type": "array", "items": { "type": "object", "required": ["answer"], "properties": { "index": { "type": "number" }, "answer": { "type": "string" } }, "additionalProperties": true } } } } },
+        { "if": { "properties": { "type": { "const": "true_false" } } }, "then": { "required": ["answer"], "properties": { "answer": { "type": "boolean" } } } },
+        { "if": { "properties": { "type": { "const": "single_choice" } } }, "then": { "required": ["options", "answer"], "properties": { "options": { "type": "object" }, "answer": { "type": "string" } } } },
+        { "if": { "properties": { "type": { "const": "multi_choice" } } }, "then": { "required": ["options", "answer"], "properties": { "options": { "type": "object" }, "answer": { "type": "array", "items": { "type": "string" } } } } },
+        { "if": { "properties": { "type": { "const": "essay" } } }, "then": { "required": ["answer"], "properties": { "answer": { "type": "string" } } } }
+      ],
+      "additionalProperties": true
+    }
+  }
+}

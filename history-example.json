@@ -1,0 +1,203 @@
+{
+  "view": "exam-bank",
+  "viewVersion": "1.0.0",
+  "meta": {
+    "title": "初中历史题库（示例）",
+    "description": "初中历史题目示例，用于演示试卷 JSON View 标准（可扩展，可替换任意学科）",
+    "author": "示例",
+    "tags": [
+      "历史",
+      "初中",
+      "示例"
+    ]
+  },
+  "features": {
+    "practice": {
+      "enabled": true,
+      "label": "记忆闯关",
+      "icon": "🕹️",
+      "config": {
+        "shuffle": true,
+        "passLabel": "😎 记住了 (剔除)",
+        "failLabel": "😥 没记住 (重刷)"
+      }
+    },
+    "exam": {
+      "enabled": true,
+      "label": "摸底速览",
+      "icon": "📝",
+      "config": {
+        "showAnswers": true
+      }
+    }
+  },
+  "papers": [
+    {
+      "id": "历史示例",
+      "name": "初中历史·示例卷",
+      "questions": [
+        {
+          "id": 1,
+          "type": "fill_blank",
+          "group": "填空题",
+          "question": "我国有文字可考的历史开始于____朝。",
+          "blanks": [
+            {
+              "index": 1,
+              "answer": "商"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "fill_blank",
+          "group": "填空题",
+          "question": "秦始皇统一六国后，在地方推行____制度，加强了中央对地方的控制。",
+          "blanks": [
+            {
+              "index": 1,
+              "answer": "郡县"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "fill_blank",
+          "group": "填空题",
+          "question": "中国近代史的开端是____战争，爆发于____年。",
+          "blanks": [
+            {
+              "index": 1,
+              "answer": "鸦片"
+            },
+            {
+              "index": 2,
+              "answer": "1840"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "true_false",
+          "group": "判断题",
+          "question": "武则天是我国历史上唯一的女皇帝。",
+          "answer": true
+        },
+        {
+          "id": 5,
+          "type": "true_false",
+          "group": "判断题",
+          "question": "郑和下西洋发生在明朝。",
+          "answer": true
+        },
+        {
+          "id": 6,
+          "type": "true_false",
+          "group": "判断题",
+          "question": "林则徐虎门销烟发生在第一次鸦片战争之后。",
+          "answer": false
+        },
+        {
+          "id": 7,
+          "type": "single_choice",
+          "group": "单项选择题",
+          "question": "我国历史上第一个统一的中央集权封建王朝是（ ）。",
+          "options": {
+            "A": "夏",
+            "B": "商",
+            "C": "秦",
+            "D": "汉"
+          },
+          "answer": "C",
+          "explanation": "公元前 221 年，秦王嬴政统一六国，建立我国历史上第一个统一的中央集权封建王朝——秦朝。"
+        },
+        {
+          "id": 8,
+          "type": "single_choice",
+          "group": "单项选择题",
+          "question": "辛亥革命的指导思想是（ ）。",
+          "options": {
+            "A": "三民主义",
+            "B": "马克思主义",
+            "C": "民主与科学",
+            "D": "维新思想"
+          },
+          "answer": "A"
+        },
+        {
+          "id": 9,
+          "type": "single_choice",
+          "group": "单项选择题",
+          "question": "五四运动爆发于（ ）。",
+          "options": {
+            "A": "1919年",
+            "B": "1921年",
+            "C": "1927年",
+            "D": "1937年"
+          },
+          "answer": "A"
+        },
+        {
+          "id": 10,
+          "type": "multi_choice",
+          "group": "多项选择题",
+          "question": "我国古代“四大发明”包括（ ）。",
+          "options": {
+            "A": "造纸术",
+            "B": "指南针",
+            "C": "火药",
+            "D": "印刷术"
+          },
+          "answer": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ]
+        },
+        {
+          "id": 11,
+          "type": "multi_choice",
+          "group": "多项选择题",
+          "question": "下列事件发生在抗日战争时期（1937—1945）的有（ ）。",
+          "options": {
+            "A": "卢沟桥事变",
+            "B": "台儿庄战役",
+            "C": "百团大战",
+            "D": "重庆谈判"
+          },
+          "answer": [
+            "A",
+            "B",
+            "C"
+          ],
+          "explanation": "卢沟桥事变（1937）、台儿庄战役（1938）、百团大战（1940）均发生在抗日战争时期；重庆谈判发生在 1945 年抗战胜利之后。"
+        },
+        {
+          "id": 12,
+          "type": "essay",
+          "group": "问答题",
+          "question": "简述秦始皇巩固统一的措施。",
+          "answer": "政治上建立中央集权制度（皇帝制度、三公九卿制、郡县制）；文化上统一文字（小篆）；经济上统一度量衡、统一货币（圆形方孔半两钱）；交通上修驰道、统一车轨；军事上北击匈奴、修筑长城，南征百越。",
+          "explanation": "记忆要点：政治、文化、经济、交通、军事五个方面。"
+        },
+        {
+          "id": 13,
+          "type": "special_fill_blank",
+          "group": "专项题",
+          "question": "中国近代史的开端是____战争；新文化运动高举的两面大旗是“____”与“科学”。",
+          "blanks": [
+            {
+              "index": 1,
+              "answer": "鸦片"
+            },
+            {
+              "index": 2,
+              "answer": "民主"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
