@@ -26,13 +26,14 @@ global.localStorage = {
 
 const JS_DIR = path.join(__dirname, '..', 'js');
 // 顺序敏感：store.js 必须在 wrongbook.js 之前
-for (const f of ['core.js', 'store.js', 'leitner.js', 'wrongbook.js']) {
+for (const f of ['core.js', 'store.js', 'leitner.js', 'wrongbook.js', 'utils.js']) {
   vm.runInThisContext(fs.readFileSync(path.join(JS_DIR, f), 'utf8'), { filename: f });
 }
 
 const Core = global.ExamCore;
 const Leitner = global.ExamLeitner;
 const Wrongbook = global.ExamWrongbook;
+const Utils = global.ExamUtils;
 
 /* ---------- 极简断言 ---------- */
 let passed = 0, failed = 0;
@@ -291,6 +292,43 @@ test('按来源统计', () => {
 test('清空', () => {
   Wrongbook.clear();
   eq(Wrongbook.list().length, 0);
+});
+
+/* ================= Utils ================= */
+console.log('\n轻量工具 utils');
+
+test('shuffle 返回新数组且元素完整（排列不丢失）', () => {
+  const src = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  for (let i = 0; i < 20; i++) {
+    const out = Utils.shuffle(src);
+    eq(out.length, src.length, '长度不变');
+    eq(out.slice().sort((a, b) => a - b), src, '元素集合不变（仅顺序随机）');
+    assert(out !== src, '应返回新数组');
+  }
+  eq(src, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], '原数组不应被修改');
+});
+
+test('shuffle 空数组 / 单元素安全', () => {
+  eq(Utils.shuffle([]), []);
+  eq(Utils.shuffle([1]), [1]);
+});
+
+test('groupBy 按键分组且保持首次出现顺序', () => {
+  const list = [
+    { k: 'a', v: 1 },
+    { k: 'b', v: 2 },
+    { k: 'a', v: 3 },
+    { k: 'c', v: 4 }
+  ];
+  const g = Utils.groupBy(list, it => it.k);
+  eq(Object.keys(g), ['a', 'b', 'c'], '键顺序应为首次出现顺序');
+  eq(g.a.map(x => x.v), [1, 3]);
+  eq(g.b.map(x => x.v), [2]);
+  eq(g.c.map(x => x.v), [4]);
+});
+
+test('groupBy 空数组安全', () => {
+  eq(Utils.groupBy([], it => it.k), {});
 });
 
 /* ================= 结果 ================= */

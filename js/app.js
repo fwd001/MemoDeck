@@ -12,6 +12,7 @@
   const Leitner = global.ExamLeitner;
   const Wrongbook = global.ExamWrongbook;
   const AIPrompt = global.ExamAIPrompt;
+  const Utils = global.ExamUtils;
 
   // 运行配置见 config.js（defaultRemoteUrl / jsonManagerUrl 均可外部覆盖）
   const CFG = global.EXAM_CONFIG || {};
@@ -105,22 +106,25 @@
       const catNextLabel = computed(() => (catIndex.value + 1 < catStats.total) ? '下一题 →' : '查看成绩');
       const hasPrevCat = computed(() => catIndex.value > 0);
       const catTypes = computed(() => {
-        const map = {};
-        bank.value.forEach(it => {
-          if (!map[it.rawType]) map[it.rawType] = { rawType: it.rawType, label: it.typeLabel, count: 0 };
-          map[it.rawType].count++;
-        });
-        return Object.values(map);
+        const groups = Utils.groupBy(bank.value, it => it.rawType);
+        return Object.keys(groups).map(rawType => ({
+          rawType: rawType,
+          label: groups[rawType][0].typeLabel,
+          count: groups[rawType].length
+        }));
       });
       const catAllSelected = computed(() => catTypes.value.length > 0 && catSelected.value.length === catTypes.value.length);
 
       const wrongCount = computed(() => wrongEntries.value.length);
-      const wrongBySource = computed(() => ({
-        practice: wrongEntries.value.filter(e => e.source === 'practice'),
-        preview: wrongEntries.value.filter(e => e.source === 'preview'),
-        exam: wrongEntries.value.filter(e => e.source === 'exam'),
-        all: wrongEntries.value
-      }));
+      const wrongBySource = computed(() => {
+        const g = Utils.groupBy(wrongEntries.value, e => e.source);
+        return {
+          practice: g.practice || [],
+          preview: g.preview || [],
+          exam: g.exam || [],
+          all: wrongEntries.value
+        };
+      });
       const wrongFiltered = computed(() => wrongBySource.value[wrongTab.value] || wrongEntries.value);
       const wrongItems = computed(() => wrongFiltered.value.map(e => e.item));
 
@@ -351,9 +355,8 @@
 
       /* ============ 记忆闯关（Leitner） ============ */
       function resetPractice() {
-        let arr = bank.value.slice();
-        if (shufflePolicy.value) arr = arr.sort(() => Math.random() - 0.5);
-        practiceQueue.value = Leitner.createQueue(arr);
+        const source = shufflePolicy.value ? Utils.shuffle(bank.value) : bank.value.slice();
+        practiceQueue.value = Leitner.createQueue(source);
         practiceShowAnswer.value = false;
       }
       function mark(remembered) {
@@ -395,8 +398,7 @@
         if (!catSelected.value.length) { catError.value = '请至少选择一种题型。'; return; }
         let pool = bank.value.filter(it => catSelected.value.includes(it.rawType));
         if (!pool.length) { catError.value = '所选题型没有题目。'; return; }
-        pool = pool.slice().sort(() => Math.random() - 0.5);
-        catPool.value = pool;
+        catPool.value = Utils.shuffle(pool);
         catIndex.value = 0;
         catStats.total = pool.length;
         catStats.right = 0;
@@ -612,7 +614,7 @@
       }
       function startWrongExam(items) {
         if (!items.length) return;
-        catPool.value = items.slice().sort(() => Math.random() - 0.5);
+        catPool.value = Utils.shuffle(items);
         catIndex.value = 0;
         catStats.total = items.length;
         catStats.right = 0;

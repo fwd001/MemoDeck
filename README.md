@@ -155,6 +155,7 @@ memodeck/
 │   ├── store.js            # localStorage 缓存 + 错题本存储
 │   ├── leitner.js          # Leitner 间隔重复算法
 │   ├── wrongbook.js        # 错题本数据操作
+│   ├── utils.js            # 轻量工具集（shuffle/groupBy，零依赖，对齐 lodash 语义）
 │   ├── ai-prompt.js        # AI 题库转换提示词
 │   └── app.js              # Vue 应用：全部状态与交互
 ├── vendor/

@@ -25,6 +25,7 @@ window
 ├── ExamStore      js/store.js     localStorage 读写
 ├── ExamLeitner    js/leitner.js   Leitner 间隔重复算法
 ├── ExamWrongbook  js/wrongbook.js 错题本数据操作
+├── ExamUtils      js/utils.js     轻量工具集（shuffle / groupBy，对齐 lodash 语义）
 ├── ExamAIPrompt   js/ai-prompt.js AI 转换提示词文本
 └── （Vue app）    js/app.js       Vue 应用：全部状态与交互
 ```
@@ -33,11 +34,13 @@ window
 
 ```
 default-bank.js → config.js → vendor/vue.global.prod.js
-→ js/core.js → js/store.js → js/leitner.js → js/wrongbook.js → js/ai-prompt.js
+→ js/core.js → js/store.js → js/leitner.js → js/wrongbook.js → js/utils.js → js/ai-prompt.js
 → js/app.js
 ```
 
-分层原则：`js/core.js`、`js/leitner.js`、`js/store.js`、`js/wrongbook.js` **不依赖 DOM 和 Vue**，可以单独在 Node 里跑单元测试；只有 `js/app.js` 碰 Vue 和界面。
+分层原则：`js/core.js`、`js/leitner.js`、`js/store.js`、`js/wrongbook.js`、`js/utils.js` **不依赖 DOM 和 Vue**，可以单独在 Node 里跑单元测试；只有 `js/app.js` 碰 Vue 和界面。
+
+> **为什么不引 lodash**：本项目为零第三方运行时依赖（`file://` 离线 + 纯逻辑零依赖单测）。lodash 全量约 530KB，而实际只有洗牌/分组两类需求。于是自建约 2KB 的 `utils.js`，函数语义对齐 lodash 同名函数；将来确有大需求时可平滑换成 `vendor/lodash.min.js`。
 
 ## 三、数据流
 
