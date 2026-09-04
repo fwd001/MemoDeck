@@ -190,6 +190,19 @@ https://<用户名>.github.io/<仓库名>/
 
 **关于跨域**：远程题库请求的 CORS 已在服务端解决，前端无需代理；GitHub Pages 只托管静态文件、无法自定义响应头，因此**跨域策略只能在数据源服务器上配置**，部署到 Pages 不影响这一点。
 
+### 3.5 本项目实战验证记录（2026-09-04）
+
+**现状**：仓库已启用 GitHub Pages（Source = `GitHub Actions`），部署工作流为 `.github/workflows/deploy.yml`，线上地址 **https://fwd001.github.io/MemoDeck/**（已验证 HTTP 200，标题与本地一致）。
+
+**启用前的一段“失败日志”**（可作为排查参照）：Pages 未开启时推送代码，`Deploy to GitHub Pages` 工作流会在第 2 步 `配置 Pages（configure-pages）` 就失败、上传/部署两步全部跳过——这是“Pages 还没开启”的典型特征，**不是工作流写错了**。开启后无需改任何文件，直接 Re-run 或重新推送即成功（本项目第 2 次部署即通过，此前多次红色均源于此）。
+
+**经验速记**：
+
+1. `deploy.yml` 写全也可能红——先确认 Settings → Pages → Source 已切成 `GitHub Actions`；
+2. 开启后想立刻验证，不必等新提交：Actions 页对失败记录点 **Re-run all jobs** 即可；
+3. 部署产物始终以 `main` 最新内容为准；页面若像旧的，强刷（Cmd/Ctrl + Shift + R）；
+4. 排障入口：Actions → `Deploy to GitHub Pages` → 打开运行 → 若第 2 步失败即未开启 Pages。
+
 ---
 
 ## 四、Nginx

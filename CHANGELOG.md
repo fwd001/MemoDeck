@@ -25,6 +25,9 @@
 - 评估后不引入 lodash 全量（约 530KB，与纯离线/零依赖定位冲突）；改为自建轻量工具集
   `js/utils.js`（约 2KB），替换 app.js 中 3 处手写洗牌（含不均衡的 `sort(()=>Math.random()-0.5)`）
   与 2 处手写分组逻辑，业务行为不变
+- **GitHub Pages 上线**：Settings → Pages → Source 切换为 `GitHub Actions`，`.github/workflows/deploy.yml`
+  跑通（第 2 次部署即成功）；线上 **https://fwd001.github.io/MemoDeck/** 已验证 HTTP 200，之后推 `main` 自动更新
+- 部署实战记录与排障经验写入 `docs/DEPLOYMENT.md` 3.5 节；README 顶部新增「在线体验」入口
 
 ## [1.0.0] - 2026-09-04
 

@@ -11,6 +11,8 @@
 
 **双击 `index.html` 就能用。** 不用装 Node，不用装依赖，不用联网，不用起服务器。
 
+**🟢 在线体验：[https://fwd001.github.io/MemoDeck/](https://fwd001.github.io/MemoDeck/)** —— GitHub Pages 自动部署，打开即测（内容与仓库一致）
+
 </div>
 
 ---
@@ -184,12 +186,14 @@ memodeck/
 |---|---|---|
 | **双击 `index.html`** | 个人单机 | 零部署，完全离线 |
 | **本地服务器** | 开发验证 | `python3 -m http.server 8000` |
-| **GitHub Pages** | 公开分享 | 已内置 Actions 工作流，推到 `main` 自动部署 |
+| **GitHub Pages** | 公开分享 | ✅ 已启用，推到 `main` 自动部署 |
 | **Nginx / Apache** | 自建服务器 | 配置见部署指南，含 CORS |
 | **Vercel / Netlify** | 免运维托管 | 连接 Git 自动部署 |
 | **Docker** | 容器化 | `docker build -t memodeck . && docker run -p 8080:80 memodeck` |
 
 详细步骤与配置片段见 [部署指南](./docs/DEPLOYMENT.md)。
+
+> 本项目已上线：**[https://fwd001.github.io/MemoDeck/](https://fwd001.github.io/MemoDeck/)**（2026-09-04 跑通，内置 13 题示例历史题库，可直接试用全部功能）。每次推送 `main` 自动更新。
 
 ---
 
