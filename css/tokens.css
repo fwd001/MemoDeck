@@ -6,6 +6,37 @@
  *   （dark token 全在 themes.css 的 html[data-theme="dark"] 里）
  * ============================================================ */
 
+/* ============================================================
+ * 全局布局防护（所有 CSS 文件共享，在 :root token 之前）
+ * 修 3 个经典溢出坑：
+ *   1. box-sizing: border-box — padding 算在 width 里，各文件计算一致
+ *   2. flex item 默认 min-width:0 — 长文本/表格不会撑开父容器
+ *   3. 全局禁止横向溢出 + 文本自动换行
+ * ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* flex item 防收缩溢出（经典 flex 布局 bug） */
+#app *,
+.md-home *,
+.md-study *,
+.md-exercise *,
+.md-practice *,
+.md-exam *,
+.md-preview *,
+.md-category *,
+.md-wrongbook *,
+.container * {
+  min-width: 0;
+}
+
+/* 全局兜底：禁止横向溢出 + 允许长文本换行 */
+
+
 :root {
   /* —— BRAND —— */
   --primary:          #007AFF;
@@ -226,6 +257,20 @@ html, body {
   overflow-x: hidden;
 }
 
+#app {
+  width: 100%;
+  max-width: var(--layout-max-content);
+  margin: 0 auto;
+  padding: 16px var(--layout-gutter) 80px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
                "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
@@ -240,22 +285,21 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-#app {
-  width: 100%;
-  max-width: var(--layout-max-content);
-  margin: 0 auto;
-  padding: 16px var(--layout-gutter) 80px;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
 
+
+/* /* v2.1: 外层容器宽度由 #app (max-width:1080px) 统一约束
+   所有 tab section 只需 width:100%，天然被父容器限制
+   内部卡片/题目等元素可各自有 max-width（单卡片大小，不是容器宽度） */
+#app .md-home,
 #app .md-study,
+#app .md-practice,
 #app .md-exercise,
-#app .md-exam {
-  max-width: var(--layout-max-study);
-  margin: 0 auto;
+#app .md-exam,
+#app .md-preview,
+#app .md-category,
+#app .md-wrongbook {
   width: 100%;
 }
 
-.container { max-width: var(--layout-max-content); margin: 0 auto; }
+/* v2.1: .container 变成纯 wrapper — 宽度由父元素(#app)决定，不自己约束 */
+.container { width: 100%; }

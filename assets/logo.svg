@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A84FF"/>
+      <stop offset="100%" stop-color="#0066CC"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="shadowSm" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- 背景: iOS 风格圆角方块 -->
+  <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
+
+  <!-- 卡片叠层（4 张扇形叠，从后到前） -->
+  <!-- 第 1 张 (最后): 半透明, 最偏左后 -->
+  <g transform="translate(256 270) rotate(-22)">
+    <rect x="-130" y="-95" width="260" height="190" rx="28" ry="28" fill="rgba(255,255,255,0.35)"/>
+  </g>
+
+  <!-- 第 2 张: 略偏后 -->
+  <g transform="translate(256 270) rotate(-12)">
+    <rect x="-130" y="-95" width="260" height="190" rx="28" ry="28" fill="rgba(255,255,255,0.65)"/>
+  </g>
+
+  <!-- 第 3 张: 中间 -->
+  <g transform="translate(256 270) rotate(-4)">
+    <rect x="-130" y="-95" width="260" height="190" rx="28" ry="28" fill="rgba(255,255,255,0.88)"/>
+  </g>
+
+  <!-- 第 4 张 (最前, 纯白): 带阴影 -->
+  <g transform="translate(256 270) rotate(4)" filter="url(#shadow)">
+    <rect x="-130" y="-95" width="260" height="190" rx="28" ry="28" fill="#FFFFFF"/>
+
+    <!-- 前景卡片上的"记忆/复习"符号: 波浪曲线 + 小圆点 -->
+    <!-- 波浪线 (间隔重复 = 间隔重复算法) -->
+    <path d="M -60 -18 Q -30 -38 0 -18 T 60 -18"
+          fill="none" stroke="#0A84FF" stroke-width="10"
+          stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- 小圆点: 答对/掌握 -->
+    <circle cx="-72" cy="-18" r="9" fill="#007AFF"/>
+
+    <!-- 底部装饰细线 -->
+    <rect x="-60" y="30" width="120" height="8" rx="4" fill="#E5EAF0"/>
+    <rect x="-60" y="50" width="85" height="8" rx="4" fill="#EEF2F7"/>
+  </g>
+
+  <!-- 头顶的小闪光 = AI / 灵感 -->
+  <g transform="translate(398 118)">
+    <path d="M0 -18 L4 -4 L18 0 L4 4 L0 18 L-4 4 L-18 0 L-4 -4 Z"
+          fill="#FFFFFF" opacity="0.9"/>
+  </g>
+</svg>

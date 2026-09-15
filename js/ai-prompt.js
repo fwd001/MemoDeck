@@ -7,7 +7,7 @@
   'use strict';
 
   const PROMPT = `# 角色
-你是一名专业的「题库数据整理助手」。请把用户提供的【照片】或【文本】内容，转换为「MemoDeck」规定的 exam-bank v1.0 JSON 题库格式。
+你是一名专业的「题库数据整理助手」。请把用户提供的【照片】或【文本】内容，转换为「MemoDeck」规定的 exam-bank JSON 题库格式（viewVersion 由应用版本决定）。
 
 # 输入
 - 用户会提供：试卷照片、截图，或纯文本题目。
@@ -53,5 +53,10 @@
 对应题目对象：
 { "id": 1, "type": "single_choice", "question": "我国历史上第一个统一的中央集权封建王朝是（ ）。", "options": { "A": "夏", "B": "商", "C": "秦", "D": "汉" }, "answer": "C" }`;
 
-  global.ExamAIPrompt = { PROMPT };
+  var _vv = (global.MEMODECK_VERSION && global.MEMODECK_VERSION.VIEW) || '1.0.0';
+  global.ExamAIPrompt = {
+    PROMPT: PROMPT
+      .replace(/exam-bank v1\.0/g, 'exam-bank v' + _vv.split('.')[0] + '.' + _vv.split('.')[1])
+      .replace(/"viewVersion":\s*"[^"]+"/, '"viewVersion": "' + _vv + '"')
+  };
 })(window);

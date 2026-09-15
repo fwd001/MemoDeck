@@ -1433,7 +1433,7 @@
       function serializeBank() {
         return {
           view: 'exam-bank',
-          viewVersion: '1.0.0',
+          viewVersion: (window.MEMODECK_VERSION && window.MEMODECK_VERSION.VIEW) || '1.0.0',
           meta: currentBank.value.meta || {},
           features: currentBank.value.features || {},
           papers: currentBank.value.papers || []

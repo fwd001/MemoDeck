@@ -3,6 +3,7 @@
 <head data-page-node-id="MNFhwRmdbaYUermUtiNpps">
   <meta charset="UTF-8" data-page-node-id="OlMBpN8N2UtLpfsYD3Cubk">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="HXZTFtP6uSpzFbc3NPwLSu">
+  <!-- ⚠️ 升级时与 config.js APP_VERSION + service-worker.js VERSION 三处同步 -->
   <meta name="version" content="2.0.0">
   <title>MemoDeck · 考试记忆系统 v2</title>
   <link rel="stylesheet" href="css/tokens.css" data-page-node-id="CSS-TOKENS">
@@ -12,6 +13,24 @@
   <link rel="stylesheet" href="css/themes.css" data-page-node-id="CSS-THEMES">
   <link rel="stylesheet" href="css/accessibility.css" data-page-node-id="CSS-A11Y">
   <style>[v-cloak] { display: none; }</style>
+  <!-- PWA: manifest + 图标 + 主题色 -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="./assets/icon-512.png">
+  <meta name="theme-color" content="#007AFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MemoDeck">
+
+  <!-- SW 注册 -->
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./service-worker.js').catch(function () { /* file:// 下会失败，忽略 */ });
+    });
+  }
+  </script>
 </head>
 <body data-page-node-id="ehA3MmGuKV43KASNoXNBUS">
   <div id="app" v-cloak data-page-node-id="Ywf2rsZANRqvMn9LebkiU6">
@@ -19,7 +38,7 @@
 
       <header class="header" data-page-node-id="EFLZMv7OA7MFAScBE6raNR">
         <h1 data-page-node-id="DvZGvDTGM5V8GQoopCB3C9">📚 MemoDeck · 考试记忆系统</h1>
-        <div class="sub" data-page-node-id="xnFkHgG7hJ6aYsD1NpKVBe">试卷 JSON View 标准 v2.0 · 纯离线 · 远程导入 · 本地缓存</div>
+        <div class="sub" data-page-node-id="xnFkHgG7hJ6aYsD1NpKVBe">试卷 JSON View 标准 v1.0 · 纯离线 · 远程导入 · 本地缓存</div>
         <div class="security-notice" data-page-node-id="Mrv4q3jJgXgwOcJ7MMtsT5">✅ 数据源：<b data-page-node-id="vVHRFuDZ64FYGcNuuUvs2w">{{ sourceMeta.label }}</b></div>
         <div class="header-actions" data-page-node-id="YaQbPOGu7RUtsxFh7ooj6I">
           <div class="theme-switch" role="tablist" aria-label="主题">
@@ -330,7 +349,7 @@
                 <label class="per-chip active" :class="{ active: studyPerSession === 30 }"><input type="radio" value="30" v-model="studyPerSession"><span>30</span></label>
                 <label class="per-chip"><input type="radio" value="50" v-model="studyPerSession"><span>50</span></label>
                 <label class="per-chip"><input type="radio" value="all" v-model="studyPerSession"><span>全部</span></label>
-                <label class="per-chip"><input type="radio" value="custom" v-model="studyPerSession"><input v-if="studyPerSession === 'custom'" type="number" min="1" max="500" v-model.number="studyPerSessionCustom" class="per-custom-input"></label>
+                <label class="per-chip"><input type="radio" value="custom" v-model="studyPerSession"><span>自定义</span><input v-if="studyPerSession === 'custom'" type="number" min="1" max="500" v-model.number="studyPerSessionCustom" class="per-custom-input"></label>
               </div>
             </div>
 
@@ -538,7 +557,7 @@
                 <label class="per-chip"><input type="radio" value="30" v-model="exercisePerSession"><span>30</span></label>
                 <label class="per-chip"><input type="radio" value="50" v-model="exercisePerSession"><span>50</span></label>
                 <label class="per-chip active" :class="{ active: exercisePerSession === 'all' }"><input type="radio" value="all" v-model="exercisePerSession"><span>全部</span></label>
-                <label class="per-chip"><input type="radio" value="custom" v-model="exercisePerSession"><input v-if="exercisePerSession === 'custom'" type="number" min="1" max="500" v-model.number="exercisePerSessionCustom" class="per-custom-input"></label>
+                <label class="per-chip"><input type="radio" value="custom" v-model="exercisePerSession"><span>自定义</span><input v-if="exercisePerSession === 'custom'" type="number" min="1" max="500" v-model.number="exercisePerSessionCustom" class="per-custom-input"></label>
               </div>
             </div>
 
@@ -727,7 +746,7 @@
         </template>
       </section>
 
-      <section v-show="activeTab === 'practice'" data-page-node-id="ao54HB8yDlqdnry3l3IR59">
+      <section class="md-practice" v-show="activeTab === 'practice'" data-page-node-id="ao54HB8yDlqdnry3l3IR59">
         <div class="empty-hint" v-if="!bank.length" data-page-node-id="uBWDMVBDXUv1AxBWRvBVpp">暂无题目。请通过上方数据面板导入 JSON。</div>
         <template v-else-if="practiceQueue.length" data-page-node-id="EiAlfjORcyJP9EsP4lrC5H">
           <div class="progress-bar-container" data-page-node-id="EV0P2fSifCHZI7C2V5lsGb"><div class="progress-bar" :style="{ width: practiceProgress + '%' }" data-page-node-id="llMNd0V4xnIRAqMHI64hjo"></div></div>
@@ -999,7 +1018,7 @@
         </template>
       </section>
 
-      <section v-show="activeTab === 'preview'" data-page-node-id="npPAwCE5yjY9iFVt9CBtbP">
+      <section class="md-preview" v-show="activeTab === 'preview'" data-page-node-id="npPAwCE5yjY9iFVt9CBtbP">
         <div class="empty-hint" v-if="!bank.length" data-page-node-id="7n5Gxvlh7B2vzeaJaid3Pu">暂无题目。请通过上方数据面板导入 JSON。</div>
         <template v-else data-page-node-id="c4IrWp8HfGT3Wue6qq5aLr">
           <div class="exam-item" v-for="(item, index) in bank" :key="index" data-page-node-id="jv7DFLF6BGqASZNmywIp3w">
@@ -1015,7 +1034,7 @@
         </template>
       </section>
 
-      <section v-show="activeTab === 'category'" data-page-node-id="GrAc6M4GH3Hz0QFQqvj0CH">
+      <section class="md-category" v-show="activeTab === 'category'" data-page-node-id="GrAc6M4GH3Hz0QFQqvj0CH">
         <div class="panel" v-if="catStage === 'setup'" data-page-node-id="4iwibywnmFfvx5StrvIp9A">
           <h3 style="margin:0 0 4px;" data-page-node-id="Ykwdm3ykvlu9PK4du3WrKc">🎯 分类考试</h3>
           <p class="sub" style="margin:0 0 10px;" data-page-node-id="TVHDDWiwUkdcWZY5Nk3Zv9">选择题型（可多选/全选），随机出题，实时判分。</p>
@@ -1036,7 +1055,7 @@
             <div style="margin-top:10px;" data-page-node-id="f1vEq6oyAo1FJz7Iw14Jdc">
               <textarea class="cat-answer-input" v-model="customForm.question" placeholder="题干（填空用 ____ 表示空位）"></textarea>
               <div class="select-row" data-page-node-id="xQdcdhb8oo0VlFJRKOguWY">
-                <select style="min-height:40px; padding:6px 10px; border:1px solid #d5dbe3; border-radius:8px; font-size:15px; font-family:inherit;" v-model="customForm.type" data-page-node-id="cvgcsw36MCDWDEiZQAYSjn">
+                <select class="cat-type-select" v-model="customForm.type" data-page-node-id="cvgcsw36MCDWDEiZQAYSjn">
                   <option value="single_choice" data-page-node-id="Rkwoob8XJ7FOEe3LQmRobE">单选题</option>
                   <option value="multi_choice" data-page-node-id="pAFGFNOXtaUoGnetSWUWIQ">多选题</option>
                   <option value="true_false" data-page-node-id="BinPkoMi5dF0Uwmo4DkCGa">判断题</option>
@@ -1122,7 +1141,7 @@
         </div>
       </section>
 
-      <section v-show="activeTab === 'wrongbook'" data-page-node-id="h3wJFyShntHoTFVyGHWi7f">
+      <section class="md-wrongbook" v-show="activeTab === 'wrongbook'" data-page-node-id="h3wJFyShntHoTFVyGHWi7f">
         <div class="panel" data-page-node-id="8tvcNyR0y1jnhr3BUkYwiM">
           <div class="panel-head" data-page-node-id="LPlQsjuvfcxa2woZ0BNoa9">
             <h3 style="margin:0;" data-page-node-id="VbUFEhDLou6QWoCyW9Fzr2">📕 错题本</h3>
@@ -1226,28 +1245,16 @@
   <script src="js/backup.js"></script>
   <script src="js/app.js"></script>
 
-  <!-- JSON 规则兜底摘要 -->
-  <script>
-    window.FALLBACK_RULES = [
-      '# MemoDeck · JSON 数据规则（exam-bank v1.0）',
-      '# 完整规则见项目内 docs/EXAM_JSON_SPEC.md',
-      '',
-      '## 顶层结构',
-      '{ "view": "exam-bank", "viewVersion": "1.0.0", "meta": {"title":"题库名"}, "features": {...}, "papers": [ {"id":"卷1","name":"试卷名","questions":[...]} ] }',
-      '',
-      '## 题目（type 决定结构）',
-      'fill_blank 填空题：question + blanks:[{index,answer}]',
-      'true_false 判断题：question + answer:true/false',
-      'single_choice 单选题：question + options:{A,B,C} + answer:"A"',
-      'multi_choice 多选题：question + options + answer:["A","B"]',
-      'essay 问答题：question + answer:"文本"',
-      'special_fill_blank 专项题：question + blanks',
-      '',
-      '## 说明',
-      '- 一份文件可含多份卷子（papers 数组），可任意扩展。',
-      '- 未知题型会兜底显示题干与 answer，不会报错。',
-      '- 兼容旧格式（顶层卷子键 + 分题型对象）。'
-    ].join('\n');
-  </script>
-</body>
+  <!-- JSON 规则兜底摘要（viewVersion 从 config.js 动态读取）-->
+<script>
+(function(){
+  var _vv = (window.MEMODECK_VERSION && window.MEMODECK_VERSION.VIEW) || '1.0.0';
+  var _major = _vv.split('.')[0];
+  var _minor = _vv.split('.')[1];
+  window.FALLBACK_RULES = [
+    '# MemoDeck · JSON 数据规则（exam-bank v' + _major + '.' + _minor + '）',
+    '# 完整规则见 docs/EXAM_JSON_SPEC.md',
+    '',
+    '## 顶层结构',
+    '{ "view": "exam-bank", "viewVersion": "' + _vv + '", "meta": {"title":"题库名"}, "features": {...}, "papers": [ {"id":"卷1","name":"试卷名","questions": [...]} ] }',</body>
 </html>

@@ -616,6 +616,7 @@
   width: 100%; padding: 12px 14px; font-size: 15px; font-family: inherit;
   border: 1.5px solid var(--border); border-radius: var(--radius-sm);
   outline: none; transition: border-color .15s;
+  background: var(--surface); color: var(--text-main); box-shadow: var(--shadow-input);
 }
 .md-exercise-blank-input:focus:not(:disabled) { border-color: var(--primary); }
 .md-exercise-blank-input:disabled { background: var(--surface-sub); }
@@ -624,6 +625,7 @@
   width: 100%; padding: 12px 14px; font-size: 15px; font-family: inherit;
   border: 1.5px solid var(--border); border-radius: var(--radius-sm);
   outline: none; resize: vertical; min-height: 120px;
+  background: var(--surface); color: var(--text-main); box-shadow: var(--shadow-input);
 }
 .md-exercise-essay-input:focus:not(:disabled) { border-color: var(--primary); }
 .md-exercise-essay-input:disabled { background: var(--surface-sub); }

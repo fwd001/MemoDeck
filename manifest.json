@@ -1,0 +1,43 @@
+{
+  "name": "MemoDeck · 考试记忆系统",
+  "short_name": "MemoDeck",
+  "description": "基于间隔重复算法的考试记忆卡片系统，支持学习、练习、考试、错题本全流程。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F2F2F7",
+  "theme_color": "#007AFF",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "学习",
+      "url": "./index.html#/study",
+      "description": "记忆闯关"
+    },
+    {
+      "name": "练习",
+      "url": "./index.html#/practice",
+      "description": "专项练习"
+    },
+    {
+      "name": "错题本",
+      "url": "./index.html#/wrongbook",
+      "description": "回顾错题"
+    }
+  ]
+}

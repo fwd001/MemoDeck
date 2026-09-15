@@ -4,6 +4,8 @@
 
 **考试记忆系统** · JSON 驱动的离线刷题工具
 
+[![v2.0](https://img.shields.io/badge/版本-v2.0-007AFF?style=flat-square)](./CHANGELOG.md)
+[![PWA](https://img.shields.io/badge/PWA-可安装到桌面-5AC8FA?style=flat-square)](#pwa-安装到桌面)
 [![纯静态](https://img.shields.io/badge/构建-无构建步骤-41b883?style=flat-square)](./docs/ARCHITECTURE.md)
 [![离线可用](https://img.shields.io/badge/离线-完全可用-3b82f6?style=flat-square)](./docs/DEPLOYMENT.md)
 [![Vue](https://img.shields.io/badge/Vue-3.5.13-4fc08d?style=flat-square)](https://vuejs.org/)
@@ -151,19 +153,37 @@ memodeck/
 ├── config.js               # 运行配置（远程题库地址 / JSON 管理服务入口）
 ├── default-bank.js         # 内置兜底题库（离线首启用）
 ├── css/
-│   └── style.css           # 全部样式（响应式 / 无障碍 / 动效降级）
+│   ├── tokens.css                # Design Token v2: 颜色/圆角/间距/字体/阴影（Light 源）
+│   ├── themes.css                # Dark 模式覆盖 + 主题切换（auto/light/dark）
+│   ├── components.css            # Header / TabNav / Button / Card 组件
+│   ├── pages.css                 # 首页 / 学习 / 练习 / 考试 / 错题本 页面
+│   ├── responsive.css           # 移动端断点（375/390/430/768/1024）
+│   ├── accessibility.css         # a11y: focus-visible / reduced-motion
+│   └── style.css                 # 旧版遗留（不再被 index.html 引用）
 ├── js/
-│   ├── core.js             # 纯逻辑：格式识别、归一化、题目条目构建
-│   ├── store.js            # localStorage 缓存 + 错题本存储
-│   ├── leitner.js          # Leitner 间隔重复算法
-│   ├── wrongbook.js        # 错题本数据操作
-│   ├── utils.js            # 轻量工具集（shuffle/groupBy，零依赖，对齐 lodash 语义）
-│   ├── ai-prompt.js        # AI 题库转换提示词
-│   └── app.js              # Vue 应用：全部状态与交互
+│   ├── core.js                   # 纯逻辑：格式识别、归一化、条目构建
+│   ├── store.js                    # localStorage 缓存 + 错题本存储
+│   ├── leitner.js                  # Leitner 间隔重复算法
+│   ├── wrongbook.js                # 错题本数据操作（v2 状态机）
+│   ├── progress.js                 # v2 学习进度持久化
+│   ├── session.js                  # v2 考试/练习会话恢复
+│   ├── stats.js                    # v2 统计看板聚合
+│   ├── migration.js                # v1→v2 数据迁移
+│   ├── backup.js                   # v2 一键备份/恢复
+│   ├── utils.js                    # 轻量工具（shuffle/groupBy）
+│   ├── ai-prompt.js                # AI 题库转换提示词
+│   └── app.js                      # Vue 应用：全部状态与交互
 ├── vendor/
 │   └── vue.global.prod.js  # 本地 Vue 3.5.13（离线依赖）
+├── assets/                       # PWA 图标
+│   ├── logo.svg                   #   矢量源文件
+│   ├── icon-192.png               #   192×192（桌面/任务栏）
+│   └── icon-512.png               #   512×512（开始菜单/启动画面）
+├── manifest.json                  # PWA 应用清单
+├── service-worker.js              # PWA 离线缓存（HTML network-first, 静态 cache-first）
 ├── test/
-│   └── core.test.js        # 纯逻辑单元测试（node test/core.test.js，零依赖）
+│   ├── core.test.js              # 纯逻辑单元测试（26 项，零依赖）
+│   └── extensions.test.js         # v2 扩展测试（progress/session/stats/migration/wrongbook v2，37 项）
 ├── docs/
 │   ├── USAGE.md            # 使用说明
 │   ├── ARCHITECTURE.md     # 架构设计（面向二次开发）
@@ -205,6 +225,53 @@ memodeck/
 | [部署指南](./docs/DEPLOYMENT.md) | 部署者 | 6 种部署方式、配置片段、CORS、自检清单 |
 | [架构设计](./docs/ARCHITECTURE.md) | 开发者 | 模块划分、数据流、算法细节、模板书写约定 |
 | [JSON 规范](./docs/EXAM_JSON_SPEC.md) | 题库作者 | 完整字段定义、题型结构、旧格式兼容 |
+
+---
+
+
+---
+
+## PWA：安装到桌面
+
+v2.0 起支持渐进式网页应用（PWA）。安装后桌面出现图标，独立窗口打开（无地址栏），断网也能用。
+
+### 安装步骤
+
+> ⚠️ PWA 必须走 **http/https** 协议，**双击 file:// 不触发**（浏览器安全限制）。
+
+```bash
+# 方式 A: 本地启动
+python3 -m http.server 8000
+# 打开 http://localhost:8000
+
+# 方式 B: 部署到 GitHub Pages / Vercel / Netlify（任何 https 静态托管）
+# 已部署实例: https://fwd001.github.io/MemoDeck/
+```
+
+然后：
+
+| 浏览器 | 安装入口 |
+|---|---|
+| **Chrome / Edge** | 地址栏右侧 ⊕ / + / 安装图标 → 点「安装」 |
+| **Safari (macOS)** | 文件 → 添加到程序坞 |
+| **手机 Chrome** | 菜单 → 添加到主屏幕 |
+
+### 离线能力
+
+首次在线打开后，Service Worker 会预缓存全部 24 个静态资源（HTML/CSS/JS/vendor/icons）。之后：
+
+- **HTML**：network-first（每次打开先尝试网络，失败回退缓存）
+- **静态资源**：cache-first + stale-while-revalidate（先秒开缓存，后台静默更新）
+
+更新缓存：修改 `service-worker.js` 顶部 `VERSION` 字符串，用户下次打开旧缓存自动清除、新资源预缓存。
+
+### 文件说明
+
+| 文件 | 作用 |
+|---|---|
+| `manifest.json` | 应用清单：名称、图标、主题色、`display:standalone`（独立窗口） |
+| `service-worker.js` | 离线缓存策略 |
+| `assets/icon-192.png` / `icon-512.png` | 品牌图标（蓝色渐变 + 白色卡片叠层） |
 
 ---
 

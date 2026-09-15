@@ -27,7 +27,8 @@
   'use strict';
 
   const PREFIX = 'exam';
-  const EXPORT_VERSION = '2.0';
+  // 从 config.js 统一版本源读取
+const EXPORT_VERSION = (window.MEMODECK_VERSION && window.MEMODECK_VERSION.BACKUP) || '2.0';
   const EXPORT_SCHEMA = 1;
 
   // —— 内部：收集所有 exam* 键 ——
