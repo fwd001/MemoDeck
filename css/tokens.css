@@ -79,7 +79,7 @@
 
   /* —— SEPARATORS —— */
   --border:          rgba(60, 60, 67, 0.12);
-  --border-opaque:   #C6C6C8;
+  --border-opaque:   var(--border-sub); /* v2.1: 消除硬编码 */
   --border-sub:      rgba(60, 60, 67, 0.08);
 
   /* —— FILLS —— */
