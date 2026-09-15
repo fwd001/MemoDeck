@@ -100,6 +100,16 @@
     throw new Error('无法识别该 JSON 格式（缺少 papers 数组或旧版卷子结构）。');
   }
 
+  /**
+   * 生成题目全局唯一标识（跨卷、跨导入、跨 session 稳定）。
+   * 格式：`${paperId}::${questionId}`
+   * 用途：progress store / session / 错题本 v2 都用它做主键。
+   * 这是纯函数，不依赖 DOM / Vue。
+   */
+  function makeGlobalId(paperId, questionId) {
+    return String(paperId) + '::' + String(questionId);
+  }
+
   function optionsText(options) {
     if (!options || typeof options !== 'object') return '';
     return Object.keys(options).map(k => `${k}. ${options[k]}`).join('\n');
@@ -145,12 +155,16 @@
         blanks: item.blanks || null,
         options: item.options || null,
         explanation: item.explanation || '',
-        paper: paper.name
+        paper: paper.name,
+        // 阶段 0 新增：跨卷唯一标识
+        paperId: String(paper.id),
+        gid: makeGlobalId(paper.id, item.id)
       };
     });
   }
 
   global.ExamCore = {
-    TYPE_REGISTRY, normalizeBank, normalizeQuestion, buildItems, optionsText, isLegacyFormat, renderAnswer
+    TYPE_REGISTRY, normalizeBank, normalizeQuestion, buildItems, optionsText, isLegacyFormat, renderAnswer,
+    makeGlobalId
   };
 })(window);

@@ -1,0 +1,17 @@
+/* ============================================================
+ * MemoDeck · Responsive
+ * Mobile breakpoints
+ * ============================================================ */
+
+/* ============ 响应式 ============ */
+@media (max-width: 600px) {
+  body { padding: 14px 12px 50px; font-size: 15px; }
+  .header h1 { font-size: 22px; }
+  .card { padding: 26px 18px 20px; min-height: 230px; }
+  .question { font-size: 17px; }
+  .btn-group { gap: 10px; }
+  .src-actions input[type="text"] { min-width: 100%; }
+  .tab-nav { gap: 6px; }
+  .tab-nav button { padding: 8px 12px; font-size: 14px; flex: 1 1 40%; }
+  .option-btn { min-height: 46px; }
+}

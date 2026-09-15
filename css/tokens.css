@@ -1,0 +1,261 @@
+/* ============================================================
+ * MemoDeck · Design Tokens + Base
+ * — 唯一默认 :root {}（Light tokens）
+ * — @media (prefers-reduced-motion: reduce)
+ * — @media (prefers-color-scheme: dark) — 只放组件硬编码覆盖
+ *   （dark token 全在 themes.css 的 html[data-theme="dark"] 里）
+ * ============================================================ */
+
+:root {
+  /* —— BRAND —— */
+  --primary:          #007AFF;
+  --primary-hover:    #0A84FF;
+  --primary-active:   #0066CC;
+  --primary-bg:       rgba(0, 122, 255, 0.10);
+  --primary-bg-hover: rgba(0, 122, 255, 0.16);
+
+  /* —— SEMANTIC —— */
+  --success:       #34C759;
+  --success-bg:    rgba(52, 199, 89, 0.12);
+  --success-border: rgba(52, 199, 89, 0.30);
+  --danger:        #FF3B30;
+  --danger-bg:     rgba(255, 59, 48, 0.10);
+  --danger-border: rgba(255, 59, 48, 0.28);
+  --warn:          #FF9500;
+  --warn-bg:       rgba(255, 149, 0, 0.12);
+  --info:          #5AC8FA;
+  --info-bg:       rgba(90, 200, 250, 0.12);
+
+  /* —— TEXT (iOS label hierarchy) —— */
+  --text-main:       #1C1C1E;
+  --text-muted:      #6E6E73;
+  --text-tertiary:   #8E8E93;
+  --text-disabled:   rgba(60, 60, 67, 0.30);
+  --text-placeholder: rgba(60, 60, 67, 0.36);
+
+  /* —— SURFACES —— */
+  --bg:              #F2F2F7;
+  --surface:         #FFFFFF;
+  --surface-2:       #F2F2F7;
+  --surface-3:       #FFFFFF;
+  --surface-elevated:#FFFFFF;
+  --surface-hover:   #E8E8ED;
+  --surface-pressed: #D1D1D6;
+
+  /* Legacy aliases */
+  --card-bg:         #FFFFFF;
+  --elevated-bg:     #FFFFFF;
+
+  /* —— SEPARATORS —— */
+  --border:          rgba(60, 60, 67, 0.12);
+  --border-opaque:   #C6C6C8;
+  --border-sub:      rgba(60, 60, 67, 0.08);
+
+  /* —— FILLS —— */
+  --fill-primary:    rgba(120, 120, 128, 0.16);
+  --fill-secondary:  rgba(120, 120, 128, 0.08);
+  --fill-tertiary:   rgba(120, 120, 128, 0.04);
+
+  /* —— SHADOWS —— */
+  --shadow-card:     0 0 0 0.5px rgba(60, 60, 67, 0.08), 0 1px 0 rgba(0,0,0,0.02), 0 4px 16px -8px rgba(28,28,30,0.08);
+  --shadow-hover:    0 0 0 0.5px rgba(0,122,255,0.22), 0 1px 0 rgba(0,0,0,0.02), 0 8px 24px -12px rgba(0,122,255,0.20);
+  --shadow-modal:    0 16px 48px -12px rgba(28, 28, 30, 0.32);
+  --shadow-popover:  0 8px 24px -8px rgba(28, 28, 30, 0.18);
+  --shadow-input:    0 0 0 0.5px rgba(60, 60, 67, 0.14);
+  --shadow-input-focus: 0 0 0 3.5px rgba(0, 122, 255, 0.22);
+  --shadow-inset:    inset 0 0 0 0.5px rgba(60, 60, 67, 0.12);
+  --focus-ring:      0 0 0 4px rgba(0, 122, 255, 0.28);
+
+  /* —— SHAPE —— */
+  --radius-2xs:  6px;
+  --radius-xs:   8px;
+  --radius-sm:   10px;
+  --radius-md:   14px;
+  --radius-lg:   16px;
+  --radius-xl:   22px;
+  --radius-full: 9998px;
+  /* Legacy */
+  --radius:      16px;
+  --radius-lg2:  22px;
+
+  /* —— SPACING (8-point grid) —— */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-7:  28px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+
+  /* —— MOTION —— */
+  --ease-out:    cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-instant: 80ms;
+  --dur-fast:    120ms;
+  --dur-base:    200ms;
+  --dur-slow:    320ms;
+
+  /* —— TYPOGRAPHY —— */
+  --font-xs:   11px;
+  --font-sm:   12px;
+  --font-md:   13px;
+  --font-base: 14px;
+  --font-lg:   15px;
+  --font-xl:   17px;
+  --font-2xl:  20px;
+  --font-3xl:  22px;
+  --font-4xl:  26px;
+  --font-mono: "SF Mono", ui-monospace, Consolas, "Courier New", monospace;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+
+  /* —— LAYOUT —— */
+  --layout-max-study:   720px;
+  --layout-max-content: 1080px;
+  --layout-max-nav:     640px;
+  --layout-gutter:      16px;
+  --header-h:           auto;
+  --nav-h:              50px;
+}
+
+/* ============================================================
+ * Reduced motion — 全局覆盖
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ============================================================
+ * DARK (auto) — 组件硬编码覆盖
+ * Token 全由 themes.css 的 @media dark / html[data-theme="dark"] 负责
+ * 这里只放无法 token 化的 rgba 背景
+ * ============================================================ */
+@media (prefers-color-scheme: dark) {
+  .tab-nav { background: var(--surface-3); box-shadow: var(--shadow-inset); }
+  .tab-nav button.active { background: var(--surface); box-shadow: var(--shadow-card); }
+
+  .src-actions input[type="text"],
+  textarea.paste-box,
+  .paper-switch select {
+    background: rgba(118, 118, 128, 0.24);
+    color: var(--text-main);
+  }
+  .src-actions input[type="text"]:focus-visible,
+  textarea.paste-box:focus-visible { background: var(--surface); }
+
+  .drop-zone {
+    border-color: var(--border);
+    background: rgba(118, 118, 128, 0.12);
+  }
+
+  .md-home-today-bar {
+    background: rgba(118, 118, 128, 0.24);
+  }
+
+  .md-home-week-ring svg circle:first-child {
+    stroke: rgba(118, 118, 128, 0.32);
+  }
+}
+
+/* ============================================================
+ * PLACEHOLDER & INPUT BASE
+ * ============================================================ */
+::placeholder {
+  color: var(--text-placeholder);
+  opacity: 1;
+  font-style: normal;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+textarea,
+select {
+  font-family: inherit;
+  font-size: var(--font-lg);
+  line-height: 1.5;
+  color: var(--text-main);
+  background: var(--surface);
+  box-shadow: var(--shadow-input);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  outline: none;
+  border: none;
+  transition: box-shadow var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out);
+}
+
+input[type="text"]:hover,
+textarea:hover,
+select:hover {
+  box-shadow: var(--shadow-input);
+}
+
+input[type="text"]:focus,
+textarea:focus,
+select:focus {
+  box-shadow: var(--shadow-input-focus);
+  background: var(--surface);
+}
+
+input[type="text"]:disabled,
+textarea:disabled,
+select:disabled {
+  color: var(--text-disabled);
+  background: var(--surface-2);
+  cursor: not-allowed;
+  box-shadow: var(--shadow-inset);
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 36px;
+}
+
+* { box-sizing: border-box; }
+
+/* ============ App Layout ============ */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+               "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  font-size: var(--font-lg);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" on;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+#app {
+  width: 100%;
+  max-width: var(--layout-max-content);
+  margin: 0 auto;
+  padding: 16px var(--layout-gutter) 80px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#app .md-study,
+#app .md-exercise,
+#app .md-exam {
+  max-width: var(--layout-max-study);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.container { max-width: var(--layout-max-content); margin: 0 auto; }

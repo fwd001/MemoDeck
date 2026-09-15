@@ -3,8 +3,14 @@
 <head data-page-node-id="MNFhwRmdbaYUermUtiNpps">
   <meta charset="UTF-8" data-page-node-id="OlMBpN8N2UtLpfsYD3Cubk">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="HXZTFtP6uSpzFbc3NPwLSu">
-  <title>MemoDeck · 考试记忆系统</title>
-  <link rel="stylesheet" href="css/style.css" data-page-node-id="B9Pi6Gn5PcPSbj9UZ5hGgy">
+  <meta name="version" content="2.0.0">
+  <title>MemoDeck · 考试记忆系统 v2</title>
+  <link rel="stylesheet" href="css/tokens.css" data-page-node-id="CSS-TOKENS">
+  <link rel="stylesheet" href="css/components.css" data-page-node-id="CSS-COMPONENTS">
+  <link rel="stylesheet" href="css/pages.css" data-page-node-id="CSS-PAGES">
+  <link rel="stylesheet" href="css/responsive.css" data-page-node-id="CSS-RESPONSIVE">
+  <link rel="stylesheet" href="css/themes.css" data-page-node-id="CSS-THEMES">
+  <link rel="stylesheet" href="css/accessibility.css" data-page-node-id="CSS-A11Y">
   <style>[v-cloak] { display: none; }</style>
 </head>
 <body data-page-node-id="ehA3MmGuKV43KASNoXNBUS">
@@ -13,9 +19,14 @@
 
       <header class="header" data-page-node-id="EFLZMv7OA7MFAScBE6raNR">
         <h1 data-page-node-id="DvZGvDTGM5V8GQoopCB3C9">📚 MemoDeck · 考试记忆系统</h1>
-        <div class="sub" data-page-node-id="xnFkHgG7hJ6aYsD1NpKVBe">试卷 JSON View 标准 v1.0 · 纯离线 · 远程导入 · 本地缓存</div>
+        <div class="sub" data-page-node-id="xnFkHgG7hJ6aYsD1NpKVBe">试卷 JSON View 标准 v2.0 · 纯离线 · 远程导入 · 本地缓存</div>
         <div class="security-notice" data-page-node-id="Mrv4q3jJgXgwOcJ7MMtsT5">✅ 数据源：<b data-page-node-id="vVHRFuDZ64FYGcNuuUvs2w">{{ sourceMeta.label }}</b></div>
         <div class="header-actions" data-page-node-id="YaQbPOGu7RUtsxFh7ooj6I">
+          <div class="theme-switch" role="tablist" aria-label="主题">
+            <button class="theme-btn" :class="{ active: themeMode === 'auto' }" @click="themeMode='auto'; applyTheme()" title="跟随系统">🖥️</button>
+            <button class="theme-btn" :class="{ active: themeMode === 'light' }" @click="themeMode='light'; applyTheme()" title="浅色">☀️</button>
+            <button class="theme-btn" :class="{ active: themeMode === 'dark' }" @click="themeMode='dark'; applyTheme()" title="深色">🌙</button>
+          </div>
           <button class="btn gray small" @click="showDataPanel = !showDataPanel" data-page-node-id="ADm3OAfFfUQAtZpQFegAwW">⚙️ {{ showDataPanel ? '收起数据' : '数据管理' }}</button>
           <button class="btn gray small" @click="showAiModal = true" data-page-node-id="6PAg82MMpyd7YFlXLDN68H">🤖 AI 提示词</button>
           <a class="btn small" v-if="managerUrl" :href="managerUrl" target="_blank" rel="noopener" data-page-node-id="QyJdnpXDCAISdboEloWVDV">🛠 JSON 管理服务</a>
@@ -70,6 +81,20 @@
           <span v-else class="lbl" data-page-node-id="6MoRyEPQUyLuGnLUpPnfNc">{{ papers.length ? papers[0].name : '（无数据）' }}</span>
           <span class="lbl" style="margin-left:10px;" data-page-node-id="Ig9XOI5se5bSbStCvzOojG">共 {{ totalQuestions }} 题</span>
         </div>
+
+        <!-- ===== 数据备份 & 恢复 ===== -->
+        <div class="backup-row">
+          <div class="backup-title">💾 数据备份与恢复</div>
+          <div class="backup-sub">备份将保存题库、学习进度、错题本、会话恢复等所有数据，生成一个 JSON 文件。</div>
+          <div class="backup-actions">
+            <button class="btn" @click="doExportBackup">⬇️ 导出备份</button>
+            <label class="btn gray backup-import-btn">
+              ⬆️ 导入备份
+              <input type="file" accept=".json,application/json" style="display:none" @change="onImportBackup($event)">
+            </label>
+            <button class="btn danger small" @click="doClearAll" v-if="confirmClearAll">⚠️ 确认清空全部数据？（二次确认）</button>
+          </div>
+        </div>
       </section>
 
       <nav class="tab-nav" data-page-node-id="zX6eBx3fqsZiPVEFhAb6C2">
@@ -78,6 +103,629 @@
           <span v-if="t.key === 'wrongbook' && wrongCount" class="badge" data-page-node-id="syUH7p6VqS2q0vpgrO63nG">{{ wrongCount }}</span>
         </button>
       </nav>
+
+      <!-- ============ 阶段 1：首页 ============ -->
+      <section v-show="activeTab === 'home'" class="md-home">
+        <div class="md-home-empty" v-if="!bank.length">
+          <!-- 内联 SVG 空状态插画（用 currentColor，可被 CSS 控色） -->
+          <svg class="empty-svg" viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="28" y="32" width="64" height="44" rx="6" />
+              <path d="M28 42h64" />
+              <path d="M40 32V22a6 6 0 016-6h28a6 6 0 016 6v10" />
+              <circle cx="60" cy="66" r="4" fill="currentColor" stroke="none" opacity=".4" />
+            </g>
+            <g fill="currentColor" opacity=".5">
+              <circle cx="14" cy="18" r="2" />
+              <circle cx="108" cy="28" r="1.5" />
+              <circle cx="20" cy="88" r="1.5" />
+              <circle cx="100" cy="82" r="2" />
+            </g>
+          </svg>
+          <div class="md-home-empty-title">还没有题库</div>
+          <div class="md-home-empty-sub">请通过上方「⚙️ 数据管理」导入 JSON，或拖拽文件到虚线框。</div>
+        </div>
+
+        <template v-else>
+          <!-- 今日学习卡 -->
+          <div class="md-home-card md-home-today">
+            <div class="md-home-card-head">
+              <span class="md-home-card-title">📅 今日学习</span>
+              <!-- 到期徽章（仅当有待复习时显示，红色气泡带数字） -->
+              <span class="md-home-due-badge" v-if="(dailyTask.stats.due || dashboard.due || 0) > 0">
+                {{ dailyTask.stats.due || dashboard.due }} 道待复习
+              </span>
+              <span class="md-home-card-sub" v-else>全部搞定 🎉</span>
+            </div>
+            <div class="md-home-big-num">
+              <span class="num">{{ dailyTask.queue.length || dashboard.due || 0 }}</span>
+              <span class="unit">题待处理</span>
+            </div>
+            <div class="md-home-today-bar">
+              <!-- 进度条：已掌握率（mastered/total） -->
+              <div class="bar-fill" :style="{ width: dashboard.total ? Math.round((dashboard.mastered / dashboard.total) * 100) + '%' : '0%' }"></div>
+            </div>
+            <div class="md-home-today-meta">
+              <span v-if="dashboard.total">已掌握 {{ dashboard.mastered }}/{{ dashboard.total }} · {{ dashboard.total ? Math.round(dashboard.mastered / dashboard.total * 100) : 0 }}%</span>
+              <span v-else>加载中...</span>
+            </div>
+            <div class="md-home-today-actions">
+              <button class="btn" @click="switchTab('study')">📖 开始学习</button>
+              <button class="btn gray small" @click="switchTab('practice')">🕹️ 记忆闯关</button>
+              <button class="btn ghost small" @click="switchTab('wrongbook')" v-if="wrongCount">📕 复习错题 ({{ wrongCount }})</button>
+            </div>
+          </div>
+
+          <!-- 学习统计 -->
+          <div class="md-home-card md-home-stats">
+            <div class="md-home-card-head">
+              <span class="md-home-card-title">📊 学习统计</span>
+              <span class="md-home-card-sub">题库共 {{ dashboard.total }} 题</span>
+            </div>
+            <div class="md-home-stats-grid">
+              <div class="md-home-stat-item">
+                <div class="stat-num">{{ dashboard.learned }}</div>
+                <div class="stat-lbl">已学习</div>
+              </div>
+              <div class="md-home-stat-item">
+                <div class="stat-num ok">{{ dashboard.mastered }}</div>
+                <div class="stat-lbl">已掌握</div>
+              </div>
+              <div class="md-home-stat-item">
+                <div class="stat-num warn">{{ dashboard.weak }}</div>
+                <div class="stat-lbl">待复习</div>
+              </div>
+              <div class="md-home-stat-item">
+                <div class="stat-num no">{{ dashboard.wrongTotal }}</div>
+                <div class="stat-lbl">错题</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 快捷入口 -->
+          <div class="md-home-card md-home-quick">
+            <div class="md-home-card-head">
+              <span class="md-home-card-title">🚀 快捷入口</span>
+            </div>
+            <div class="md-home-quick-grid">
+              <button class="md-home-quick-btn" @click="switchTab('practice')">
+                <span class="q-icon">🕹️</span><span class="q-label">记忆闯关</span>
+              </button>
+              <button class="md-home-quick-btn" @click="switchTab('category')">
+                <span class="q-icon">🎯</span><span class="q-label">模拟考试</span>
+              </button>
+              <button class="md-home-quick-btn" @click="switchTab('wrongbook')">
+                <span class="q-icon">📕</span><span class="q-label">错题本</span>
+              </button>
+              <button class="md-home-quick-btn" @click="switchTab('exam')">
+                <span class="q-icon">📝</span><span class="q-label">摸底速览</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 最近 7 天趋势 -->
+          <div class="md-home-card md-home-trend" v-if="dashboard.weekTrend && dashboard.weekTrend.length">
+            <div class="md-home-card-head">
+              <span class="md-home-card-title">📈 最近 7 天</span>
+            </div>
+            <div class="md-home-trend-grid">
+              <div class="md-home-trend-bar" v-for="(d, idx) in dashboard.weekTrend" :key="idx">
+                <div class="bars">
+                  <div class="bar-reviewed" :style="{ height: Math.min(100, d.reviewed * 8) + 'px' }" :title="'复习 ' + d.reviewed"></div>
+                  <div class="bar-mastered" :style="{ height: Math.min(100, d.mastered * 8) + 'px' }" :title="'掌握 ' + d.mastered"></div>
+                </div>
+                <div class="day-label">{{ d.day.slice(5) }}</div>
+              </div>
+            </div>
+            <!-- 本周活跃天数进度环 -->
+            <div class="md-home-week-ring">
+              <!-- circumference ≈ 2*π*18 = 113.1 -->
+              <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+                <circle cx="26" cy="26" r="20" fill="none" stroke="rgba(120,120,128,0.16)" stroke-width="4" />
+                <circle cx="26" cy="26" r="20" fill="none" stroke="var(--primary)" stroke-width="4" stroke-linecap="round"
+                        :stroke-dasharray="125.6 * Math.min(1, weekActiveDays / Math.max(weekGoalDays, 1)) + ' 125.6'"
+                        stroke-dashoffset="0" transform="rotate(-90 26 26)"
+                        style="transition: stroke-dasharray 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)" />
+              </svg>
+              <div class="md-home-week-ring-text">
+                <span class="wr-num">{{ weekActiveDays }}</span>
+                <span class="wr-unit">/ {{ weekGoalDays }} 天</span>
+                <div class="wr-sub">本周活跃</div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- ============ 阶段 2：学习/背诵模式 ============ -->
+      <section v-show="activeTab === 'study'" class="md-study">
+        <div class="md-study-empty" v-if="!bank.length">
+          <div class="md-home-empty-title">还没有题库</div>
+          <div class="md-home-empty-sub">请通过上方「⚙️ 数据管理」导入 JSON，或拖拽文件到虚线框。</div>
+        </div>
+
+        <!-- ===== 模式 A：setup ===== -->
+        <template v-else-if="studyMode === 'setup'">
+          <div class="md-study-setup">
+            <div class="md-study-setup-head">
+              <h2>📖 开始学习</h2>
+              <button v-if="hasResume" class="btn ghost small" @click="studyRestart">放弃上次</button>
+            </div>
+
+            <!-- 恢复点 -->
+            <div class="md-study-resume" v-if="hasResume">
+              <div class="resume-info">
+                <span class="resume-icon">💾</span>
+                <span>上次学习还没做完</span>
+              </div>
+              <div class="resume-actions">
+                <button class="btn small" @click="studyResume">继续上次</button>
+              </div>
+            </div>
+
+            <!-- 范围选择 -->
+            <div class="md-study-group">
+              <div class="md-study-group-title">学习范围</div>
+              <label class="md-study-radio" :class="{ active: studyScope === 'today' }">
+                <input type="radio" value="today" v-model="studyScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">今日复习</span>
+                <span class="md-study-badge">{{ studyScopeCounts.today }}</span>
+              </label>
+              <label class="md-study-radio" :class="{ active: studyScope === 'unmastered' }">
+                <input type="radio" value="unmastered" v-model="studyScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">未掌握题目</span>
+                <span class="md-study-badge">{{ studyScopeCounts.unmastered }}</span>
+              </label>
+              <label class="md-study-radio" :class="{ active: studyScope === 'all' }">
+                <input type="radio" value="all" v-model="studyScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">全部题目</span>
+                <span class="md-study-badge">{{ studyScopeCounts.all }}</span>
+              </label>
+              <label class="md-study-radio" :class="{ active: studyScope === 'wrongbook' }">
+                <input type="radio" value="wrongbook" v-model="studyScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">错题本</span>
+                <span class="md-study-badge">{{ wrongCount }}</span>
+              </label>
+              <label class="md-study-radio" :class="{ active: studyScope === 'custom' }">
+                <input type="radio" value="custom" v-model="studyScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">自定义范围</span>
+                <span class="md-study-badge" v-if="studyScope === 'custom'">{{ studyCustomCount }}</span>
+              </label>
+
+              <!-- 自定义子表单 -->
+              <div class="md-study-custom" v-if="studyScope === 'custom'" @focus="studyAutoFillCustomEnd">
+                <div class="custom-range">
+                  <label>开始：</label><input type="number" v-model.number="studyCustomStart" min="1" :max="bank.length">
+                  <label>结束：</label><input type="number" v-model.number="studyCustomEnd" min="1" :max="bank.length" :placeholder="'总数 '+bank.length">
+                </div>
+                <div class="custom-types">
+                  <div class="types-title">题型筛选：</div>
+                  <label class="type-check"><input type="checkbox" v-model="studyTypes.single_choice">单选</label>
+                  <label class="type-check"><input type="checkbox" v-model="studyTypes.multi_choice">多选</label>
+                  <label class="type-check"><input type="checkbox" v-model="studyTypes.true_false">判断</label>
+                  <label class="type-check"><input type="checkbox" v-model="studyTypes.fill_blank">填空</label>
+                  <label class="type-check"><input type="checkbox" v-model="studyTypes.special_fill_blank">特填</label>
+                  <label class="type-check"><input type="checkbox" v-model="studyTypes.essay">简答</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 策略 + 数量 -->
+            <div class="md-study-group">
+              <div class="md-study-group-title">队列生成</div>
+              <div class="md-study-strategy">
+                <label><input type="radio" value="due" v-model="studyStrategy">到期优先</label>
+                <label><input type="radio" value="sequential" v-model="studyStrategy">顺序学习</label>
+                <label><input type="radio" value="random" v-model="studyStrategy">随机洗牌</label>
+              </div>
+              <div class="md-study-per">
+                <span class="per-label">每次：</span>
+                <label class="per-chip"><input type="radio" value="10" v-model="studyPerSession"><span>10</span></label>
+                <label class="per-chip"><input type="radio" value="20" v-model="studyPerSession"><span>20</span></label>
+                <label class="per-chip active" :class="{ active: studyPerSession === 30 }"><input type="radio" value="30" v-model="studyPerSession"><span>30</span></label>
+                <label class="per-chip"><input type="radio" value="50" v-model="studyPerSession"><span>50</span></label>
+                <label class="per-chip"><input type="radio" value="all" v-model="studyPerSession"><span>全部</span></label>
+                <label class="per-chip"><input type="radio" value="custom" v-model="studyPerSession"><input v-if="studyPerSession === 'custom'" type="number" min="1" max="500" v-model.number="studyPerSessionCustom" class="per-custom-input"></label>
+              </div>
+            </div>
+
+            <div class="md-study-summary-line">
+              将学习 <b>{{ studyAvailableCount }}</b> 题
+            </div>
+
+            <button class="md-study-start-btn" @click="studyStart" :disabled="!studyAvailableCount">
+              🚀 开始学习
+            </button>
+          </div>
+        </template>
+
+        <!-- ===== 模式 B：running ===== -->
+        <template v-else-if="studyMode === 'running'">
+          <!-- 顶部进度条 -->
+          <div class="md-study-topbar">
+            <button class="md-study-exit-btn" @click="studyExit" title="退出（进度自动保存）">← 退出</button>
+            <div class="md-study-progress-bar">
+              <div class="progress-fill" :style="{ width: studyProgressPct + '%' }"></div>
+            </div>
+            <div class="md-study-top-info">
+              <span class="md-study-count">{{ studyCurrentProgress }}</span>
+              <span class="md-study-timer">⏱ {{ studyFormatDuration(studyElapsedSec) }}</span>
+            </div>
+          </div>
+
+          <!-- 卡片堆叠区 -->
+          <div class="md-study-stage"
+               @touchstart.passive="studyOnSwipeStart"
+               @touchmove.prevent="studyOnSwipeMove"
+               @touchend="studyOnSwipeEnd"
+               @mousedown="studyOnSwipeStart"
+               @mousemove="studyOnSwipeMove"
+               @mouseup="studyOnSwipeEnd"
+               @mouseleave="studyOnSwipeEnd">
+
+            <!-- 下一题预览（如果有） -->
+            <div class="md-study-card md-study-card-back" v-if="studyNextItem">
+              <div class="card-inner">
+                <div class="tag">{{ studyNextItem.typeLabel }}</div>
+                <div class="question">{{ studyNextItem.question }}</div>
+              </div>
+            </div>
+
+            <!-- 当前卡片 -->
+            <div class="md-study-card md-study-card-front"
+                 :style="{
+                   transform: 'translateX(' + studySwipeX + 'px) rotate(' + (studySwipeX / 30) + 'deg)',
+                   transition: studySwipeActive ? 'none' : 'transform 0.25s ease-out'
+                 }"
+                 v-if="studyCurrentItem">
+              <div class="card-inner">
+                <div class="md-study-swipe-hint swipe-right" v-if="studyShowAnswer && studySwipeX > 20">✅ 记住了</div>
+                <div class="md-study-swipe-hint swipe-left" v-if="studyShowAnswer && studySwipeX < -20">🤦 还不会</div>
+
+                <div class="md-study-card-head">
+                  <span class="tag">{{ studyCurrentItem.typeLabel }}</span>
+                  <span class="md-study-prev">{{ studyPrevHint }}</span>
+                </div>
+
+                <div class="question">{{ studyCurrentItem.q }}</div>
+
+                <div class="md-study-answer-area">
+                  <div v-if="!studyShowAnswer" class="md-study-answer-hidden">
+                    <button class="md-study-reveal-btn" @click="studyShowAnswer = true">👀 想好了，看答案</button>
+                    <div class="md-study-hint-mobile" v-if="studyAvailableCount">
+                      看完答案右滑✅ / 左滑🤦
+                    </div>
+                  </div>
+                  <answer-view v-else :item="studyCurrentItem"></answer-view>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部操作栏（固定） -->
+          <div class="md-study-footer">
+            <button class="md-study-fail-btn" :class="{ 'swipe-over': studySwipeX < -120 }"
+                    @click="studyShowAnswer && studyMark(false)">
+              🤦 还不会
+            </button>
+            <button class="md-study-pass-btn" :class="{ 'swipe-over': studySwipeX > 120 }"
+                    @click="studyShowAnswer && studyMark(true)">
+              ✅ 记住了
+            </button>
+          </div>
+        </template>
+
+        <!-- ===== 模式 C：summary ===== -->
+        <template v-else-if="studyMode === 'summary'">
+          <div class="md-study-summary">
+            <div class="md-study-summary-emoji">🎉</div>
+            <h2 class="md-study-summary-title">本次学习完成</h2>
+            <div class="md-study-summary-sub">共 {{ studyTotal }} 题 · 耗时 {{ studyFormatDuration(studyElapsedSec) }}</div>
+
+            <div class="md-study-summary-grid">
+              <div class="md-study-summary-card ok">
+                <div class="sum-num">{{ studyPassCount }}</div>
+                <div class="sum-lbl">记住了</div>
+              </div>
+              <div class="md-study-summary-card no">
+                <div class="sum-num">{{ studyFailCount }}</div>
+                <div class="sum-lbl">还不会</div>
+              </div>
+              <div class="md-study-summary-card star">
+                <div class="sum-num">{{ studyNewMastered }}</div>
+                <div class="sum-lbl">新掌握</div>
+              </div>
+              <div class="md-study-summary-card warn">
+                <div class="sum-num">{{ studyNewWrong }}</div>
+                <div class="sum-lbl">进错题</div>
+              </div>
+            </div>
+
+            <div class="md-study-summary-streak" v-if="studyMaxStreak >= 2">
+              🔥 本次 streak 最高 {{ studyMaxStreak }}
+            </div>
+
+            <div class="md-study-summary-actions">
+              <button class="btn" @click="studyRestart">再来一轮</button>
+              <button class="btn ghost" @click="switchTab('wrongbook')">📕 查看错题</button>
+              <button class="btn ghost" @click="switchTab('home')">🏠 返回首页</button>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- ============ 阶段 3：练习模式 ============ -->
+      <section v-show="activeTab === 'exercise'" class="md-exercise">
+        <div class="md-study-empty" v-if="!bank.length">
+          <div class="md-home-empty-title">还没有题库</div>
+          <div class="md-home-empty-sub">请通过上方「⚙️ 数据管理」导入 JSON。</div>
+        </div>
+
+        <!-- ===== setup ===== -->
+        <template v-else-if="exerciseMode === 'setup'">
+          <div class="md-study-setup">
+            <div class="md-study-setup-head">
+              <h2>✍️ 开始练习</h2>
+              <button v-if="hasResume" class="btn ghost small" @click="exerciseRestart">放弃上次</button>
+            </div>
+
+            <div class="md-study-resume" v-if="hasResume">
+              <div class="resume-info"><span class="resume-icon">💾</span><span>上次练习还没做完</span></div>
+              <div class="resume-actions">
+                <button class="btn small" @click="exerciseResume">继续上次</button>
+              </div>
+            </div>
+
+            <!-- 范围（默认全部，练习通常用随机洗牌） -->
+            <div class="md-study-group">
+              <div class="md-study-group-title">练习范围</div>
+              <label class="md-study-radio" :class="{ active: exerciseScope === 'all' }">
+                <input type="radio" value="all" v-model="exerciseScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">全部题目</span>
+                <span class="md-study-badge">{{ bankGids.length }}</span>
+              </label>
+              <label class="md-study-radio" :class="{ active: exerciseScope === 'unmastered' }">
+                <input type="radio" value="unmastered" v-model="exerciseScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">未掌握</span>
+              </label>
+              <label class="md-study-radio" :class="{ active: exerciseScope === 'wrongbook' }">
+                <input type="radio" value="wrongbook" v-model="exerciseScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">错题本</span>
+                <span class="md-study-badge">{{ wrongCount }}</span>
+              </label>
+              <label class="md-study-radio" :class="{ active: exerciseScope === 'custom' }">
+                <input type="radio" value="custom" v-model="exerciseScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">自定义范围</span>
+                <span class="md-study-badge" v-if="exerciseScope === 'custom'">{{ exerciseBadgeCount }}</span>
+              </label>
+              <div class="md-study-custom" v-if="exerciseScope === 'custom'" @focus="exerciseAutoFillCustomEnd">
+                <div class="custom-range">
+                  <label>开始：</label><input type="number" v-model.number="exerciseCustomStart" min="1" :max="bank.length">
+                  <label>结束：</label><input type="number" v-model.number="exerciseCustomEnd" min="1" :max="bank.length" :placeholder="'总数 '+bank.length">
+                </div>
+                <div class="custom-types">
+                  <div class="types-title">题型：</div>
+                  <label class="type-check"><input type="checkbox" v-model="exerciseTypes.single_choice">单选</label>
+                  <label class="type-check"><input type="checkbox" v-model="exerciseTypes.multi_choice">多选</label>
+                  <label class="type-check"><input type="checkbox" v-model="exerciseTypes.true_false">判断</label>
+                  <label class="type-check"><input type="checkbox" v-model="exerciseTypes.fill_blank">填空</label>
+                  <label class="type-check"><input type="checkbox" v-model="exerciseTypes.special_fill_blank">特填</label>
+                  <label class="type-check"><input type="checkbox" v-model="exerciseTypes.essay">简答</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 策略 + 数量 -->
+            <div class="md-study-group">
+              <div class="md-study-group-title">出题方式</div>
+              <div class="md-study-strategy">
+                <label><input type="radio" value="random" v-model="exerciseStrategy">随机洗牌</label>
+                <label><input type="radio" value="sequential" v-model="exerciseStrategy">顺序出题</label>
+              </div>
+              <div class="md-study-per">
+                <span class="per-label">数量：</span>
+                <label class="per-chip"><input type="radio" value="10" v-model="exercisePerSession"><span>10</span></label>
+                <label class="per-chip"><input type="radio" value="20" v-model="exercisePerSession"><span>20</span></label>
+                <label class="per-chip"><input type="radio" value="30" v-model="exercisePerSession"><span>30</span></label>
+                <label class="per-chip"><input type="radio" value="50" v-model="exercisePerSession"><span>50</span></label>
+                <label class="per-chip active" :class="{ active: exercisePerSession === 'all' }"><input type="radio" value="all" v-model="exercisePerSession"><span>全部</span></label>
+                <label class="per-chip"><input type="radio" value="custom" v-model="exercisePerSession"><input v-if="exercisePerSession === 'custom'" type="number" min="1" max="500" v-model.number="exercisePerSessionCustom" class="per-custom-input"></label>
+              </div>
+            </div>
+
+            <div class="md-study-summary-line">将练习 <b>{{ exerciseBadgeCount }}</b> 题</div>
+            <button class="md-study-start-btn" @click="exerciseStart" :disabled="!exerciseBadgeCount">🚀 开始练习</button>
+          </div>
+        </template>
+
+        <!-- ===== running（核心差异：自己作答→系统判分） ===== -->
+        <template v-else-if="exerciseMode === 'running'">
+          <div class="md-study-topbar">
+            <button class="md-study-exit-btn" @click="exerciseExit" title="退出（进度自动保存）">← 退出</button>
+            <div class="md-study-progress-bar"><div class="progress-fill" :style="{ width: exerciseProgressPct + '%' }"></div></div>
+            <div class="md-study-top-info">
+              <span class="md-study-count">{{ exerciseCurrentProgress }}</span>
+              <span class="md-study-timer">⏱ {{ studyFormatDuration(exerciseElapsedSec) }}</span>
+            </div>
+          </div>
+
+          <div class="md-study-stage"
+               @touchstart.passive="exerciseOnSwipeStart"
+               @touchmove.prevent="exerciseOnSwipeMove"
+               @touchend="exerciseOnSwipeEnd"
+               @mousedown="exerciseOnSwipeStart"
+               @mousemove="exerciseOnSwipeMove"
+               @mouseup="exerciseOnSwipeEnd"
+               @mouseleave="exerciseOnSwipeEnd">
+
+            <div class="md-study-card md-study-card-back" v-if="exerciseNextItem">
+              <div class="card-inner">
+                <div class="tag">{{ exerciseNextItem.typeLabel }}</div>
+                <div class="question">{{ exerciseNextItem.question }}</div>
+              </div>
+            </div>
+
+            <div class="md-study-card md-study-card-front"
+                 :style="{
+                   transform: 'translateX(' + exerciseSwipeX + 'px)',
+                   transition: exerciseSwipeActive ? 'none' : 'transform 0.25s ease-out'
+                 }"
+                 v-if="exerciseCurrentItem">
+              <div class="card-inner">
+                <div class="md-study-card-head">
+                  <span class="tag">{{ exerciseCurrentItem.typeLabel }}</span>
+                  <span class="md-study-prev">{{ exercisePrevHint }}</span>
+                </div>
+                <div class="question">{{ exerciseCurrentItem.question }}</div>
+
+                <!-- 作答区：根据题型渲染不同交互 -->
+                <div class="md-exercise-answer">
+
+                  <!-- 单选 -->
+                  <template v-if="exerciseCurrentItem.rawType === 'single_choice'">
+                    <div class="md-exercise-options">
+                      <button v-for="opt in exerciseCurrentItem.options" :key="opt.key"
+                              class="md-exercise-option"
+                              :class="{ selected: exerciseChoice === opt.key,
+                                        correct: exerciseAnswerSubmitted && opt.key === exerciseCurrentItem.answer,
+                                        wrong: exerciseAnswerSubmitted && exerciseChoice === opt.key && opt.key !== exerciseCurrentItem.answer }"
+                              :disabled="exerciseAnswerSubmitted"
+                              @click="exerciseOptionClick(opt.key)">
+                        <span class="md-exercise-opt-key">{{ opt.key }}</span>
+                        <span class="md-exercise-opt-val">{{ opt.val }}</span>
+                      </button>
+                    </div>
+                  </template>
+
+                  <!-- 多选 -->
+                  <template v-else-if="exerciseCurrentItem.rawType === 'multi_choice'">
+                    <div class="md-exercise-options">
+                      <button v-for="opt in exerciseCurrentItem.options" :key="opt.key"
+                              class="md-exercise-option multi"
+                              :class="{ selected: exerciseIsOptionOn(opt.key),
+                                        correct: exerciseAnswerSubmitted && (Array.isArray(exerciseCurrentItem.answer) && exerciseCurrentItem.answer.includes(opt.key)),
+                                        wrong: exerciseAnswerSubmitted && exerciseIsOptionOn(opt.key) && !(Array.isArray(exerciseCurrentItem.answer) && exerciseCurrentItem.answer.includes(opt.key)) }"
+                              :disabled="exerciseAnswerSubmitted"
+                              @click="exerciseOptionClick(opt.key)">
+                        <span class="md-exercise-opt-key">{{ opt.key }}</span>
+                        <span class="md-exercise-opt-val">{{ opt.val }}</span>
+                      </button>
+                    </div>
+                  </template>
+
+                  <!-- 判断 -->
+                  <template v-else-if="exerciseCurrentItem.rawType === 'true_false'">
+                    <div class="md-exercise-tf">
+                      <button class="md-exercise-tf-btn"
+                              :class="{ selected: exerciseChoice === 'true',
+                                        correct: exerciseAnswerSubmitted && exerciseCurrentItem.answer === true,
+                                        wrong: exerciseAnswerSubmitted && exerciseChoice === 'true' && exerciseCurrentItem.answer !== true }"
+                              :disabled="exerciseAnswerSubmitted"
+                              @click="exerciseOptionClick('true')">✅ 正确</button>
+                      <button class="md-exercise-tf-btn"
+                              :class="{ selected: exerciseChoice === 'false',
+                                        correct: exerciseAnswerSubmitted && exerciseCurrentItem.answer === false,
+                                        wrong: exerciseAnswerSubmitted && exerciseChoice === 'false' && exerciseCurrentItem.answer !== false }"
+                              :disabled="exerciseAnswerSubmitted"
+                              @click="exerciseOptionClick('false')">❌ 错误</button>
+                    </div>
+                  </template>
+
+                  <!-- 填空 / 特填 -->
+                  <template v-else-if="['fill_blank', 'special_fill_blank'].indexOf(exerciseCurrentItem.rawType) >= 0">
+                    <div class="md-exercise-blank">
+                      <input type="text" v-model="exerciseInput" :disabled="exerciseAnswerSubmitted"
+                             :placeholder="'请输入答案'" class="md-exercise-blank-input">
+                    </div>
+                  </template>
+
+                  <!-- 简答 -->
+                  <template v-else-if="exerciseCurrentItem.rawType === 'essay'">
+                    <textarea v-model="exerciseInput" :disabled="exerciseAnswerSubmitted" rows="4"
+                              class="md-exercise-essay-input" placeholder="请写出你的答案..."></textarea>
+                  </template>
+
+                  <!-- 判分结果 + 标准答案 -->
+                  <template v-if="exerciseAnswerSubmitted">
+                    <div class="md-exercise-feedback" :class="exerciseFeedback.correct ? 'ok' : 'no'">
+                      <div class="md-exercise-feedback-icon">{{ exerciseFeedback.correct ? '✅' : '❌' }}</div>
+                      <div class="md-exercise-feedback-text">
+                        <div v-if="exerciseCurrentItem.rawType === 'single_choice' || exerciseCurrentItem.rawType === 'true_false' || exerciseCurrentItem.rawType === 'multi_choice'">
+                          标准答案：<b>{{ exerciseCurrentItem.a }}</b>
+                        </div>
+                        <div v-else>
+                          标准答案：<b>{{ exerciseCurrentItem.a }}</b>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- 主观题：自评按钮（提交后显示） -->
+                  <div class="md-exercise-self-judge"
+                       v-if="exerciseAnswerSubmitted && !exerciseFeedback && ['fill_blank','special_fill_blank','essay'].indexOf(exerciseCurrentItem.rawType) >= 0">
+                    <div class="md-exercise-self-label">对照标准答案自评：</div>
+                    <button class="md-exercise-self-btn ok" @click="exerciseSelfJudge(true)">✅ 算我答对了</button>
+                    <button class="md-exercise-self-btn no" @click="exerciseSelfJudge(false)">❌ 还是答错了</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部操作栏 -->
+          <div class="md-study-footer">
+            <button v-if="!exerciseAnswerSubmitted" class="md-study-pass-btn" :class="{ disabled: exerciseCurrentItem && (exerciseCurrentItem.rawType === 'single_choice' || exerciseCurrentItem.rawType === 'true_false') && !exerciseChoice }"
+                    @click="exerciseSubmit"
+                    :disabled="(exerciseCurrentItem && (exerciseCurrentItem.rawType === 'single_choice' || exerciseCurrentItem.rawType === 'true_false') && !exerciseChoice) || (exerciseCurrentItem && exerciseCurrentItem.rawType === 'multi_choice' && exerciseMultiSel.length === 0)">
+              💾 提交答案
+            </button>
+            <button v-else class="md-study-pass-btn"
+                    @click="exerciseNext">
+              {{ exerciseIndex + 1 < exerciseTotal ? '👉 下一题' : '🏁 查看结果' }}
+            </button>
+          </div>
+        </template>
+
+        <!-- ===== summary ===== -->
+        <template v-else-if="exerciseMode === 'summary'">
+          <div class="md-study-summary">
+            <div class="md-study-summary-emoji">{{ exerciseFailCount > exercisePassCount ? '💪' : exerciseFailCount === 0 ? '🏆' : '🎯' }}</div>
+            <h2 class="md-study-summary-title">练习完成</h2>
+            <div class="md-study-summary-sub">共 {{ exerciseTotal }} 题 · 耗时 {{ studyFormatDuration(exerciseElapsedSec) }}
+              · 正确率 {{ exerciseTotal ? Math.round((exercisePassCount / exerciseTotal) * 100) : 0 }}%</div>
+
+            <div class="md-study-summary-grid">
+              <div class="md-study-summary-card ok">
+                <div class="sum-num">{{ exercisePassCount }}</div><div class="sum-lbl">答对</div>
+              </div>
+              <div class="md-study-summary-card no">
+                <div class="sum-num">{{ exerciseFailCount }}</div><div class="sum-lbl">答错</div>
+              </div>
+              <div class="md-study-summary-card star">
+                <div class="sum-num">{{ exerciseNewMastered }}</div><div class="sum-lbl">新掌握</div>
+              </div>
+              <div class="md-study-summary-card warn">
+                <div class="sum-num">{{ exerciseNewWrong }}</div><div class="sum-lbl">进错题</div>
+              </div>
+            </div>
+
+            <div class="md-study-summary-actions">
+              <button class="btn" @click="exerciseRestart">再来一轮</button>
+              <button class="btn ghost" @click="switchTab('wrongbook')">📕 查看错题</button>
+              <button class="btn ghost" @click="switchTab('home')">🏠 返回首页</button>
+            </div>
+          </div>
+        </template>
+      </section>
 
       <section v-show="activeTab === 'practice'" data-page-node-id="ao54HB8yDlqdnry3l3IR59">
         <div class="empty-hint" v-if="!bank.length" data-page-node-id="uBWDMVBDXUv1AxBWRvBVpp">暂无题目。请通过上方数据面板导入 JSON。</div>
@@ -107,7 +755,251 @@
         </div>
       </section>
 
-      <section v-show="activeTab === 'exam'" data-page-node-id="npPAwCE5yjY9iFVt9CBtbP">
+      <!-- ============ 阶段 4：模拟考试 ============ -->
+      <section v-show="activeTab === 'exam'" class="md-exam">
+        <div class="md-study-empty" v-if="!bank.length">
+          <div class="md-home-empty-title">还没有题库</div>
+          <div class="md-home-empty-sub">请通过上方「⚙️ 数据管理」导入 JSON。</div>
+        </div>
+
+        <!-- ===== setup ===== -->
+        <template v-else-if="examMode === 'setup'">
+          <div class="md-study-setup">
+            <div class="md-study-setup-head"><h2>🎓 开始考试</h2></div>
+
+            <div class="md-study-group">
+              <div class="md-study-group-title">考试范围</div>
+              <label class="md-study-radio" :class="{ active: examScope === 'all' }">
+                <input type="radio" value="all" v-model="examScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">全部题目</span>
+                <span class="md-study-badge">{{ bankGids.length }}</span>
+              </label>
+              <label class="md-study-radio" :class="{ active: examScope === 'custom' }">
+                <input type="radio" value="custom" v-model="examScope">
+                <span class="radio-dot"></span>
+                <span class="radio-label">自定义范围 / 题型</span>
+                <span class="md-study-badge" v-if="examScope === 'custom'">{{ examBadgeCount }}</span>
+              </label>
+              <div class="md-study-custom" v-if="examScope === 'custom'" @focus="examAutoFillCustomEnd">
+                <div class="custom-range">
+                  <label>开始：</label><input type="number" v-model.number="examCustomStart" min="1" :max="bank.length">
+                  <label>结束：</label><input type="number" v-model.number="examCustomEnd" min="1" :max="bank.length" :placeholder="'总数 '+bank.length">
+                </div>
+                <div class="custom-types">
+                  <div class="types-title">题型：</div>
+                  <label class="type-check"><input type="checkbox" v-model="examTypes.single_choice">单选</label>
+                  <label class="type-check"><input type="checkbox" v-model="examTypes.multi_choice">多选</label>
+                  <label class="type-check"><input type="checkbox" v-model="examTypes.true_false">判断</label>
+                  <label class="type-check"><input type="checkbox" v-model="examTypes.fill_blank">填空</label>
+                  <label class="type-check"><input type="checkbox" v-model="examTypes.special_fill_blank">特填</label>
+                  <label class="type-check"><input type="checkbox" v-model="examTypes.essay">简答</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="md-study-group">
+              <div class="md-study-group-title">考试设置</div>
+              <div class="md-study-strategy">
+                <label><input type="radio" value="random" v-model="examStrategy">随机出题</label>
+                <label><input type="radio" value="sequential" v-model="examStrategy">顺序出题</label>
+              </div>
+              <div class="md-study-per">
+                <span class="per-label">题数：</span>
+                <label class="per-chip"><input type="radio" value="20" v-model="examPerSession"><span>20</span></label>
+                <label class="per-chip"><input type="radio" value="50" v-model="examPerSession"><span>50</span></label>
+                <label class="per-chip"><input type="radio" value="100" v-model="examPerSession"><span>100</span></label>
+                <label class="per-chip active" :class="{ active: examPerSession === 'all' }"><input type="radio" value="all" v-model="examPerSession"><span>全部</span></label>
+                <label class="per-chip"><input type="radio" value="custom" v-model="examPerSession"><span>自定义</span><input v-if="examPerSession === 'custom'" type="number" min="1" max="500" v-model.number="examPerSessionCustom" class="per-custom-input"></label>
+              </div>
+            </div>
+
+            <div class="md-study-summary-line">本次考试 <b>{{ examBadgeCount }}</b> 题</div>
+            <button class="md-study-start-btn" @click="examStart" :disabled="!examBadgeCount">🎓 开始考试</button>
+          </div>
+        </template>
+
+        <!-- ===== running（答题卡模式，不判分可回看） ===== -->
+        <template v-else-if="examMode === 'running'">
+          <div class="md-study-topbar">
+            <button class="md-study-exit-btn" @click="examExit" title="退出本次考试">← 退出</button>
+            <div class="md-study-progress-bar">
+              <div class="progress-fill" :style="{ width: examProgressPct + '%' }"></div>
+            </div>
+            <div class="md-study-top-info">
+              <span class="md-study-count">{{ examIndexLabel }}</span>
+              <span class="md-study-timer">⏱ {{ studyFormatDuration(examElapsedSec) }}</span>
+            </div>
+          </div>
+
+          <div class="md-exam-main">
+            <!-- 移动端答题卡切换按钮 -->
+            <button class="md-exam-sheet-toggle" @click="examSheetOpen = !examSheetOpen">
+              📋 答题卡 <span class="ans-count">{{ examAnsweredCount }}/{{ examTotal }}</span>
+              <span class="arrow" :class="{ up: examSheetOpen }">▾</span>
+            </button>
+
+            <!-- 左侧：答题卡（桌面端） / 折叠面板（移动端） -->
+            <div class="md-exam-sheet" :class="{ open: examSheetOpen }">
+              <div class="md-exam-sheet-title">答题卡（{{ examAnsweredCount }}/{{ examTotal }}）</div>
+              <div class="md-exam-sheet-grid">
+                <button v-for="(gid, idx) in examQueueGids" :key="gid"
+                        class="md-exam-sheet-num"
+                        :class="{
+                          current: examIndex === idx,
+                          answered: examAnswers[gid] && examAnswers[gid].answered
+                        }"
+                        @click="examJump(idx)">
+                  {{ idx + 1 }}
+                </button>
+              </div>
+              <div class="md-exam-sheet-legend">
+                <span><i class="dot answered"></i>已答</span>
+                <span><i class="dot current"></i>当前</span>
+                <span><i class="dot"></i>未答</span>
+              </div>
+            </div>
+
+            <!-- 中间题目卡 -->
+            <div class="md-exam-question">
+              <div class="md-study-card md-study-card-front" v-if="examCurrentItem">
+                <div class="card-inner">
+                  <div class="md-study-card-head">
+                    <span class="tag">{{ examCurrentItem.typeLabel }}</span>
+                    <span class="md-study-prev">第 {{ examIndex + 1 }} 题</span>
+                  </div>
+                  <div class="question">{{ examCurrentItem.question }}</div>
+
+                  <!-- 作答区（和练习完全相同的题型交互，但不判分、不禁用） -->
+                  <div class="md-exercise-answer">
+
+                    <template v-if="examCurrentItem.rawType === 'single_choice'">
+                      <div class="md-exercise-options">
+                        <button v-for="opt in examCurrentItem.options" :key="opt.key"
+                                class="md-exercise-option"
+                                :class="{ selected: examChoiceProxy === opt.key }"
+                                @click="examOptionClick(opt.key)">
+                          <span class="md-exercise-opt-key">{{ opt.key }}</span>
+                          <span class="md-exercise-opt-val">{{ opt.val }}</span>
+                        </button>
+                      </div>
+                    </template>
+
+                    <template v-else-if="examCurrentItem.rawType === 'multi_choice'">
+                      <div class="md-exercise-options">
+                        <button v-for="opt in examCurrentItem.options" :key="opt.key"
+                                class="md-exercise-option multi"
+                                :class="{ selected: examIsOptionOn(opt.key) }"
+                                @click="examOptionClick(opt.key)">
+                          <span class="md-exercise-opt-key">{{ opt.key }}</span>
+                          <span class="md-exercise-opt-val">{{ opt.val }}</span>
+                        </button>
+                      </div>
+                    </template>
+
+                    <template v-else-if="examCurrentItem.rawType === 'true_false'">
+                      <div class="md-exercise-tf">
+                        <button class="md-exercise-tf-btn"
+                                :class="{ selected: examChoiceProxy === 'true' }"
+                                @click="examOptionClick('true')">✅ 正确</button>
+                        <button class="md-exercise-tf-btn"
+                                :class="{ selected: examChoiceProxy === 'false' }"
+                                @click="examOptionClick('false')">❌ 错误</button>
+                      </div>
+                    </template>
+
+                    <template v-else-if="['fill_blank', 'special_fill_blank'].indexOf(examCurrentItem.rawType) >= 0">
+                      <div class="md-exercise-blank">
+                        <input type="text" v-model="examInputProxy"
+                               :placeholder="'请输入你的答案'"
+                               class="md-exercise-blank-input">
+                      </div>
+                    </template>
+
+                    <template v-else-if="examCurrentItem.rawType === 'essay'">
+                      <textarea v-model="examInputProxy" rows="4"
+                                class="md-exercise-essay-input" placeholder="请写出你的答案..."></textarea>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部操作栏 -->
+          <div class="md-exam-footer">
+            <button class="btn ghost" @click="examPrev" :disabled="examIndex === 0">← 上一题</button>
+            <button class="btn ghost" @click="examNext" :disabled="examIndex >= examTotal - 1">下一题 →</button>
+            <button class="md-exam-submit-btn" @click="examSubmit">📝 交卷 ({{ examAnsweredCount }}/{{ examTotal }})</button>
+          </div>
+        </template>
+
+        <!-- ===== summary（一次性判分结果 + 错题详情） ===== -->
+        <template v-else-if="examMode === 'summary'">
+          <div class="md-exam-summary">
+            <!-- 成绩卡片 -->
+            <div class="md-exam-score-card">
+              <div class="score-circle">
+                <svg viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="44" stroke="#e4eaf2" stroke-width="6" fill="none"/>
+                  <circle cx="50" cy="50" r="44" stroke="var(--primary)" stroke-width="6" fill="none"
+                          stroke-linecap="round"
+                          transform="rotate(-90 50 50)"
+                          stroke-dasharray="276"
+                          :style="{ strokeDashoffset: String(276 - 276 * (examTotal ? examPassCount / examTotal : 0)) }"/>
+                </svg>
+                <div class="score-num">{{ examTotal ? Math.round((examPassCount / examTotal) * 100) : 0 }}</div>
+                <div class="score-label">正确率</div>
+              </div>
+              <div class="score-meta">
+                <div class="meta-row"><span>总题数</span><b>{{ examTotal }}</b></div>
+                <div class="meta-row ok"><span>答对</span><b>{{ examPassCount }}</b></div>
+                <div class="meta-row no"><span>答错 / 未答</span><b>{{ examFailCount }}</b></div>
+                <div class="meta-row"><span>耗时</span><b>{{ studyFormatDuration(examElapsedSec) }}</b></div>
+              </div>
+            </div>
+
+            <!-- 错题详情列表（只在有错题时显示） -->
+            <div class="md-exam-wrong-detail" v-if="examWrongItems.length">
+              <div class="md-exam-wrong-title">📋 错题详情（{{ examWrongItems.length }} 题）</div>
+              <div class="md-exam-wrong-list">
+                <div class="md-exam-wrong-item" v-for="(entry, idx) in examWrongItems" :key="idx">
+                  <div class="wrong-head">
+                    <span class="wrong-idx">第 {{ idx + 1 }} 题</span>
+                    <span class="tag" style="margin-left:8px;">{{ entry.item.typeLabel }}</span>
+                    <span class="wrong-flag" :class="{ subjective: entry.subjective }">
+                      {{ entry.subjective ? '主观题' : '客观题' }}
+                    </span>
+                  </div>
+                  <div class="wrong-q">{{ entry.item.question }}</div>
+                  <div class="wrong-line">
+                    <span class="wrong-lbl">你的答案：</span>
+                    <span class="wrong-user">{{ entry.userAnswer.input || entry.userAnswer.choice || (entry.userAnswer.multiSel ? entry.userAnswer.multiSel.join(', ') : '—') || '—' }}</span>
+                  </div>
+                  <div class="wrong-line correct">
+                    <span class="wrong-lbl">正确答案：</span>
+                    <span class="wrong-std">{{ entry.item.a }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 无错题 -->
+            <div class="md-exam-perfect" v-else>
+              <div class="perfect-emoji">🏆</div>
+              <div class="perfect-text">全对！太厉害了！</div>
+            </div>
+
+            <div class="md-exam-summary-actions">
+              <button class="btn" @click="examRestart">🎓 再考一次</button>
+              <button class="btn ghost" @click="switchTab('wrongbook')">📕 查看错题本</button>
+              <button class="btn ghost" @click="switchTab('home')">🏠 返回首页</button>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <section v-show="activeTab === 'preview'" data-page-node-id="npPAwCE5yjY9iFVt9CBtbP">
         <div class="empty-hint" v-if="!bank.length" data-page-node-id="7n5Gxvlh7B2vzeaJaid3Pu">暂无题目。请通过上方数据面板导入 JSON。</div>
         <template v-else data-page-node-id="c4IrWp8HfGT3Wue6qq5aLr">
           <div class="exam-item" v-for="(item, index) in bank" :key="index" data-page-node-id="jv7DFLF6BGqASZNmywIp3w">
@@ -242,6 +1134,13 @@
             <button :class="{ on: wrongTab === 'exam' }" @click="wrongTab = 'exam'" data-page-node-id="jNwsFZytB3QVJpFbpFwAlh">考试错题 ({{ wrongBySource.exam.length }})</button>
             <button :class="{ on: wrongTab === 'all' }" @click="wrongTab = 'all'" data-page-node-id="WUAFhFtSgZQNa9QwnUa2gl">全部 ({{ wrongCount }})</button>
           </div>
+          <!-- v2：状态分布（错题本状态面板） -->
+          <div class="wb-status-bar" v-if="wrongCount">
+            <span class="wb-status-chip new">🆕 新题 {{ wrongStatusDist.new }}</span>
+            <span class="wb-status-chip learning">📚 学习中 {{ wrongStatusDist.learning }}</span>
+            <span class="wb-status-chip weak">💪 待巩固 {{ wrongStatusDist.weak }}</span>
+            <span class="wb-status-hint">连续答对 3 次自动移除</span>
+          </div>
           <div class="select-row" v-if="wrongFiltered.length" data-page-node-id="RmsAM4ewJfmU3CrMYeDUI0">
             <button class="btn" @click="startWrongPractice(wrongItems)" data-page-node-id="2vMfTA6qC4Fw6qbBTvA8Jj">🕹️ 加强练习</button>
             <button class="btn" @click="startWrongExam(wrongItems)" data-page-node-id="qPihAdGaWHWebOlCRz2qiY">🎯 重新考试</button>
@@ -271,6 +1170,14 @@
         <div class="wb-item" v-for="e in wrongFiltered" :key="e.id" data-page-node-id="emOBICXxj7iiaRvrF1Fgdt">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;" data-page-node-id="9ElfIQSbeO2HOIytesCC3D">
             <span class="src-tag" :class="e.source" data-page-node-id="W6zbEYqnHdXWrtsSIJssHA">{{ sourceLabel(e.source) }}</span>
+            <span class="wb-item-stats">
+              <span class="wb-status-chip small" :class="e.status || 'new'">
+                {{ (e.status === 'learning' ? '📚' : e.status === 'weak' ? '💪' : e.status === 'mastered' ? '🏆' : '🆕') }}
+                {{ e.status === 'learning' ? '学习中' : e.status === 'weak' ? '待巩固' : e.status === 'mastered' ? '已掌握' : '新题' }}
+              </span>
+              <span class="wb-err-count" v-if="e.wrongCount > 1">错 {{ e.wrongCount }} 次</span>
+              <span class="wb-streak" v-if="e.correctStreak > 0">✓{{ e.correctStreak }}</span>
+            </span>
             <button class="btn-text small" @click="wrongRemove(e.id)" data-page-node-id="mfPZb6gNdQXpvOGVOiGTcB">✕ 移除</button>
           </div>
           <div class="exam-q" style="margin-top:8px;" data-page-node-id="4ho5RfokMY0M1oJgqUFTxR">{{ e.item.q }}</div>
@@ -309,8 +1216,14 @@
   <script src="js/store.js"></script>
   <script src="js/leitner.js"></script>
   <script src="js/wrongbook.js"></script>
+  <!-- 阶段 0 新增：迁移层 & 学习状态层 & 会话层 & 统计层 -->
+  <script src="js/migration.js"></script>
+  <script src="js/progress.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/ai-prompt.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/backup.js"></script>
   <script src="js/app.js"></script>
 
   <!-- JSON 规则兜底摘要 -->

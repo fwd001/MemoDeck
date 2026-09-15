@@ -6,13 +6,18 @@
 (function (global) {
   'use strict';
 
-  const { createApp, ref, reactive, computed, nextTick } = global.Vue;
+  const { createApp, ref, reactive, computed, nextTick, onMounted, onBeforeUnmount } = global.Vue;
   const Core = global.ExamCore;
   const Store = global.ExamStore;
   const Leitner = global.ExamLeitner;
   const Wrongbook = global.ExamWrongbook;
   const AIPrompt = global.ExamAIPrompt;
   const Utils = global.ExamUtils;
+  // —— 阶段 0 新增模块 ——
+  const Migration = global.ExamMigration;
+  const Progress = global.ExamProgress;
+  const Session = global.ExamSession;
+  const Stats = global.ExamStats;
 
   // 运行配置见 config.js（defaultRemoteUrl / jsonManagerUrl 均可外部覆盖）
   const CFG = global.EXAM_CONFIG || {};
@@ -22,7 +27,7 @@
   const app = createApp({
     setup() {
       /* ============ 基础 / 数据源 ============ */
-      const activeTab = ref('practice');            // practice | exam | category | wrongbook
+      const activeTab = ref('home');               // 阶段 1：默认首页；其余：practice | exam | category | wrongbook
       const sourceMeta = ref({ label: '加载中…', cls: 'default', url: '', detail: '' });
       const currentBank = ref({ meta: {}, features: {}, papers: [] });
       const currentPaperId = ref('');
@@ -31,12 +36,44 @@
       const remoteUrl = ref('');
       const pasteText = ref('');
       const managerUrl = ref(JSON_MANAGER_URL);
-      const showDataPanel = ref(true);
+      const showDataPanel = ref(localStorage.getItem('memo:showDataPanel') !== '0');
+      const confirmClearAll = ref(false); // 备份区二次确认
       const dataBusy = ref(false);
       const dragActive = ref(false);
       const toastMsg = ref('');
       const toastOk = ref(true);
       let toastTimer = null;
+
+      /* ============ 主题 ============ */
+      // 'auto' | 'light' | 'dark'
+      const themeMode = ref(localStorage.getItem('memo:theme') || 'auto');
+      function applyTheme() {
+        var mode = themeMode.value;
+        if (mode === 'auto') {
+          document.documentElement.removeAttribute('data-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', mode);
+        }
+        localStorage.setItem('memo:theme', mode);
+      }
+      // 初始化立即应用
+      applyTheme();
+      // 跟随系统偏好变化（auto 模式下实时切换）
+      if (window.matchMedia) {
+        var mql = window.matchMedia('(prefers-color-scheme: dark)');
+        mql.addEventListener && mql.addEventListener('change', function () {
+          if (themeMode.value === 'auto') applyTheme();
+        });
+      }
+
+      /* ============ 阶段 0 新增：学习状态 & 统计 ============ */
+      // 刷新信号：每次 bump 让 dashboard/dailyTask 重新计算
+      const progressTick = ref(0);
+      function refreshProgress() { progressTick.value++; }
+
+      /* —— watchers：面板/主题状态持久化 —— */
+      Vue.watch(showDataPanel, function (v) { localStorage.setItem('memo:showDataPanel', v ? '1' : '0'); });
+      Vue.watch(themeMode, function () { applyTheme(); });
 
       /* ============ 记忆闯关 ============ */
       const practiceQueue = ref([]);
@@ -73,6 +110,988 @@
       const wrongPracticeQueue = ref([]);
       const wrongPracticeShow = ref(false);
 
+      /* ============ 阶段 2：学习/背诵模式 ============ */
+      // 状态机：setup → running → summary
+      const studyMode = ref('setup');
+
+      // setup 配置
+      const studyScope = ref('today');               // today | unmastered | all | wrongbook | custom
+      const studyCustomStart = ref(1);
+      const studyCustomEnd = ref(0);                 // 0 表示自动填充总题数
+      const studyStrategy = ref('due');              // due | sequential | random
+      const studyPerSession = ref(30);
+      const studyPerSessionCustom = ref(20);         // 自定义数量
+      const studyTypes = ref({ single_choice: true, multi_choice: true, true_false: true, fill_blank: true, special_fill_blank: true, essay: false });
+
+      // running 状态
+      const studyQueueGids = ref([]);
+      const studyIndex = ref(0);
+      const studyShowAnswer = ref(false);
+      const studyStartAt = ref(0);
+      const studyPassCount = ref(0);
+      const studyFailCount = ref(0);
+      const studyNewMastered = ref(0);
+      const studyNewWrong = ref(0);
+      const studyMaxStreak = ref(0);
+
+      // 手势状态
+      const studySwipeX = ref(0);                    // 当前卡片的水平位移 px
+      const studySwipeActive = ref(false);
+      let studySwipeStartX = 0;
+      let studySwipeStartY = 0;
+      const STUDY_SWIPE_THRESHOLD = 120;             // 触发阈值 px
+
+      // summary 统计
+      const studyElapsedSec = ref(0);
+      let studyTimer = null;
+
+      // computed：当前题目 item
+      const studyCurrentItem = computed(() => {
+        const gid = studyQueueGids.value[studyIndex.value];
+        if (!gid) return null;
+        return bank.value.find(it => it.gid === gid) || null;
+      });
+      const studyNextItem = computed(() => {
+        const gid = studyQueueGids.value[studyIndex.value + 1];
+        if (!gid) return null;
+        return bank.value.find(it => it.gid === gid) || null;
+      });
+      const studyTotal = computed(() => studyQueueGids.value.length);
+      const studyProgressPct = computed(() => {
+        if (!studyTotal.value) return 0;
+        return Math.round((studyIndex.value / studyTotal.value) * 100);
+      });
+      const studyCurrentProgress = computed(() => {
+        if (!studyTotal.value) return '0/0';
+        return (studyIndex.value + 1) + '/' + studyTotal.value;
+      });
+      // 当前题的学习历史（小字 hint）
+      const studyPrevHint = computed(() => {
+        const gid = studyCurrentItem.value && studyCurrentItem.value.gid;
+        if (!gid) return '';
+        const e = Progress.get(gid);
+        if (!e) return '之前：未学过';
+        const parts = [];
+        if (e.attempts > 0) parts.push('学过 ' + e.attempts + ' 次');
+        if (e.status === 'mastered') parts.push('已掌握');
+        else if (e.status === 'review') parts.push('需复习');
+        else if (e.wrong > 0) parts.push('上次答错');
+        parts.push('streak ' + e.streak);
+        return '之前：' + parts.join(' · ');
+      });
+      // setup 时实时计算各范围的题数
+      const studyScopeCounts = computed(() => {
+        const gids = bankGids.value;
+        const pm = progressMap.value;
+        const out = {};
+        out.all = gids.length;
+        out.today = Progress.getDueQuestions(gids).length;
+        out.unmastered = gids.filter(g => {
+          const e = pm[g]; return !e || e.status !== 'mastered';
+        }).length;
+        out.wrongbook = wrongEntries.value.length;
+        // custom 数量需要在选 custom 时动态算
+        return out;
+      });
+      const studyCustomCount = computed(() => {
+        const start = Math.max(1, studyCustomStart.value || 1);
+        const end = studyCustomEnd.value > 0 ? studyCustomEnd.value : bank.value.length;
+        const s = Math.min(start, end), e = Math.max(start, end);
+        // 过滤题型
+        const typesSelected = Object.values(studyTypes.value).some(Boolean);
+        let count = 0;
+        for (let i = s - 1; i < Math.min(e, bank.value.length); i++) {
+          const t = bank.value[i].rawType;
+          if (!typesSelected || studyTypes.value[t]) count++;
+        }
+        return count;
+      });
+      const studyAvailableCount = computed(() => {
+        if (studyScope.value === 'custom') return studyCustomCount.value;
+        return (studyScopeCounts.value[studyScope.value] !== undefined) ? studyScopeCounts.value[studyScope.value] : studyScopeCounts.value.all;
+      });
+      const studyBadgeCount = computed(() => {
+        if (studyScope.value === 'custom') return studyCustomCount.value;
+        const c = studyScopeCounts.value;
+        return c[studyScope.value] !== undefined ? c[studyScope.value] : c.all;
+      });
+
+      // ====== setup → running ======
+      function studyStart() {
+        if (!studyAvailableCount.value) { toast('当前条件下没有可学习的题目', false); return; }
+        const all = bankGids.value;
+        let scopeGids = all.slice();
+
+        // 1. 按 scope 切
+        if (studyScope.value === 'unmastered') {
+          const pm = Progress.getAll();
+          scopeGids = all.filter(g => {
+            const e = pm[g]; return !e || e.status !== 'mastered';
+          });
+        } else if (studyScope.value === 'wrongbook') {
+          const wg = new Set(wrongEntries.value.map(e => e.item && e.item.gid).filter(Boolean));
+          scopeGids = all.filter(g => wg.has(g));
+        } else if (studyScope.value === 'custom') {
+          const start = Math.max(1, studyCustomStart.value || 1);
+          const end = Math.min(bank.value.length, studyCustomEnd.value > 0 ? studyCustomEnd.value : bank.value.length);
+          scopeGids = all.slice(start - 1, end);
+          // 再按题型过滤
+          const ts = studyTypes.value;
+          const hasType = Object.values(ts).some(Boolean);
+          if (hasType) {
+            scopeGids = scopeGids.filter(g => {
+              const it = bank.value.find(b => b.gid === g);
+              return it && ts[it.rawType];
+            });
+          }
+        } else if (studyScope.value === 'today') {
+          scopeGids = Progress.getDueQuestions(all);
+        }
+
+        // 2. 按 strategy 排
+        let queueGids;
+        if (studyStrategy.value === 'sequential') {
+          queueGids = scopeGids.slice();
+        } else if (studyStrategy.value === 'random') {
+          queueGids = scopeGids.slice();
+          for (let i = queueGids.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [queueGids[i], queueGids[j]] = [queueGids[j], queueGids[i]];
+          }
+        } else {
+          // due 优先：Session.generateDailyTask
+          const perSession = studyPerSession.value === 'custom'
+            ? studyPerSessionCustom.value
+            : Number(studyPerSession.value) || 30;
+          const r = Session.generateDailyTask(all, perSession, scopeGids);
+          queueGids = r.queue;
+        }
+
+        if (!queueGids.length) { toast('队列生成为空，请换范围', false); return; }
+
+        // 3. 启动
+        studyQueueGids.value = queueGids;
+        studyIndex.value = 0;
+        studyShowAnswer.value = false;
+        studyStartAt.value = Date.now();
+        studyPassCount.value = 0;
+        studyFailCount.value = 0;
+        studyNewMastered.value = 0;
+        studyNewWrong.value = 0;
+        studyMaxStreak.value = 0;
+        studyMode.value = 'running';
+
+        // 保存恢复点
+        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
+        Session.saveResumePoint({
+          bankId: bankId,
+          paperId: currentPaperId.value,
+          mode: 'study',
+          queueGids: queueGids,
+          currentIndex: 0,
+          segment: { scope: studyScope.value, start: studyCustomStart.value, end: studyCustomEnd.value }
+        });
+
+        // 计时器
+        studyElapsedSec.value = 0;
+        if (studyTimer) clearInterval(studyTimer);
+        studyTimer = setInterval(() => {
+          studyElapsedSec.value = Math.floor((Date.now() - studyStartAt.value) / 1000);
+        }, 1000);
+      }
+
+      function studyResume() {
+        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
+        const rp = Session.loadResumePoint(bankId);
+        if (!rp) return;
+        studyQueueGids.value = rp.queueGids || [];
+        studyIndex.value = rp.currentIndex || 0;
+        studyShowAnswer.value = false;
+        // 恢复设置（尽量还原）
+        const seg = rp.segment || {};
+        if (seg.scope) studyScope.value = seg.scope;
+        if (seg.start) studyCustomStart.value = seg.start;
+        if (seg.end) studyCustomEnd.value = seg.end;
+        // running 统计重置（恢复点只存位置不存统计）
+        studyPassCount.value = 0;
+        studyFailCount.value = 0;
+        studyNewMastered.value = 0;
+        studyNewWrong.value = 0;
+        studyMaxStreak.value = 0;
+        studyStartAt.value = Date.now();
+        studyMode.value = 'running';
+        studyElapsedSec.value = 0;
+        if (studyTimer) clearInterval(studyTimer);
+        studyTimer = setInterval(() => {
+          studyElapsedSec.value = Math.floor((Date.now() - studyStartAt.value) / 1000);
+        }, 1000);
+      }
+
+      function studyAbandonResume() {
+        // 放弃上次 → 保持 setup 模式，等用户重新开始
+        toast('已放弃上次进度，重新设置');
+      }
+
+      // ====== running：mark + next ======
+      function studyMark(remembered) {
+        const item = studyCurrentItem.value;
+        if (!item || !item.gid) return;
+        const prev = Progress.get(item.gid);
+        const prevStatus = prev ? prev.status : 'new';
+
+        if (remembered) {
+          const e = Progress.markPass(item.gid);
+          studyPassCount.value++;
+          if (e && e.streak > studyMaxStreak.value) studyMaxStreak.value = e.streak;
+          if (prevStatus !== 'mastered' && e && e.status === 'mastered') studyNewMastered.value++;
+        } else {
+          Progress.markFail(item.gid);
+          studyFailCount.value++;
+          Wrongbook.add(item, 'study', null, false);
+          studyNewWrong.value++;
+          loadWrongbook();
+        }
+        refreshProgress();
+
+        // 保存恢复点（节流）
+        Session.touchResumePoint();
+
+        // 自动下一题
+        studyNext();
+      }
+
+      function studyNext() {
+        studyShowAnswer.value = false;
+        if (studyIndex.value + 1 >= studyQueueGids.value.length) {
+          studyFinish();
+        } else {
+          studyIndex.value++;
+          studySwipeX.value = 0;
+        }
+      }
+
+      function studyFinish() {
+        studyMode.value = 'summary';
+        if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
+        Session.clearResumePoint();
+        refreshProgress();
+      }
+
+      function studyExit() {
+        // 主动退出 running → 暂停，恢复点已在 saveResumePoint/touchResumePoint 里
+        if (studyMode.value === 'running') {
+          toast('已暂停，下次打开可继续', true);
+          if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
+          studyMode.value = 'setup';
+          switchTab('home');
+          setTimeout(() => switchTab('study'), 50);
+        } else {
+          studyMode.value = 'setup';
+        }
+      }
+
+      function studyRestart() {
+        studyMode.value = 'setup';
+        studySwipeX.value = 0;
+        studyShowAnswer.value = false;
+        if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
+        Session.clearResumePoint();
+      }
+
+      // ====== 手势：移动端左右滑动 ======
+      function studyOnSwipeStart(e) {
+        if (studyMode.value !== 'running') return;
+        if (!studyShowAnswer.value) return; // 必须先看答案才能滑动
+        const pt = e.touches ? e.touches[0] : e;
+        studySwipeStartX = pt.clientX;
+        studySwipeStartY = pt.clientY;
+        studySwipeX.value = 0;
+        studySwipeActive.value = true;
+      }
+      function studyOnSwipeMove(e) {
+        if (!studySwipeActive.value) return;
+        const pt = e.touches ? e.touches[0] : e;
+        const dx = pt.clientX - studySwipeStartX;
+        const dy = pt.clientY - studySwipeStartY;
+        // 优先判断：水平位移大于垂直才算水平滑动
+        if (Math.abs(dx) > Math.abs(dy)) {
+          studySwipeX.value = dx;
+          if (e.cancelable) e.preventDefault();
+        }
+      }
+      function studyOnSwipeEnd() {
+        if (!studySwipeActive.value) return;
+        studySwipeActive.value = false;
+        const x = studySwipeX.value;
+        if (x >= STUDY_SWIPE_THRESHOLD) {
+          // 右滑 → 记住了 ✅
+          studyMark(true);
+        } else if (x <= -STUDY_SWIPE_THRESHOLD) {
+          // 左滑 → 还不会 🤦
+          studyMark(false);
+        } else {
+          // 阈值不够，弹回
+          studySwipeX.value = 0;
+        }
+      }
+
+      // 桌面端也支持：点击"记住了/还不会"按钮 或 键盘 1/2 或 ←/→
+      function studyKeyDown(e) {
+        if (activeTab.value !== 'study') return;
+        if (studyMode.value !== 'running') return;
+        if (e.key === ' ' || e.key === 'Enter') {
+          if (!studyShowAnswer.value) { studyShowAnswer.value = true; e.preventDefault(); }
+        } else if (studyShowAnswer.value) {
+          if (e.key === 'ArrowLeft' || e.key === '1') { studyMark(false); e.preventDefault(); }
+          else if (e.key === 'ArrowRight' || e.key === '2') { studyMark(true); e.preventDefault(); }
+        }
+      }
+
+      // 格式化时长
+      function studyFormatDuration(sec) {
+        sec = sec || 0;
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        if (m >= 60) {
+          const h = Math.floor(m / 60);
+          return h + 'h ' + (m % 60) + 'm';
+        }
+        return m + '分 ' + (s < 10 ? '0' : '') + s + 's';
+      }
+
+      // ====== setup 自动填充 custom end ======
+      function studyAutoFillCustomEnd() {
+        if (!studyCustomEnd.value || studyCustomEnd.value <= 0) {
+          studyCustomEnd.value = bank.value.length || 500;
+        }
+      }
+
+      /* ============ 阶段 3：练习模式（独立于学习/记忆闯关） ============ */
+      // 核心差异：练习 = 自己作答 → 系统自动判分 → 看答案 → 下一题
+      // 与学习/记忆闯关的区别：有"提交答案"步骤，客观题系统判分，主观题看答案后自评
+      const exerciseMode = ref('setup');
+
+      // setup 配置（复用 study 的范围逻辑，独立 ref 避免串状态）
+      const exerciseScope = ref('all');
+      const exerciseCustomStart = ref(1);
+      const exerciseCustomEnd = ref(0);
+      const exerciseStrategy = ref('random');    // 练习默认随机洗牌
+      const exercisePerSession = ref('all');
+      const exercisePerSessionCustom = ref(30);
+      const exerciseTypes = ref({ single_choice: true, multi_choice: true, true_false: true, fill_blank: true, special_fill_blank: true, essay: true });
+
+      // running 状态
+      const exerciseQueueGids = ref([]);
+      const exerciseIndex = ref(0);
+      const exerciseStartAt = ref(0);
+      let exerciseTimer = null;
+
+      // 每题作答
+      const exerciseAnswerSubmitted = ref(false);
+      const exerciseChoice = ref(null);       // 单选/判断
+      const exerciseMultiSel = ref([]);       // 多选
+      const exerciseInput = ref('');          // 填空/简答
+
+      // 每题判分结果
+      const exerciseFeedback = ref(null);     // { correct: true/false, reveal: true }
+      const exerciseStudentAnswer = ref('');  // 渲染"你的答案"（主观题或填空）
+
+      // summary 统计
+      const exercisePassCount = ref(0);
+      const exerciseFailCount = ref(0);
+      const exerciseNewWrong = ref(0);
+      const exerciseNewMastered = ref(0);
+      const exerciseElapsedSec = ref(0);
+
+      // 手势
+      const exerciseSwipeX = ref(0);
+      const exerciseSwipeActive = ref(false);
+      let exerciseSwipeStartX = 0, exerciseSwipeStartY = 0;
+
+      // computed
+      const exerciseCurrentItem = computed(() => {
+        const gid = exerciseQueueGids.value[exerciseIndex.value];
+        if (!gid) return null;
+        return bank.value.find(it => it.gid === gid) || null;
+      });
+      const exerciseNextItem = computed(() => {
+        const gid = exerciseQueueGids.value[exerciseIndex.value + 1];
+        if (!gid) return null;
+        return bank.value.find(it => it.gid === gid) || null;
+      });
+      const exerciseTotal = computed(() => exerciseQueueGids.value.length);
+      const exerciseProgressPct = computed(() => {
+        if (!exerciseTotal.value) return 0;
+        return Math.round((exerciseIndex.value / exerciseTotal.value) * 100);
+      });
+      const exerciseCurrentProgress = computed(() => {
+        if (!exerciseTotal.value) return '0/0';
+        return (exerciseIndex.value + 1) + '/' + exerciseTotal.value;
+      });
+      const exercisePrevHint = computed(() => {
+        const gid = exerciseCurrentItem.value && exerciseCurrentItem.value.gid;
+        if (!gid) return '';
+        const e = Progress.get(gid);
+        if (!e) return '之前：未学过';
+        const parts = [];
+        if (e.attempts > 0) parts.push('学过 ' + e.attempts + ' 次');
+        if (e.status === 'mastered') parts.push('已掌握');
+        else if (e.wrong > 0) parts.push('上次答错');
+        return '之前：' + parts.join(' · ');
+      });
+      const exerciseBadgeCount = computed(() => {
+        const all = bankGids.value;
+        let scopeGids = all.slice();
+        if (exerciseScope.value === 'unmastered') {
+          const pm = Progress.getAll();
+          scopeGids = all.filter(g => { const e = pm[g]; return !e || e.status !== 'mastered'; });
+        } else if (exerciseScope.value === 'wrongbook') {
+          const wg = new Set(wrongEntries.value.map(e => e.item && e.item.gid).filter(Boolean));
+          scopeGids = all.filter(g => wg.has(g));
+        } else if (exerciseScope.value === 'custom') {
+          const s = Math.max(1, exerciseCustomStart.value || 1);
+          const e = Math.min(bank.value.length, exerciseCustomEnd.value > 0 ? exerciseCustomEnd.value : bank.value.length);
+          scopeGids = all.slice(s - 1, e);
+          const ts = exerciseTypes.value;
+          const hasType = Object.values(ts).some(Boolean);
+          if (hasType) scopeGids = scopeGids.filter(g => {
+            const it = bank.value.find(b => b.gid === g); return it && ts[it.rawType];
+          });
+        }
+        return scopeGids.length;
+      });
+
+      // 判分核心（纯函数，不读写任何 ref）
+      function judgeExerciseObjective(cur, choice, multiSel) {
+        if (!cur) return false;
+        if (cur.rawType === 'true_false') return (choice === 'true') === !!cur.answer;
+        if (cur.rawType === 'single_choice') return choice === cur.answer;
+        if (cur.rawType === 'multi_choice') {
+          const std = (Array.isArray(cur.answer) ? cur.answer : []).slice().sort().join(',');
+          const sel = multiSel.slice().sort().join(',');
+          return sel === std && sel !== '';
+        }
+        return false;
+      }
+
+      function resetExerciseAnswer() {
+        exerciseChoice.value = null;
+        exerciseMultiSel.value = [];
+        exerciseInput.value = '';
+        exerciseAnswerSubmitted.value = false;
+        exerciseFeedback.value = null;
+        exerciseStudentAnswer.value = '';
+      }
+
+      // ====== setup → running ======
+      function exerciseStart() {
+        if (!exerciseBadgeCount.value) { toast('当前条件下没有可练习的题目', false); return; }
+        const all = bankGids.value;
+        let scopeGids = all.slice();
+        if (exerciseScope.value === 'unmastered') {
+          const pm = Progress.getAll();
+          scopeGids = all.filter(g => { const e = pm[g]; return !e || e.status !== 'mastered'; });
+        } else if (exerciseScope.value === 'wrongbook') {
+          const wg = new Set(wrongEntries.value.map(e => e.item && e.item.gid).filter(Boolean));
+          scopeGids = all.filter(g => wg.has(g));
+        } else if (exerciseScope.value === 'custom') {
+          const s = Math.max(1, exerciseCustomStart.value || 1);
+          const e = Math.min(bank.value.length, exerciseCustomEnd.value > 0 ? exerciseCustomEnd.value : bank.value.length);
+          scopeGids = all.slice(s - 1, e);
+          const ts = exerciseTypes.value;
+          const hasType = Object.values(ts).some(Boolean);
+          if (hasType) scopeGids = scopeGids.filter(g => {
+            const it = bank.value.find(b => b.gid === g); return it && ts[it.rawType];
+          });
+        }
+
+        let queueGids;
+        if (exerciseStrategy.value === 'sequential') {
+          queueGids = scopeGids.slice();
+        } else if (exerciseStrategy.value === 'random') {
+          queueGids = scopeGids.slice();
+          for (let i = queueGids.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [queueGids[i], queueGids[j]] = [queueGids[j], queueGids[i]];
+          }
+        } else {
+          queueGids = scopeGids.slice();
+        }
+
+        let perSession = exercisePerSession.value === 'custom' ? exercisePerSessionCustom.value : exercisePerSession.value;
+        if (perSession !== 'all' && Number(perSession) > 0) {
+          queueGids = queueGids.slice(0, Number(perSession));
+        }
+
+        if (!queueGids.length) { toast('队列为空', false); return; }
+
+        exerciseQueueGids.value = queueGids;
+        exerciseIndex.value = 0;
+        resetExerciseAnswer();
+        exercisePassCount.value = 0;
+        exerciseFailCount.value = 0;
+        exerciseNewWrong.value = 0;
+        exerciseNewMastered.value = 0;
+        exerciseStartAt.value = Date.now();
+        exerciseElapsedSec.value = 0;
+        exerciseMode.value = 'running';
+
+        // 恢复点
+        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
+        Session.saveResumePoint({ bankId: bankId, paperId: currentPaperId.value, mode: 'exercise', queueGids: queueGids, currentIndex: 0 });
+
+        if (exerciseTimer) clearInterval(exerciseTimer);
+        exerciseTimer = setInterval(() => {
+          exerciseElapsedSec.value = Math.floor((Date.now() - exerciseStartAt.value) / 1000);
+        }, 1000);
+      }
+
+      function exerciseResume() {
+        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
+        const rp = Session.loadResumePoint(bankId);
+        if (!rp || rp.mode !== 'exercise') return;
+        exerciseQueueGids.value = rp.queueGids || [];
+        exerciseIndex.value = rp.currentIndex || 0;
+        resetExerciseAnswer();
+        exercisePassCount.value = 0; exerciseFailCount.value = 0;
+        exerciseNewWrong.value = 0; exerciseNewMastered.value = 0;
+        exerciseStartAt.value = Date.now(); exerciseElapsedSec.value = 0;
+        exerciseMode.value = 'running';
+        if (exerciseTimer) clearInterval(exerciseTimer);
+        exerciseTimer = setInterval(() => {
+          exerciseElapsedSec.value = Math.floor((Date.now() - exerciseStartAt.value) / 1000);
+        }, 1000);
+      }
+
+      function exerciseAbandonResume() { toast('已放弃上次进度'); }
+
+      // ====== running ======
+      function exerciseSubmit() {
+        const cur = exerciseCurrentItem.value;
+        if (!cur || exerciseAnswerSubmitted.value) return;
+
+        if (isObjective(cur.rawType)) {
+          // 客观题：系统自动判分
+          const correct = judgeExerciseObjective(cur, exerciseChoice.value, exerciseMultiSel.value);
+          _exerciseRecord(cur, correct, null); // 客观题的"你的答案"直接在 answer-view 里展示
+          exerciseFeedback.value = { correct: correct };
+        } else {
+          // 主观题（填空/简答/特填）：不自动判分，先看答案，用户自评
+          exerciseAnswerSubmitted.value = true;
+          return;
+        }
+        exerciseAnswerSubmitted.value = true;
+      }
+
+      // 用户对主观题自评（答对/答错）
+      function exerciseSelfJudge(correct) {
+        const cur = exerciseCurrentItem.value;
+        if (!cur || !exerciseAnswerSubmitted.value) return;
+        // 主观题先展示标准答案，让用户自己对照自评
+        _exerciseRecord(cur, correct, exerciseInput.value);
+        exerciseFeedback.value = { correct: correct };
+      }
+
+      // 内部：记录结果
+      function _exerciseRecord(cur, correct, studentAnswer) {
+        const prev = Progress.get(cur.gid);
+        const prevStatus = prev ? prev.status : 'new';
+        if (correct) {
+          const e = Progress.markPass(cur.gid);
+          exercisePassCount.value++;
+          if (prevStatus !== 'mastered' && e && e.status === 'mastered') exerciseNewMastered.value++;
+        } else {
+          Progress.markFail(cur.gid);
+          exerciseFailCount.value++;
+          const added = Wrongbook.add(cur, 'exercise', studentAnswer, false);
+          exerciseNewWrong.value++;
+          loadWrongbook();
+        }
+        refreshProgress();
+        Session.touchResumePoint();
+      }
+
+      function exerciseNext() {
+        if (exerciseIndex.value + 1 >= exerciseQueueGids.value.length) {
+          exerciseFinish();
+        } else {
+          exerciseIndex.value++;
+          resetExerciseAnswer();
+          exerciseSwipeX.value = 0;
+        }
+      }
+
+      function exerciseFinish() {
+        exerciseMode.value = 'summary';
+        if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
+        Session.clearResumePoint();
+        refreshProgress();
+      }
+
+      function exerciseExit() {
+        if (exerciseMode.value === 'running') {
+          toast('已暂停，下次打开可继续', true);
+          if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
+          exerciseMode.value = 'setup';
+          switchTab('home'); setTimeout(() => switchTab('exercise'), 50);
+        } else {
+          exerciseMode.value = 'setup';
+        }
+      }
+
+      function exerciseRestart() {
+        exerciseMode.value = 'setup';
+        resetExerciseAnswer();
+        exerciseSwipeX.value = 0;
+        if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
+        Session.clearResumePoint();
+      }
+
+      // 选项 / 多选
+      function exerciseOptionClick(val) {
+        if (exerciseAnswerSubmitted.value) return;
+        const cur = exerciseCurrentItem.value;
+        if (!cur) return;
+        if (cur.rawType === 'single_choice' || cur.rawType === 'true_false') {
+          exerciseChoice.value = val;
+        } else if (cur.rawType === 'multi_choice') {
+          const idx = exerciseMultiSel.value.indexOf(val);
+          if (idx >= 0) exerciseMultiSel.value.splice(idx, 1);
+          else exerciseMultiSel.value.push(val);
+        }
+      }
+      function exerciseIsOptionOn(val) {
+        return exerciseMultiSel.value.indexOf(val) >= 0;
+      }
+
+      // 手势
+      function exerciseOnSwipeStart(e) {
+        if (exerciseMode.value !== 'running') return;
+        if (!exerciseAnswerSubmitted.value) return; // 只有判完分才能滑
+        const pt = e.touches ? e.touches[0] : e;
+        exerciseSwipeStartX = pt.clientX;
+        exerciseSwipeStartY = pt.clientY;
+        exerciseSwipeX.value = 0;
+        exerciseSwipeActive.value = true;
+      }
+      function exerciseOnSwipeMove(e) {
+        if (!exerciseSwipeActive.value) return;
+        const pt = e.touches ? e.touches[0] : e;
+        const dx = pt.clientX - exerciseSwipeStartX;
+        const dy = pt.clientY - exerciseSwipeStartY;
+        if (Math.abs(dx) > Math.abs(dy)) { exerciseSwipeX.value = dx; if (e.cancelable) e.preventDefault(); }
+      }
+      function exerciseOnSwipeEnd() {
+        if (!exerciseSwipeActive.value) return;
+        exerciseSwipeActive.value = false;
+        const x = exerciseSwipeX.value;
+        if (Math.abs(x) >= 80) { exerciseNext(); }
+        else { exerciseSwipeX.value = 0; }
+      }
+
+      // 键盘
+      function exerciseKeyDown(e) {
+        if (activeTab.value !== 'exercise') return;
+        if (exerciseMode.value !== 'running') return;
+        if (exerciseAnswerSubmitted.value) {
+          if (e.key === 'Enter' || e.key === ' ') { exerciseNext(); e.preventDefault(); }
+        } else {
+          if (e.key === 'Enter') { exerciseSubmit(); e.preventDefault(); }
+        }
+      }
+
+      function exerciseAutoFillCustomEnd() {
+        if (!exerciseCustomEnd.value || exerciseCustomEnd.value <= 0) {
+          exerciseCustomEnd.value = bank.value.length || 500;
+        }
+      }
+
+      /* ============ 阶段 4：考试模式 ============ */
+      // 核心差异：过程中不判分不显示答案，可回看改答，结束一次性判分
+      const examMode = ref('setup');
+
+      // setup（与 exercise 类似，默认 50 题随机洗牌）
+      const examScope = ref('all');
+      const examCustomStart = ref(1);
+      const examCustomEnd = ref(0);
+      const examStrategy = ref('random');
+      const examPerSession = ref('50');
+      const examPerSessionCustom = ref(100);
+      const examTypes = ref({ single_choice: true, multi_choice: true, true_false: true, fill_blank: true, special_fill_blank: true, essay: true });
+
+      // running
+      const examQueueGids = ref([]);
+      const examIndex = ref(0);
+      const examStartAt = ref(0);
+      const examElapsedSec = ref(0);
+      let examTimer = null;
+      // 核心：每题独立存答案（可随时回看改答）
+      const examAnswers = reactive({});   // { [gid]: { choice, multiSel, input, answered: bool } }
+      const examSubmitted = ref(false);   // 是否已交卷
+      const examSheetOpen = ref(false);    // 移动端答题卡折叠开关
+
+      // summary
+      const examPassCount = ref(0);
+      const examFailCount = ref(0);
+      const examWrongItems = ref([]);     // [{ gid, item, userAnswer, isCorrect }]
+
+      // 状态面板显示
+      const examAnsweredCount = computed(() => {
+        let c = 0;
+        examQueueGids.value.forEach(g => { if (examAnswers[g] && examAnswers[g].answered) c++; });
+        return c;
+      });
+
+      // computed
+      const examCurrentItem = computed(() => {
+        const gid = examQueueGids.value[examIndex.value];
+        if (!gid) return null;
+        return bank.value.find(it => it.gid === gid) || null;
+      });
+      const examTotal = computed(() => examQueueGids.value.length);
+      const examProgressPct = computed(() => {
+        if (!examTotal.value) return 0;
+        return Math.round((examAnsweredCount.value / examTotal.value) * 100);
+      });
+      const examIndexLabel = computed(() => {
+        if (!examTotal.value) return '0/0';
+        return (examIndex.value + 1) + '/' + examTotal.value;
+      });
+      const examBadgeCount = computed(() => {
+        const all = bankGids.value;
+        let scopeGids = all.slice();
+        if (examScope.value === 'custom') {
+          const s = Math.max(1, examCustomStart.value || 1);
+          const e = Math.min(bank.value.length, examCustomEnd.value > 0 ? examCustomEnd.value : bank.value.length);
+          scopeGids = all.slice(s - 1, e);
+          const ts = examTypes.value;
+          const hasType = Object.values(ts).some(Boolean);
+          if (hasType) scopeGids = scopeGids.filter(g => {
+            const it = bank.value.find(b => b.gid === g); return it && ts[it.rawType];
+          });
+        }
+        let n = examPerSession.value === 'custom' ? examPerSessionCustom.value : examPerSession.value;
+        if (n !== 'all' && Number(n) > 0 && Number(n) < scopeGids.length) return Number(n);
+        return scopeGids.length;
+      });
+
+      function _examGetAnswer(gid) {
+        if (!examAnswers[gid]) examAnswers[gid] = { choice: null, multiSel: [], input: '', answered: false };
+        return examAnswers[gid];
+      }
+      function _examMarkAnswered(gid) {
+        const a = _examGetAnswer(gid);
+        const item = bank.value.find(it => it.gid === gid);
+        if (!item) { a.answered = false; return; }
+        if (item.rawType === 'single_choice' || item.rawType === 'true_false') {
+          a.answered = !!a.choice;
+        } else if (item.rawType === 'multi_choice') {
+          a.answered = a.multiSel.length > 0;
+        } else {
+          a.answered = !!a.input && a.input.trim() !== '';
+        }
+      }
+
+      // setup → running
+      function examStart() {
+        if (!examBadgeCount.value) { toast('当前条件下没有可考试的题目', false); return; }
+        const all = bankGids.value;
+        let scopeGids = all.slice();
+        if (examScope.value === 'custom') {
+          const s = Math.max(1, examCustomStart.value || 1);
+          const e = Math.min(bank.value.length, examCustomEnd.value > 0 ? examCustomEnd.value : bank.value.length);
+          scopeGids = all.slice(s - 1, e);
+          const ts = examTypes.value;
+          const hasType = Object.values(ts).some(Boolean);
+          if (hasType) scopeGids = scopeGids.filter(g => {
+            const it = bank.value.find(b => b.gid === g); return it && ts[it.rawType];
+          });
+        }
+
+        let queueGids;
+        if (examStrategy.value === 'sequential') { queueGids = scopeGids.slice(); }
+        else {
+          queueGids = scopeGids.slice();
+          for (let i = queueGids.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [queueGids[i], queueGids[j]] = [queueGids[j], queueGids[i]];
+          }
+        }
+        let n = examPerSession.value === 'custom' ? examPerSessionCustom.value : examPerSession.value;
+        if (n !== 'all' && Number(n) > 0) queueGids = queueGids.slice(0, Number(n));
+
+        if (!queueGids.length) { toast('队列为空', false); return; }
+
+        examQueueGids.value = queueGids;
+        examIndex.value = 0;
+        // 清空/初始化答案对象
+        for (const k of Object.keys(examAnswers)) delete examAnswers[k];
+        examPassCount.value = 0; examFailCount.value = 0;
+        examWrongItems.value = [];
+        examSubmitted.value = false;
+        examStartAt.value = Date.now();
+        examElapsedSec.value = 0;
+        examMode.value = 'running';
+
+        if (examTimer) clearInterval(examTimer);
+        examTimer = setInterval(() => {
+          examElapsedSec.value = Math.floor((Date.now() - examStartAt.value) / 1000);
+        }, 1000);
+      }
+
+      function examJump(idx) {
+        if (idx < 0 || idx >= examTotal.value) return;
+        examIndex.value = idx;
+        examSheetOpen.value = false; // 移动端跳题后自动折叠
+      }
+      function examPrev() { if (examIndex.value > 0) examIndex.value--; }
+      function examNext() { if (examIndex.value < examTotal.value - 1) examIndex.value++; }
+
+      // 选项点击（running 中随时可改）
+      function examOptionClick(val) {
+        const cur = examCurrentItem.value;
+        if (!cur || examSubmitted.value) return;
+        const a = _examGetAnswer(cur.gid);
+        if (cur.rawType === 'single_choice' || cur.rawType === 'true_false') {
+          a.choice = (a.choice === val) ? null : val;
+        } else if (cur.rawType === 'multi_choice') {
+          const idx = a.multiSel.indexOf(val);
+          if (idx >= 0) a.multiSel.splice(idx, 1); else a.multiSel.push(val);
+        }
+        _examMarkAnswered(cur.gid);
+      }
+      function examIsOptionOn(val) {
+        const cur = examCurrentItem.value;
+        if (!cur) return false;
+        const a = examAnswers[cur.gid];
+        return a && a.multiSel.indexOf(val) >= 0;
+      }
+
+      // computed 代理：把 examAnswers[gid].input 暴露为可 v-model 的左值
+      // Vue 模板 v-model 不能跟函数调用表达式（非 LValue），所以用 computed 桥接
+      const examInputProxy = computed({
+        get() {
+          const cur = examCurrentItem.value;
+          if (!cur) return '';
+          const a = examAnswers[cur.gid];
+          return a ? a.input : '';
+        },
+        set(val) {
+          const cur = examCurrentItem.value;
+          if (!cur) return;
+          _examGetAnswer(cur.gid).input = val;
+          _examMarkAnswered(cur.gid);
+        }
+      });
+      // 同理：把 examAnswers[gid].choice 暴露为 computed 左值（模板 :class 里不能跟函数调用）
+      const examChoiceProxy = computed({
+        get() {
+          const cur = examCurrentItem.value;
+          if (!cur) return null;
+          const a = examAnswers[cur.gid];
+          return a ? a.choice : null;
+        },
+        set(val) {
+          const cur = examCurrentItem.value;
+          if (!cur) return;
+          _examGetAnswer(cur.gid).choice = val;
+          _examMarkAnswered(cur.gid);
+        }
+      });
+
+      // 交卷（结束 running → summary）
+      function examSubmit() {
+        if (examSubmitted.value) return;
+        // 一次性判分全部题
+        let pass = 0, fail = 0;
+        const wrong = [];
+        examQueueGids.value.forEach(gid => {
+          const item = bank.value.find(it => it.gid === gid);
+          if (!item) return;
+          const a = examAnswers[gid] || {};
+          let correct = false;
+          if (isObjective(item.rawType)) {
+            correct = judgeExerciseObjective(item, a.choice || null, a.multiSel || []);
+          } else {
+            // 主观题：未答算错；答了也暂时算"不确定"——实际考试中主观题由人工判分
+            // 这里保守：未答算错，答了也标记"需要人工评判"
+            if (!a.answered) correct = false;
+            else correct = null; // null = 主观题待定
+          }
+          if (correct === true) {
+            pass++;
+            Progress.markPass(gid);
+          } else if (correct === false) {
+            fail++;
+            Progress.markFail(gid);
+            Wrongbook.add(item, 'exam', (a.input || a.choice || (a.multiSel ? a.multiSel.join(',') : '')), false);
+            wrong.push({ gid, item, userAnswer: a, isCorrect: false, isObjective: isObjective(item.rawType) });
+          } else {
+            // 主观题待定：默认标记为错（用户稍后可在错题本里自行判断）
+            fail++;
+            Progress.markFail(gid);
+            Wrongbook.add(item, 'exam', a.input || '', false);
+            wrong.push({ gid, item, userAnswer: a, isCorrect: false, isObjective: false, subjective: true });
+          }
+        });
+        examPassCount.value = pass;
+        examFailCount.value = fail;
+        examWrongItems.value = wrong;
+        examSubmitted.value = true;
+        refreshProgress();
+
+        // 计时停止
+        if (examTimer) { clearInterval(examTimer); examTimer = null; }
+        examMode.value = 'summary';
+      }
+
+      function examExit() {
+        if (examTimer) { clearInterval(examTimer); examTimer = null; }
+        examMode.value = 'setup';
+        for (const k of Object.keys(examAnswers)) delete examAnswers[k];
+      }
+
+      function examRestart() {
+        examMode.value = 'setup';
+        examPassCount.value = 0; examFailCount.value = 0;
+        examWrongItems.value = []; examSubmitted.value = false;
+        examIndex.value = 0;
+        for (const k of Object.keys(examAnswers)) delete examAnswers[k];
+        if (examTimer) { clearInterval(examTimer); examTimer = null; }
+      }
+
+      function examAutoFillCustomEnd() {
+        if (!examCustomEnd.value || examCustomEnd.value <= 0) {
+          examCustomEnd.value = bank.value.length || 500;
+        }
+      }
+
+      // 键盘（考试中 Enter = 下一题，方便快速跳过）
+      function examKeyDown(e) {
+        if (activeTab.value !== 'exam') return;
+        if (examMode.value !== 'running' || examSubmitted.value) return;
+        if (e.key === 'Enter') { examNext(); e.preventDefault(); }
+        else if (e.key === 'Escape') { examSubmit(); e.preventDefault(); }
+      }
+
+      // ====== 生命周期更新（把 examKeyDown 也加进去） ======
+      // 下面的 onMounted / onBeforeUnmount 会覆盖这里，在生命周期块追加 exerciseKeyDown 监听
+
+      // ====== 生命周期 ======
+      onMounted(() => {
+        window.addEventListener('keydown', studyKeyDown);
+        window.addEventListener('keydown', exerciseKeyDown);
+        window.addEventListener('keydown', examKeyDown);
+      });
+      onBeforeUnmount(() => {
+        window.removeEventListener('keydown', studyKeyDown);
+        window.removeEventListener('keydown', exerciseKeyDown);
+        window.removeEventListener('keydown', examKeyDown);
+        if (studyTimer) clearInterval(studyTimer);
+        if (exerciseTimer) clearInterval(exerciseTimer);
+        if (examTimer) clearInterval(examTimer);
+      });
+
       /* ============ AI 提示词（弹窗） ============ */
       const showAiModal = ref(false);
       const aiCopied = ref(false);
@@ -83,11 +1102,65 @@
       const features = computed(() => currentBank.value.features || {});
       const totalQuestions = computed(() => bank.value.length);
 
+      /* —— 阶段 0 新增：学习状态 & 统计 —— */
+      // bankGids：所有题目的全局 id 数组
+      const bankGids = computed(() => bank.value.map(it => it.gid).filter(Boolean));
+      // progressMap：全部学习进度（读取 ExamProgress，用 progressTick 驱动刷新）
+      const progressMap = computed(() => {
+        progressTick.value; // 依赖信号
+        return Progress.getAll();
+      });
+      // wrongbookV2Entries：读取 v2 错题本
+      const wrongbookV2Entries = computed(() => {
+        progressTick.value;
+        try {
+          const raw = localStorage.getItem(Migration.WRONGBOOK_V2_KEY);
+          if (!raw) return [];
+          const v = JSON.parse(raw);
+          return v && Array.isArray(v.entries) ? v.entries : [];
+        } catch (e) { return []; }
+      });
+      // dashboard：首页聚合
+      const dashboard = computed(() => {
+        progressTick.value;
+        return Stats.buildDashboard({
+          allGids: bankGids.value,
+          progressMap: progressMap.value,
+          wrongbookEntries: wrongbookV2Entries.value
+        });
+      });
+      // dailyTask：今日任务生成
+      const dailyTask = computed(() => {
+        progressTick.value;
+        if (!Session || !Session.generateDailyTask) return { queue: [], stats: {} };
+        return Session.generateDailyTask(bankGids.value);
+      });
+      // 本周活跃天数（weekTrend 里 reviewed > 0 的天数）
+      const weekActiveDays = computed(() => {
+        const trend = dashboard.value && dashboard.value.weekTrend;
+        if (!trend) return 0;
+        return trend.filter(d => d.reviewed > 0).length;
+      });
+      const weekGoalDays = 5; // 每周目标 5 天（硬编码，后续可从 settings 读）
+      // hasResume：是否有恢复点
+      const hasResume = computed(() => {
+        progressTick.value;
+        if (!Session) return false;
+        // 用当前数据源标识过滤
+        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
+        return !!Session.loadResumePoint(bankId);
+      });
+
       const tabs = computed(() => {
-        const f = features.value;
+        // 阶段 3：home + study + exercise + 原功能 tab
         const list = [];
+        list.push({ key: 'home', label: '首页', icon: '🏠', mode: 'all' });
+        list.push({ key: 'study', label: '学习', icon: '📖' });
+        list.push({ key: 'exercise', label: '练习', icon: '✍️' });
+        const f = features.value;
         if (!f.practice || f.practice.enabled) list.push({ key: 'practice', label: (f.practice && f.practice.label) || '记忆闯关', icon: (f.practice && f.practice.icon) || '🕹️' });
-        if (!f.exam || f.exam.enabled) list.push({ key: 'exam', label: (f.exam && f.exam.label) || '摸底速览', icon: (f.exam && f.exam.icon) || '📝' });
+        if (!f.preview || f.preview.enabled) list.push({ key: 'preview', label: (f.preview && f.preview.label) || '摸底速览', icon: (f.preview && f.preview.icon) || '📝' });
+        list.push({ key: 'exam', label: '模拟考试', icon: '🎓' });
         list.push({ key: 'category', label: '分类考试', icon: '🎯' });
         list.push({ key: 'wrongbook', label: '错题本', icon: '📕' });
         return list;
@@ -127,6 +1200,11 @@
       });
       const wrongFiltered = computed(() => wrongBySource.value[wrongTab.value] || wrongEntries.value);
       const wrongItems = computed(() => wrongFiltered.value.map(e => e.item));
+      // v2：错题本状态分布（new / learning / weak）
+      const wrongStatusDist = computed(() => {
+        if (!wrongEntries.value.length) return { new: 0, learning: 0, weak: 0 };
+        return Wrongbook.countByStatus();
+      });
 
       const aiPrompt = computed(() => AIPrompt.PROMPT);
 
@@ -158,17 +1236,22 @@
         currentPaperId.value = normalized.papers[0] ? String(normalized.papers[0].id) : '';
         rebuildBank();
         if (!tabs.value.some(t => t.key === activeTab.value)) {
-          activeTab.value = (tabs.value[0] && tabs.value[0].key) || 'practice';
+          activeTab.value = (tabs.value[0] && tabs.value[0].key) || 'home';
         }
         sourceMetaDump(source);
         dataError.value = '';
         catSelected.value = [];
         loadWrongbook();
+        // 阶段 0 新增：数据到位后跑一次性迁移 + 刷新统计
+        try { Migration.runAll(normalized); } catch (e) { /* 迁移失败不阻塞应用 */ }
+        refreshProgress();
       }
 
       function rebuildBank() {
         bank.value = Core.buildItems(currentBank.value, currentPaperId.value);
         resetPractice(); // 数据变化时总是重置练习队列，避免切卷残留旧队列
+        // 阶段 0 新增：切卷后刷新统计
+        refreshProgress();
       }
 
       function switchPaper() {
@@ -190,10 +1273,13 @@
             currentBank.value = normalized;
             currentPaperId.value = normalized.papers[0] ? String(normalized.papers[0].id) : '';
             rebuildBank();
-            if (!tabs.value.some(t => t.key === activeTab.value)) activeTab.value = (tabs.value[0] && tabs.value[0].key) || 'practice';
+            if (!tabs.value.some(t => t.key === activeTab.value)) activeTab.value = (tabs.value[0] && tabs.value[0].key) || 'home';
             sourceMetaDump({ source: 'local', url: cached.url, fetchedAt: cached.fetchedAt });
             remoteUrl.value = cached.url || '';
             loadWrongbook();
+            // 阶段 0 新增：迁移 + 刷新
+            try { Migration.runAll(normalized); } catch (e) { /* */ }
+            refreshProgress();
             return { via: 'cache' };
           } catch (e) { Store.clearCache(); }
         }
@@ -231,6 +1317,56 @@
           toast('远程导入成功');
         } catch (e) { dataError.value = '远程导入失败：' + e.message; }
         finally { dataBusy.value = false; }
+      }
+
+      /* ============ 数据备份 & 恢复 ============ */
+      function doExportBackup() {
+        if (!global.ExamBackup) { toast('备份模块未加载', false); return; }
+        try {
+          var payload = global.ExamBackup.exportBackup();
+          var keys = Object.keys(payload.storage).length;
+          toast('已导出备份：' + keys + ' 个数据键', true);
+        } catch (e) {
+          toast('导出失败：' + e.message, false);
+        }
+      }
+
+      function onImportBackup(evt) {
+        var file = evt.target.files && evt.target.files[0];
+        if (!file) return;
+        // reset so picking the same file again triggers change
+        evt.target.value = '';
+        if (!global.ExamBackup) { toast('备份模块未加载', false); return; }
+        var msg = '导入方式：\n[合并] 只覆盖备份中有数据的项，保留现有其它数据\n[覆盖] 先清空全部数据再写入备份\n\n是否继续？';
+        var mode = confirm(msg + '\n\n点"确定"=合并，点"取消"=再给你一次选择机会') ? 'merge' : null;
+        if (mode === null) {
+          mode = confirm('确定要用 [覆盖] 模式吗？这会先清空所有数据！') ? 'replace' : null;
+        }
+        if (!mode) return;
+        global.ExamBackup.importBackup(file, { mode: mode }).then(function (r) {
+          toast(r.msg, r.ok);
+          if (r.ok) {
+            progressTick.value++;
+            refresh();
+          }
+        }).catch(function (e) {
+          toast('导入失败：' + (e && e.msg ? e.msg : e.message), false);
+        });
+      }
+
+      function doClearAll() {
+        if (!confirmClearAll.value) {
+          confirmClearAll.value = true;
+          setTimeout(function () { confirmClearAll.value = false; }, 5000);
+          return;
+        }
+        confirmClearAll.value = false;
+        if (!confirm('⚠️ 确定要清空所有数据吗？\n这将删除题库、学习进度、错题本等全部数据。\n\n此操作不可撤销（除非你之前导出过备份）。')) return;
+        if (!global.ExamBackup) return;
+        var removed = global.ExamBackup.clearAll();
+        toast('已清空 ' + removed.length + ' 个数据键，请重新导入题库', true);
+        progressTick.value++;
+        refresh();
       }
 
       async function refresh() {
@@ -363,6 +1499,8 @@
         const cur = practiceCard.value;
         if (remembered) {
           Leitner.markPass(practiceQueue.value);
+          // 阶段 0 新增：写入 progress store
+          if (cur && cur.gid) Progress.markPass(cur.gid);
         } else {
           Leitner.markFail(practiceQueue.value);
           // 没记住：立即加入错题本（全局去重），实时刷新角标
@@ -370,7 +1508,11 @@
             Wrongbook.add(cur, 'practice', null, false);
             loadWrongbook();
           }
+          // 阶段 0 新增：写入 progress store
+          if (cur && cur.gid) Progress.markFail(cur.gid);
         }
+        // 阶段 0 新增：刷新统计
+        refreshProgress();
         practiceShowAnswer.value = false;
       }
 
@@ -599,17 +1741,37 @@
         wrongPracticeShow.value = false;
       }
       function wrongMark(remembered) {
+        const cur = wrongPracticeQueue.value[0];
+        const curItem = cur && cur.it;
         if (remembered) {
-          // 在错题本内点「记住了」：该题移出错题本（加强练习答对一次即清除）
-          const r = Leitner.markPass(wrongPracticeQueue.value);
-          if (r && r.mastered) {
-            Wrongbook.removeByItem(r.card.it);
+          // ✅ v2：调 Wrongbook.markCorrect 推进状态机（连续答对 3 次自动移出）
+          // 先找对应 entry（通过 gid）
+          const wbEntries = Wrongbook.list();
+          const entry = curItem && curItem.gid
+            ? wbEntries.find(e => e.gid === curItem.gid)
+            : null;
+          if (entry) {
+            const result = Wrongbook.markCorrect(entry.id);
+            if (result.removed) toast('🎉 这道题已连续答对 3 次，自动移出错题本', true);
             loadWrongbook();
           }
+          // Leitner 队列仍然前移
+          Leitner.markPass(wrongPracticeQueue.value);
+          if (curItem && curItem.gid) Progress.markPass(curItem.gid);
         } else {
-          // 没记住：留在错题本，卡片埋到 5~7 张之后继续练
+          // ❌ 没记住
+          const wbEntries = Wrongbook.list();
+          const entry = curItem && curItem.gid
+            ? wbEntries.find(e => e.gid === curItem.gid)
+            : null;
+          if (entry) {
+            Wrongbook.markWrong(entry.id); // 状态机归零
+            loadWrongbook();
+          }
           Leitner.markFail(wrongPracticeQueue.value);
+          if (curItem && curItem.gid) Progress.markFail(curItem.gid);
         }
+        refreshProgress();
         wrongPracticeShow.value = false;
       }
       function startWrongExam(items) {
@@ -658,24 +1820,67 @@
       return {
         activeTab, sourceMeta, currentBank, papers, hasMultiplePapers, features, currentPaperId, bank, dataError,
         remoteUrl, pasteText, managerUrl, showDataPanel, dataBusy, dragActive, toastMsg, toastOk,
+        themeMode, applyTheme,
         practiceQueue, practiceShowAnswer, practiceCard, practiceMastered, practiceProgress,
         passLabel, failLabel, totalQuestions, tabs,
         previewRevealed,
         catStage, catSelected, catInput, catChoice, catMultiSel, catRevealed, catFeedback,
         catPool, catIndex, catStats, catWrongItems, catError, catCurrent, catNextLabel, hasPrevCat, catElapsed, catTypes, catAllSelected,
         showCustomForm, customForm,
-        wrongEntries, wrongTab, wrongCount, wrongFiltered, wrongItems, wrongBySource,
+        wrongEntries, wrongTab, wrongCount, wrongFiltered, wrongItems, wrongBySource, wrongStatusDist,
         wrongPracticeQueue, wrongPracticeShow,
         showAiModal, aiPrompt, aiCopied,
         catFillInput, insertCatSep,
         fetchUrl, refresh, applyPaste, clearAndReload, onDragOver, onDragLeave, onDrop, onFileChange,
         downloadCurrent, copyCurrent, downloadRules, switchPaper, switchTab,
+        doExportBackup, onImportBackup, doClearAll, confirmClearAll,
         resetPractice, mark, togglePreview, addPreviewToWrongbook,
         toggleCatType, selectAllTypes, startCat, catSubmit, catSelfJudge, catNext, catPrev,
         toggleCatMulti, catOptionClick, isCatOptionOn, catRestart, addCustomQuestion, isObjective,
         sourceLabel,
         loadWrongbook, wrongRemove, wrongClear, startWrongPractice, wrongMark, startWrongExam,
-        copyAiPrompt, downloadAiPrompt
+        copyAiPrompt, downloadAiPrompt,
+        // —— 阶段 0/1 新增：首页数据 & 学习状态 ——
+        bankGids, progressMap, dashboard, dailyTask, weekActiveDays, weekGoalDays, hasResume, wrongbookV2Entries,
+        refreshProgress,
+        // —— 阶段 2 新增：学习/背诵模式 ——
+        studyMode, studyScope, studyCustomStart, studyCustomEnd, studyStrategy,
+        studyPerSession, studyPerSessionCustom, studyTypes,
+        studyQueueGids, studyIndex, studyShowAnswer,
+        studyPassCount, studyFailCount, studyNewMastered, studyNewWrong, studyMaxStreak,
+        studySwipeX, studySwipeActive,
+        studyElapsedSec, studyCurrentItem, studyNextItem,
+        studyTotal, studyProgressPct, studyCurrentProgress, studyPrevHint,
+        studyScopeCounts, studyCustomCount, studyAvailableCount, studyBadgeCount,
+        studyStart, studyResume, studyAbandonResume, studyMark, studyNext,
+        studyExit, studyRestart, studyFinish, studyFormatDuration,
+        studyOnSwipeStart, studyOnSwipeMove, studyOnSwipeEnd,
+        studyAutoFillCustomEnd,
+        // —— 阶段 3 新增：练习模式 ——
+        exerciseMode, exerciseScope, exerciseCustomStart, exerciseCustomEnd, exerciseStrategy,
+        exercisePerSession, exercisePerSessionCustom, exerciseTypes,
+        exerciseQueueGids, exerciseIndex, exerciseStartAt,
+        exerciseAnswerSubmitted, exerciseChoice, exerciseMultiSel, exerciseInput,
+        exerciseFeedback, exerciseStudentAnswer,
+        exercisePassCount, exerciseFailCount, exerciseNewWrong, exerciseNewMastered, exerciseElapsedSec,
+        exerciseSwipeX, exerciseSwipeActive,
+        exerciseCurrentItem, exerciseNextItem, exerciseTotal, exerciseProgressPct,
+        exerciseCurrentProgress, exercisePrevHint, exerciseBadgeCount,
+        exerciseStart, exerciseResume, exerciseAbandonResume,
+        exerciseSubmit, exerciseSelfJudge, exerciseNext, exerciseExit, exerciseRestart, exerciseFinish,
+        exerciseOptionClick, exerciseIsOptionOn, exerciseAutoFillCustomEnd,
+        exerciseOnSwipeStart, exerciseOnSwipeMove, exerciseOnSwipeEnd,
+        // —— 阶段 4 新增：模拟考试 ——
+        examMode, examScope, examCustomStart, examCustomEnd, examStrategy,
+        examPerSession, examPerSessionCustom, examTypes,
+        examQueueGids, examIndex, examStartAt, examElapsedSec,
+        examAnswers, examSubmitted, examSheetOpen, examPassCount, examFailCount, examWrongItems,
+        examAnsweredCount, examCurrentItem, examTotal, examProgressPct,
+        examIndexLabel, examBadgeCount,
+        examStart, examJump, examPrev, examNext, examSubmit, examExit, examRestart,
+        examOptionClick, examIsOptionOn, examAutoFillCustomEnd,
+        examInputProxy, examChoiceProxy,
+        _examGetAnswer
       };
     }
   });
