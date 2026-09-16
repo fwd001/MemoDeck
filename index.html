@@ -612,15 +612,15 @@
                   <!-- 单选 -->
                   <template v-if="exerciseCurrentItem.rawType === 'single_choice'">
                     <div class="md-exercise-options">
-                      <button v-for="opt in exerciseCurrentItem.options" :key="opt.key"
+                      <button v-for="(val, key) in exerciseCurrentItem.options" :key="key"
                               class="md-exercise-option"
-                              :class="{ selected: exerciseChoice === opt.key,
-                                        correct: exerciseAnswerSubmitted && opt.key === exerciseCurrentItem.answer,
-                                        wrong: exerciseAnswerSubmitted && exerciseChoice === opt.key && opt.key !== exerciseCurrentItem.answer }"
+                              :class="{ selected: exerciseChoice === key,
+                                        correct: exerciseAnswerSubmitted && key === exerciseCurrentItem.answer,
+                                        wrong: exerciseAnswerSubmitted && exerciseChoice === key && key !== exerciseCurrentItem.answer }"
                               :disabled="exerciseAnswerSubmitted"
-                              @click="exerciseOptionClick(opt.key)">
-                        <span class="md-exercise-opt-key">{{ opt.key }}</span>
-                        <span class="md-exercise-opt-val">{{ opt.val }}</span>
+                              @click="exerciseOptionClick(key)">
+                        <span class="md-exercise-opt-key">{{ key }}</span>
+                        <span class="md-exercise-opt-val">{{ val }}</span>
                       </button>
                     </div>
                   </template>
@@ -628,15 +628,15 @@
                   <!-- 多选 -->
                   <template v-else-if="exerciseCurrentItem.rawType === 'multi_choice'">
                     <div class="md-exercise-options">
-                      <button v-for="opt in exerciseCurrentItem.options" :key="opt.key"
+                      <button v-for="(val, key) in exerciseCurrentItem.options" :key="key"
                               class="md-exercise-option multi"
-                              :class="{ selected: exerciseIsOptionOn(opt.key),
-                                        correct: exerciseAnswerSubmitted && (Array.isArray(exerciseCurrentItem.answer) && exerciseCurrentItem.answer.includes(opt.key)),
-                                        wrong: exerciseAnswerSubmitted && exerciseIsOptionOn(opt.key) && !(Array.isArray(exerciseCurrentItem.answer) && exerciseCurrentItem.answer.includes(opt.key)) }"
+                              :class="{ selected: exerciseIsOptionOn(key),
+                                        correct: exerciseAnswerSubmitted && (Array.isArray(exerciseCurrentItem.answer) && exerciseCurrentItem.answer.includes(key)),
+                                        wrong: exerciseAnswerSubmitted && exerciseIsOptionOn(key) && !(Array.isArray(exerciseCurrentItem.answer) && exerciseCurrentItem.answer.includes(key)) }"
                               :disabled="exerciseAnswerSubmitted"
-                              @click="exerciseOptionClick(opt.key)">
-                        <span class="md-exercise-opt-key">{{ opt.key }}</span>
-                        <span class="md-exercise-opt-val">{{ opt.val }}</span>
+                              @click="exerciseOptionClick(key)">
+                        <span class="md-exercise-opt-key">{{ key }}</span>
+                        <span class="md-exercise-opt-val">{{ val }}</span>
                       </button>
                     </div>
                   </template>
@@ -894,24 +894,24 @@
 
                     <template v-if="examCurrentItem.rawType === 'single_choice'">
                       <div class="md-exercise-options">
-                        <button v-for="opt in examCurrentItem.options" :key="opt.key"
+                        <button v-for="(val, key) in examCurrentItem.options" :key="key"
                                 class="md-exercise-option"
-                                :class="{ selected: examChoiceProxy === opt.key }"
-                                @click="examOptionClick(opt.key)">
-                          <span class="md-exercise-opt-key">{{ opt.key }}</span>
-                          <span class="md-exercise-opt-val">{{ opt.val }}</span>
+                                :class="{ selected: examChoiceProxy === key }"
+                                @click="examOptionClick(key)">
+                          <span class="md-exercise-opt-key">{{ key }}</span>
+                          <span class="md-exercise-opt-val">{{ val }}</span>
                         </button>
                       </div>
                     </template>
 
                     <template v-else-if="examCurrentItem.rawType === 'multi_choice'">
                       <div class="md-exercise-options">
-                        <button v-for="opt in examCurrentItem.options" :key="opt.key"
+                        <button v-for="(val, key) in examCurrentItem.options" :key="key"
                                 class="md-exercise-option multi"
-                                :class="{ selected: examIsOptionOn(opt.key) }"
-                                @click="examOptionClick(opt.key)">
-                          <span class="md-exercise-opt-key">{{ opt.key }}</span>
-                          <span class="md-exercise-opt-val">{{ opt.val }}</span>
+                                :class="{ selected: examIsOptionOn(key) }"
+                                @click="examOptionClick(key)">
+                          <span class="md-exercise-opt-key">{{ key }}</span>
+                          <span class="md-exercise-opt-val">{{ val }}</span>
                         </button>
                       </div>
                     </template>
