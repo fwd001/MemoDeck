@@ -71,6 +71,12 @@
       const progressTick = ref(0);
       function refreshProgress() { progressTick.value++; }
 
+      // 题库稳定标识：恢复点按它归属，切库后旧恢复点不再冒出来
+      function bankIdOf() {
+        const m = currentBank.value.meta;
+        return m && m.title ? String(m.title) : '';
+      }
+
       /* —— watchers：面板/主题状态持久化 —— */
       Vue.watch(showDataPanel, function (v) { localStorage.setItem('memo:showDataPanel', v ? '1' : '0'); });
       Vue.watch(themeMode, function () { applyTheme(); });
@@ -283,9 +289,8 @@
         studyMode.value = 'running';
 
         // 保存恢复点
-        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
         Session.saveResumePoint({
-          bankId: bankId,
+          bankId: bankIdOf(),
           paperId: currentPaperId.value,
           mode: 'study',
           queueGids: queueGids,
@@ -302,8 +307,7 @@
       }
 
       function studyResume() {
-        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
-        const rp = Session.loadResumePoint(bankId);
+        const rp = Session.loadResumePoint(bankIdOf(), 'study');
         if (!rp) return;
         studyQueueGids.value = rp.queueGids || [];
         studyIndex.value = rp.currentIndex || 0;
@@ -354,9 +358,6 @@
         }
         refreshProgress();
 
-        // 保存恢复点（节流）
-        Session.touchResumePoint();
-
         // 自动下一题
         studyNext();
       }
@@ -368,13 +369,15 @@
         } else {
           studyIndex.value++;
           studySwipeX.value = 0;
+          // 位置必须写回恢复点，否则「继续上次」永远从第 1 题重来
+          Session.touchResumePoint(studyIndex.value);
         }
       }
 
       function studyFinish() {
         studyMode.value = 'summary';
         if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
-        Session.clearResumePoint();
+        Session.clearResumePoint('study');
         refreshProgress();
       }
 
@@ -396,7 +399,7 @@
         studySwipeX.value = 0;
         studyShowAnswer.value = false;
         if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
-        Session.clearResumePoint();
+        Session.clearResumePoint('study');
       }
 
       // ====== 手势：移动端左右滑动 ======
@@ -655,8 +658,7 @@
         exerciseMode.value = 'running';
 
         // 恢复点
-        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
-        Session.saveResumePoint({ bankId: bankId, paperId: currentPaperId.value, mode: 'exercise', queueGids: queueGids, currentIndex: 0 });
+        Session.saveResumePoint({ bankId: bankIdOf(), paperId: currentPaperId.value, mode: 'exercise', queueGids: queueGids, currentIndex: 0 });
 
         if (exerciseTimer) clearInterval(exerciseTimer);
         exerciseTimer = setInterval(() => {
@@ -665,9 +667,8 @@
       }
 
       function exerciseResume() {
-        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
-        const rp = Session.loadResumePoint(bankId);
-        if (!rp || rp.mode !== 'exercise') return;
+        const rp = Session.loadResumePoint(bankIdOf(), 'exercise');
+        if (!rp) return;
         exerciseQueueGids.value = rp.queueGids || [];
         exerciseIndex.value = rp.currentIndex || 0;
         resetExerciseAnswer();
@@ -726,7 +727,6 @@
           loadWrongbook();
         }
         refreshProgress();
-        Session.touchResumePoint();
       }
 
       function exerciseNext() {
@@ -736,13 +736,14 @@
           exerciseIndex.value++;
           resetExerciseAnswer();
           exerciseSwipeX.value = 0;
+          Session.touchResumePoint(exerciseIndex.value);
         }
       }
 
       function exerciseFinish() {
         exerciseMode.value = 'summary';
         if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
-        Session.clearResumePoint();
+        Session.clearResumePoint('exercise');
         refreshProgress();
       }
 
@@ -762,7 +763,7 @@
         resetExerciseAnswer();
         exerciseSwipeX.value = 0;
         if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
-        Session.clearResumePoint();
+        Session.clearResumePoint('exercise');
       }
 
       // 选项 / 多选
@@ -1203,14 +1204,15 @@
         return trend.filter(d => d.reviewed > 0).length;
       });
       const weekGoalDays = 5; // 每周目标 5 天（硬编码，后续可从 settings 读）
-      // hasResume：是否有恢复点
-      const hasResume = computed(() => {
-        progressTick.value;
-        if (!Session) return false;
-        // 用当前数据源标识过滤
-        const bankId = currentBank.value.meta && currentBank.value.meta.title ? String(currentBank.value.meta.title) : '';
-        return !!Session.loadResumePoint(bankId);
-      });
+      // 恢复点按 mode 归属：学习 / 练习 / 考试各认各的，不再互相顶包
+      function resumeComputed(mode) {
+        return computed(() => {
+          progressTick.value;
+          return Session.loadResumePoint(bankIdOf(), mode);
+        });
+      }
+      const resumeStudy = resumeComputed('study');
+      const resumeExercise = resumeComputed('exercise');
 
       const tabs = computed(() => {
         // 阶段 3：home + study + exercise + 原功能 tab
@@ -1892,7 +1894,8 @@
         loadWrongbook, wrongRemove, wrongClear, startWrongPractice, wrongMark, startWrongExam,
         copyAiPrompt, downloadAiPrompt,
         // —— 阶段 0/1 新增：首页数据 & 学习状态 ——
-        bankGids, progressMap, dashboard, dailyTask, weekActiveDays, weekGoalDays, hasResume, wrongbookV2Entries,
+        bankGids, progressMap, dashboard, dailyTask, weekActiveDays, weekGoalDays,
+        resumeStudy, resumeExercise, wrongbookV2Entries,
         refreshProgress,
         // —— 阶段 2 新增：学习/背诵模式 ——
         studyMode, studyScope, studyCustomStart, studyCustomEnd, studyStrategy,

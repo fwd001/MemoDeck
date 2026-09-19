@@ -89,26 +89,39 @@
 
   /**
    * 读取恢复点。
-   * @param {string} [bankId] 可选：如果传了 bankId，只返回匹配这个题库的恢复点
+   * @param {string} [bankId] 可选：只返回匹配这个题库的恢复点
+   * @param {string} [mode]   可选：只返回匹配这个模式（study/exercise/exam）的恢复点，
+   *                          避免「学习」页顶到「练习」留下的恢复点
    * @returns {object | null}
    */
-  function loadResumePoint(bankId) {
+  function loadResumePoint(bankId, mode) {
     const sess = readSession();
     if (!sess.resume) return null;
     if (bankId && sess.resume.bankId !== String(bankId)) return null;
+    if (mode && sess.resume.mode !== String(mode)) return null;
     return sess.resume;
   }
 
-  /** 清除恢复点 */
-  function clearResumePoint() {
+  /**
+   * 清除恢复点。
+   * @param {string} [mode] 可选：只清除该模式的恢复点，其它模式的保持不变
+   */
+  function clearResumePoint(mode) {
+    if (mode) {
+      const sess = readSession();
+      if (sess.resume && sess.resume.mode !== String(mode)) return;
+    }
     writeSession({ version: 1, resume: null });
   }
 
-  /** 刷新恢复点的 lastTouchedAt（每做一题调用） */
-  function touchResumePoint() {
+  /** 刷新恢复点的 lastTouchedAt 与作答进度（每做一题调用） */
+  function touchResumePoint(currentIndex) {
     const sess = readSession();
     if (sess.resume) {
       sess.resume.lastTouchedAt = new Date().toISOString();
+      if (typeof currentIndex === 'number') {
+        sess.resume.currentIndex = Math.max(0, Number(currentIndex) || 0);
+      }
       writeSession(sess);
     }
   }

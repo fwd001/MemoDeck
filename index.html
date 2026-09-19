@@ -268,14 +268,14 @@
           <div class="md-study-setup">
             <div class="md-study-setup-head">
               <h2>📖 开始学习</h2>
-              <button v-if="hasResume" class="btn ghost small" @click="studyRestart">放弃上次</button>
+              <button v-if="resumeStudy" class="btn ghost small" @click="studyRestart">放弃上次</button>
             </div>
 
             <!-- 恢复点 -->
-            <div class="md-study-resume" v-if="hasResume">
+            <div class="md-study-resume" v-if="resumeStudy">
               <div class="resume-info">
                 <span class="resume-icon">💾</span>
-                <span>上次学习还没做完</span>
+                <span>上次学习做到第 {{ resumeStudy.currentIndex + 1 }} / {{ resumeStudy.queueGids.length }} 题</span>
               </div>
               <div class="resume-actions">
                 <button class="btn small" @click="studyResume">继续上次</button>
@@ -490,11 +490,11 @@
           <div class="md-study-setup">
             <div class="md-study-setup-head">
               <h2>✍️ 开始练习</h2>
-              <button v-if="hasResume" class="btn ghost small" @click="exerciseRestart">放弃上次</button>
+              <button v-if="resumeExercise" class="btn ghost small" @click="exerciseRestart">放弃上次</button>
             </div>
 
-            <div class="md-study-resume" v-if="hasResume">
-              <div class="resume-info"><span class="resume-icon">💾</span><span>上次练习还没做完</span></div>
+            <div class="md-study-resume" v-if="resumeExercise">
+              <div class="resume-info"><span class="resume-icon">💾</span><span>上次练习做到第 {{ resumeExercise.currentIndex + 1 }} / {{ resumeExercise.queueGids.length }} 题</span></div>
               <div class="resume-actions">
                 <button class="btn small" @click="exerciseResume">继续上次</button>
               </div>
