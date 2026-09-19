@@ -784,6 +784,17 @@
 .score-meta .meta-row b { color: var(--text-main); font-weight: 600; font-size: 16px; }
 .score-meta .meta-row.ok b { color: var(--success); }
 .score-meta .meta-row.no b { color: var(--danger); }
+.score-meta .meta-row.pending b { color: var(--warn); }
+
+/* 成绩口径说明 */
+.md-exam-score-note {
+  margin-top: -12px; padding: 10px 14px;
+  font-size: 12px; line-height: 1.6; color: var(--text-muted);
+  background: var(--surface-sub); border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+.md-exam-wrong-item .answer-box { margin-top: 10px; }
+.md-exam-wrong-item .md-exercise-self-judge { margin-top: 12px; }
 
 /* 错题详情 */
 .md-exam-wrong-detail {

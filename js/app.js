@@ -855,6 +855,15 @@
       const examPassCount = ref(0);
       const examFailCount = ref(0);
       const examWrongItems = ref([]);     // [{ gid, item, userAnswer, isCorrect }]
+      const examPendingItems = ref([]);   // 主观题已作答、待自评
+      const examBlankItems = ref([]);     // 未作答：不计分、不写 progress、不进错题本
+
+      // 正确率按「已判分」题数算：把待自评和未作答算进分母会系统性压低分数
+      const examGradedCount = computed(() => examPassCount.value + examFailCount.value);
+      const examScorePct = computed(() => {
+        if (!examGradedCount.value) return 0;
+        return Math.round((examPassCount.value / examGradedCount.value) * 100);
+      });
 
       // 状态面板显示
       const examAnsweredCount = computed(() => {
@@ -948,7 +957,7 @@
         // 清空/初始化答案对象
         for (const k of Object.keys(examAnswers)) delete examAnswers[k];
         examPassCount.value = 0; examFailCount.value = 0;
-        examWrongItems.value = [];
+        examWrongItems.value = []; examPendingItems.value = []; examBlankItems.value = [];
         examSubmitted.value = false;
         examStartAt.value = Date.now();
         examElapsedSec.value = 0;
@@ -1020,50 +1029,80 @@
         }
       });
 
+      function _examAnswerText(a) {
+        if (!a) return '';
+        if (a.input) return a.input;
+        if (Array.isArray(a.multiSel) && a.multiSel.length) return a.multiSel.join(',');
+        return a.choice || '';
+      }
+
       // 交卷（结束 running → summary）
+      // 三分法：客观题即时判分；主观题答了→转待自评（此刻不算错）；未答→不计分不入错题本
       function examSubmit() {
         if (examSubmitted.value) return;
-        // 一次性判分全部题
+        const blank = examQueueGids.value.filter(g => !(examAnswers[g] && examAnswers[g].answered));
+        const tip = blank.length
+          ? '还有 ' + blank.length + ' 题未作答，确定交卷吗？'
+          : '确认交卷并判分？';
+        if (!confirm(tip)) return;
+
         let pass = 0, fail = 0;
         const wrong = [];
+        const pending = [];
         examQueueGids.value.forEach(gid => {
           const item = bank.value.find(it => it.gid === gid);
           if (!item) return;
           const a = examAnswers[gid] || {};
-          let correct = false;
+          if (!a.answered) return;
           if (isObjective(item.rawType)) {
-            correct = judgeObjective(item, a.choice || null, a.multiSel || []);
+            if (judgeObjective(item, a.choice || null, a.multiSel || [])) {
+              pass++;
+              Progress.markPass(gid);
+            } else {
+              fail++;
+              Progress.markFail(gid);
+              Wrongbook.add(item, 'exam', _examAnswerText(a), false);
+              wrong.push({ gid, item, userAnswer: a, isCorrect: false, isObjective: true });
+            }
           } else {
-            // 主观题：未答算错；答了也暂时算"不确定"——实际考试中主观题由人工判分
-            // 这里保守：未答算错，答了也标记"需要人工评判"
-            if (!a.answered) correct = false;
-            else correct = null; // null = 主观题待定
-          }
-          if (correct === true) {
-            pass++;
-            Progress.markPass(gid);
-          } else if (correct === false) {
-            fail++;
-            Progress.markFail(gid);
-            Wrongbook.add(item, 'exam', (a.input || a.choice || (a.multiSel ? a.multiSel.join(',') : '')), false);
-            wrong.push({ gid, item, userAnswer: a, isCorrect: false, isObjective: isObjective(item.rawType) });
-          } else {
-            // 主观题待定：默认标记为错（用户稍后可在错题本里自行判断）
-            fail++;
-            Progress.markFail(gid);
-            Wrongbook.add(item, 'exam', a.input || '', false);
-            wrong.push({ gid, item, userAnswer: a, isCorrect: false, isObjective: false, subjective: true });
+            pending.push({ gid, item, userAnswer: a, isCorrect: null, isObjective: false, subjective: true });
           }
         });
         examPassCount.value = pass;
         examFailCount.value = fail;
         examWrongItems.value = wrong;
+        examPendingItems.value = pending;
+        examBlankItems.value = blank.map(g => {
+          const item = bank.value.find(it => it.gid === g);
+          return { gid: g, item: item, userAnswer: examAnswers[g] || {} };
+        }).filter(e => e.item);
         examSubmitted.value = true;
+        loadWrongbook();      // 角标与来源计数即时刷新
         refreshProgress();
 
         // 计时停止
         if (examTimer) { clearInterval(examTimer); examTimer = null; }
         examMode.value = 'summary';
+      }
+
+      // 主观题自评：对齐分类考试的 catSelfJudge 语义
+      function examSelfJudge(gid, correct) {
+        const idx = examPendingItems.value.findIndex(e => e.gid === gid);
+        if (idx < 0) return;
+        const entry = examPendingItems.value[idx];
+        examPendingItems.value.splice(idx, 1);
+        if (correct) {
+          examPassCount.value++;
+          Progress.markPass(gid);
+        } else {
+          examFailCount.value++;
+          Progress.markFail(gid);
+          Wrongbook.add(entry.item, 'exam', _examAnswerText(entry.userAnswer), false);
+          entry.isCorrect = false;
+          examWrongItems.value.push(entry);
+          loadWrongbook();
+        }
+        refreshProgress();
       }
 
       function examExit() {
@@ -1075,7 +1114,8 @@
       function examRestart() {
         examMode.value = 'setup';
         examPassCount.value = 0; examFailCount.value = 0;
-        examWrongItems.value = []; examSubmitted.value = false;
+        examWrongItems.value = []; examPendingItems.value = []; examBlankItems.value = [];
+        examSubmitted.value = false;
         examIndex.value = 0;
         for (const k of Object.keys(examAnswers)) delete examAnswers[k];
         if (examTimer) { clearInterval(examTimer); examTimer = null; }
@@ -1886,9 +1926,10 @@
         examPerSession, examPerSessionCustom, examTypes,
         examQueueGids, examIndex, examStartAt, examElapsedSec,
         examAnswers, examSubmitted, examSheetOpen, examPassCount, examFailCount, examWrongItems,
+        examPendingItems, examBlankItems, examGradedCount, examScorePct,
         examAnsweredCount, examCurrentItem, examTotal, examProgressPct,
         examIndexLabel, examBadgeCount,
-        examStart, examJump, examPrev, examNext, examSubmit, examExit, examRestart,
+        examStart, examJump, examPrev, examNext, examSubmit, examSelfJudge, examExit, examRestart,
         examOptionClick, examIsOptionOn, examAutoFillCustomEnd,
         examInputProxy, examChoiceProxy,
         _examGetAnswer

@@ -949,11 +949,11 @@
           <div class="md-exam-footer">
             <button class="btn ghost" @click="examPrev" :disabled="examIndex === 0">← 上一题</button>
             <button class="btn ghost" @click="examNext" :disabled="examIndex >= examTotal - 1">下一题 →</button>
-            <button class="md-exam-submit-btn" @click="examSubmit">📝 交卷 ({{ examAnsweredCount }}/{{ examTotal }})</button>
+            <button class="md-exam-submit-btn" @click="examSubmit()">📝 交卷 ({{ examAnsweredCount }}/{{ examTotal }})</button>
           </div>
         </template>
 
-        <!-- ===== summary（一次性判分结果 + 错题详情） ===== -->
+        <!-- ===== summary（客观题即时判分 + 主观题自评 + 未答题单列） ===== -->
         <template v-else-if="examMode === 'summary'">
           <div class="md-exam-summary">
             <!-- 成绩卡片 -->
@@ -965,24 +965,53 @@
                           stroke-linecap="round"
                           transform="rotate(-90 50 50)"
                           stroke-dasharray="276"
-                          :style="{ strokeDashoffset: String(276 - 276 * (examTotal ? examPassCount / examTotal : 0)) }"/>
+                          :style="{ strokeDashoffset: String(276 - 276 * examScorePct / 100) }"/>
                 </svg>
-                <div class="score-num">{{ examTotal ? Math.round((examPassCount / examTotal) * 100) : 0 }}</div>
+                <div class="score-num">{{ examScorePct }}</div>
                 <div class="score-label">正确率</div>
               </div>
               <div class="score-meta">
                 <div class="meta-row"><span>总题数</span><b>{{ examTotal }}</b></div>
                 <div class="meta-row ok"><span>答对</span><b>{{ examPassCount }}</b></div>
-                <div class="meta-row no"><span>答错 / 未答</span><b>{{ examFailCount }}</b></div>
+                <div class="meta-row no"><span>答错</span><b>{{ examFailCount }}</b></div>
+                <div class="meta-row pending" v-if="examPendingItems.length"><span>主观题待自评</span><b>{{ examPendingItems.length }}</b></div>
+                <div class="meta-row" v-if="examBlankItems.length"><span>未作答</span><b>{{ examBlankItems.length }}</b></div>
                 <div class="meta-row"><span>耗时</span><b>{{ studyFormatDuration(examElapsedSec) }}</b></div>
               </div>
             </div>
+            <div class="md-exam-score-note" v-if="examBlankItems.length">
+              正确率按已判分的 {{ examGradedCount }} 题计算；未作答的 {{ examBlankItems.length }} 题不计分、不写入错题本。
+            </div>
 
-            <!-- 错题详情列表（只在有错题时显示） -->
+            <!-- 主观题自评（答了但系统无法判分的题，答对/答错后才计入成绩） -->
+            <div class="md-exam-wrong-detail" v-if="examPendingItems.length">
+              <div class="md-exam-wrong-title">✍️ 主观题自评（{{ examPendingItems.length }} 题）</div>
+              <div class="md-exam-wrong-list">
+                <div class="md-exam-wrong-item" v-for="entry in examPendingItems" :key="entry.gid">
+                  <div class="wrong-head">
+                    <span class="tag">{{ entry.item.typeLabel }}</span>
+                    <span class="wrong-flag subjective">主观题</span>
+                  </div>
+                  <div class="wrong-q">{{ entry.item.question }}</div>
+                  <div class="wrong-line">
+                    <span class="wrong-lbl">你的答案：</span>
+                    <span class="wrong-user">{{ entry.userAnswer.input || '—' }}</span>
+                  </div>
+                  <answer-view :item="entry.item"></answer-view>
+                  <div class="md-exercise-self-judge">
+                    <div class="md-exercise-self-label">对照参考答案自评：</div>
+                    <button class="md-exercise-self-btn ok" @click="examSelfJudge(entry.gid, true)">✅ 算我答对了</button>
+                    <button class="md-exercise-self-btn no" @click="examSelfJudge(entry.gid, false)">❌ 还是答错了</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 错题详情列表 -->
             <div class="md-exam-wrong-detail" v-if="examWrongItems.length">
               <div class="md-exam-wrong-title">📋 错题详情（{{ examWrongItems.length }} 题）</div>
               <div class="md-exam-wrong-list">
-                <div class="md-exam-wrong-item" v-for="(entry, idx) in examWrongItems" :key="idx">
+                <div class="md-exam-wrong-item" v-for="(entry, idx) in examWrongItems" :key="entry.gid || idx">
                   <div class="wrong-head">
                     <span class="wrong-idx">第 {{ idx + 1 }} 题</span>
                     <span class="tag" style="margin-left:8px;">{{ entry.item.typeLabel }}</span>
@@ -1003,8 +1032,21 @@
               </div>
             </div>
 
-            <!-- 无错题 -->
-            <div class="md-exam-perfect" v-else>
+            <!-- 未作答（不影响成绩，仅供回看） -->
+            <div class="md-exam-wrong-detail" v-if="examBlankItems.length">
+              <div class="md-exam-wrong-title">⬜ 未作答（{{ examBlankItems.length }} 题）</div>
+              <div class="md-exam-wrong-list">
+                <div class="md-exam-wrong-item" v-for="entry in examBlankItems" :key="entry.gid">
+                  <div class="wrong-head">
+                    <span class="tag">{{ entry.item.typeLabel }}</span>
+                  </div>
+                  <div class="wrong-q">{{ entry.item.question }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 全对且无遗留 -->
+            <div class="md-exam-perfect" v-if="!examWrongItems.length && !examPendingItems.length && !examBlankItems.length">
               <div class="perfect-emoji">🏆</div>
               <div class="perfect-text">全对！太厉害了！</div>
             </div>
