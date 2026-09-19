@@ -338,6 +338,8 @@
   padding: 8px 0 100px;
   min-height: 400px;
   cursor: grab;
+  /* 横向位移由 JS 手势接管，纵向滚动与双指缩放交还浏览器 */
+  touch-action: pan-y pinch-zoom;
 }
 .md-study-stage:active { cursor: grabbing; }
 

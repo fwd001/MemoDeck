@@ -210,13 +210,13 @@
               <button class="md-home-quick-btn" @click="switchTab('practice')">
                 <span class="q-icon">🕹️</span><span class="q-label">记忆闯关</span>
               </button>
-              <button class="md-home-quick-btn" @click="switchTab('category')">
-                <span class="q-icon">🎯</span><span class="q-label">模拟考试</span>
+              <button class="md-home-quick-btn" @click="switchTab('exam')">
+                <span class="q-icon">🎓</span><span class="q-label">模拟考试</span>
               </button>
               <button class="md-home-quick-btn" @click="switchTab('wrongbook')">
                 <span class="q-icon">📕</span><span class="q-label">错题本</span>
               </button>
-              <button class="md-home-quick-btn" @click="switchTab('exam')">
+              <button class="md-home-quick-btn" @click="switchTab('preview')">
                 <span class="q-icon">📝</span><span class="q-label">摸底速览</span>
               </button>
             </div>
@@ -380,7 +380,7 @@
           <!-- 卡片堆叠区 -->
           <div class="md-study-stage"
                @touchstart.passive="studyOnSwipeStart"
-               @touchmove.prevent="studyOnSwipeMove"
+               @touchmove="studyOnSwipeMove"
                @touchend="studyOnSwipeEnd"
                @mousedown="studyOnSwipeStart"
                @mousemove="studyOnSwipeMove"
@@ -579,7 +579,7 @@
 
           <div class="md-study-stage"
                @touchstart.passive="exerciseOnSwipeStart"
-               @touchmove.prevent="exerciseOnSwipeMove"
+               @touchmove="exerciseOnSwipeMove"
                @touchend="exerciseOnSwipeEnd"
                @mousedown="exerciseOnSwipeStart"
                @mousemove="exerciseOnSwipeMove"
@@ -1256,5 +1256,22 @@
     '# 完整规则见 docs/EXAM_JSON_SPEC.md',
     '',
     '## 顶层结构',
-    '{ "view": "exam-bank", "viewVersion": "' + _vv + '", "meta": {"title":"题库名"}, "features": {...}, "papers": [ {"id":"卷1","name":"试卷名","questions": [...]} ] }',</body>
+    '{ "view": "exam-bank", "viewVersion": "' + _vv + '", "meta": {"title":"题库名"}, "features": {...}, "papers": [ {"id":"卷1","name":"试卷名","questions": [...]} ] }',
+    '',
+    '## 题目（type 决定结构）',
+    'fill_blank 填空题：question + blanks:[{index,answer}]',
+    'true_false 判断题：question + answer:true/false',
+    'single_choice 单选题：question + options:{A,B,C} + answer:"A"',
+    'multi_choice 多选题：question + options + answer:["A","B"]',
+    'essay 问答题：question + answer:"文本"',
+    'special_fill_blank 专项题：question + blanks',
+    '',
+    '## 说明',
+    '- 一份文件可含多份卷子（papers 数组），可任意扩展。',
+    '- 未知题型会兜底显示题干与 answer，不会报错。',
+    '- 兼容旧格式（顶层卷子键 + 分题型对象）。'
+  ].join('\n');
+})();
+  </script>
+</body>
 </html>

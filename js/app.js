@@ -139,6 +139,7 @@
       const studySwipeActive = ref(false);
       let studySwipeStartX = 0;
       let studySwipeStartY = 0;
+      const studySwipeAxis = { locked: false, horizontal: false };
       const STUDY_SWIPE_THRESHOLD = 120;             // 触发阈值 px
 
       // summary 统计
@@ -399,6 +400,18 @@
       }
 
       // ====== 手势：移动端左右滑动 ======
+      // 首个超出死区的位移一次性定轴：判为纵向就返回 null 并交还浏览器滚动，
+      // 之后本次触摸不再改判——否则斜着拖会在「滑卡」和「滚页」之间反复横跳。
+      const SWIPE_AXIS_DEADZONE = 8;
+      function swipeAxisDx(axis, dx, dy) {
+        if (!axis.locked) {
+          if (Math.abs(dx) < SWIPE_AXIS_DEADZONE && Math.abs(dy) < SWIPE_AXIS_DEADZONE) return null;
+          axis.locked = true;
+          axis.horizontal = Math.abs(dx) > Math.abs(dy);
+        }
+        return axis.horizontal ? dx : null;
+      }
+
       function studyOnSwipeStart(e) {
         if (studyMode.value !== 'running') return;
         if (!studyShowAnswer.value) return; // 必须先看答案才能滑动
@@ -406,18 +419,17 @@
         studySwipeStartX = pt.clientX;
         studySwipeStartY = pt.clientY;
         studySwipeX.value = 0;
+        studySwipeAxis.locked = false;
+        studySwipeAxis.horizontal = false;
         studySwipeActive.value = true;
       }
       function studyOnSwipeMove(e) {
         if (!studySwipeActive.value) return;
         const pt = e.touches ? e.touches[0] : e;
-        const dx = pt.clientX - studySwipeStartX;
-        const dy = pt.clientY - studySwipeStartY;
-        // 优先判断：水平位移大于垂直才算水平滑动
-        if (Math.abs(dx) > Math.abs(dy)) {
-          studySwipeX.value = dx;
-          if (e.cancelable) e.preventDefault();
-        }
+        const dx = swipeAxisDx(studySwipeAxis, pt.clientX - studySwipeStartX, pt.clientY - studySwipeStartY);
+        if (dx === null) return;
+        studySwipeX.value = dx;
+        if (e.cancelable) e.preventDefault();
       }
       function studyOnSwipeEnd() {
         if (!studySwipeActive.value) return;
@@ -506,6 +518,7 @@
       // 手势
       const exerciseSwipeX = ref(0);
       const exerciseSwipeActive = ref(false);
+      const exerciseSwipeAxis = { locked: false, horizontal: false };
       let exerciseSwipeStartX = 0, exerciseSwipeStartY = 0;
 
       // computed
@@ -561,17 +574,22 @@
         return scopeGids.length;
       });
 
-      // 判分核心（纯函数，不读写任何 ref）
-      function judgeExerciseObjective(cur, choice, multiSel) {
-        if (!cur) return false;
-        if (cur.rawType === 'true_false') return (choice === 'true') === !!cur.answer;
-        if (cur.rawType === 'single_choice') return choice === cur.answer;
-        if (cur.rawType === 'multi_choice') {
-          const std = (Array.isArray(cur.answer) ? cur.answer : []).slice().sort().join(',');
-          const sel = multiSel.slice().sort().join(',');
-          return sel === std && sel !== '';
+      // 判分核心（纯函数，不读写任何 ref）——学习/练习/模拟考试/分类考试共用这一份
+      // 未作答必须先判错：否则判断题 answer=false 时 (null==='true')===false 会白送一分
+      function judgeObjective(cur, choice, multiSel) {
+        if (!cur || !isObjective(cur.rawType)) return false;
+        if (cur.rawType === 'true_false') {
+          if (choice !== 'true' && choice !== 'false') return false;
+          return (choice === 'true') === !!cur.answer;
         }
-        return false;
+        if (cur.rawType === 'single_choice') {
+          if (!choice) return false;
+          return choice === cur.answer;
+        }
+        const sel = Array.isArray(multiSel) ? multiSel : [];
+        if (!sel.length) return false;
+        const std = (Array.isArray(cur.answer) ? cur.answer : []).slice().sort().join(',');
+        return sel.slice().sort().join(',') === std;
       }
 
       function resetExerciseAnswer() {
@@ -672,7 +690,7 @@
 
         if (isObjective(cur.rawType)) {
           // 客观题：系统自动判分
-          const correct = judgeExerciseObjective(cur, exerciseChoice.value, exerciseMultiSel.value);
+          const correct = judgeObjective(cur, exerciseChoice.value, exerciseMultiSel.value);
           _exerciseRecord(cur, correct, null); // 客观题的"你的答案"直接在 answer-view 里展示
           exerciseFeedback.value = { correct: correct };
         } else {
@@ -772,14 +790,17 @@
         exerciseSwipeStartX = pt.clientX;
         exerciseSwipeStartY = pt.clientY;
         exerciseSwipeX.value = 0;
+        exerciseSwipeAxis.locked = false;
+        exerciseSwipeAxis.horizontal = false;
         exerciseSwipeActive.value = true;
       }
       function exerciseOnSwipeMove(e) {
         if (!exerciseSwipeActive.value) return;
         const pt = e.touches ? e.touches[0] : e;
-        const dx = pt.clientX - exerciseSwipeStartX;
-        const dy = pt.clientY - exerciseSwipeStartY;
-        if (Math.abs(dx) > Math.abs(dy)) { exerciseSwipeX.value = dx; if (e.cancelable) e.preventDefault(); }
+        const dx = swipeAxisDx(exerciseSwipeAxis, pt.clientX - exerciseSwipeStartX, pt.clientY - exerciseSwipeStartY);
+        if (dx === null) return;
+        exerciseSwipeX.value = dx;
+        if (e.cancelable) e.preventDefault();
       }
       function exerciseOnSwipeEnd() {
         if (!exerciseSwipeActive.value) return;
@@ -1011,7 +1032,7 @@
           const a = examAnswers[gid] || {};
           let correct = false;
           if (isObjective(item.rawType)) {
-            correct = judgeExerciseObjective(item, a.choice || null, a.multiSel || []);
+            correct = judgeObjective(item, a.choice || null, a.multiSel || []);
           } else {
             // 主观题：未答算错；答了也暂时算"不确定"——实际考试中主观题由人工判分
             // 这里保守：未答算错，答了也标记"需要人工评判"
@@ -1579,21 +1600,11 @@
       function isObjective(rawType) {
         return rawType === 'true_false' || rawType === 'single_choice' || rawType === 'multi_choice';
       }
-      function judgeObjective(cur) {
-        if (cur.rawType === 'true_false') return (catChoice.value === 'true') === !!cur.answer;
-        if (cur.rawType === 'single_choice') return catChoice.value === cur.answer;
-        if (cur.rawType === 'multi_choice') {
-          const std = (Array.isArray(cur.answer) ? cur.answer : []).slice().sort().join(',');
-          const sel = catMultiSel.value.slice().sort().join(',');
-          return sel === std && sel !== '';
-        }
-        return false;
-      }
       function catSubmit() {
         const cur = catCurrent.value;
         if (!cur || catRevealed.value) return;
         if (isObjective(cur.rawType)) {
-          finishCatAnswer(judgeObjective(cur));
+          finishCatAnswer(judgeObjective(cur, catChoice.value, catMultiSel.value));
         } else {
           catRevealed.value = true; // 主观题：揭示答案，等待自评
         }
