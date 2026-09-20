@@ -11,7 +11,7 @@
   .question { font-size: 17px; }
   .btn-group { gap: 10px; }
   .src-actions input[type="text"] { min-width: 100%; }
-  /* 触摸目标 ≥44px（ARCHITECTURE.md:161）；同时改横向滚动为单行，
+  /* 触摸目标 ≥44px（见 ARCHITECTURE.md §六 样式约定）；同时改横向滚动为单行，
      否则 8 个 Tab 按 flex 1 1 40% 会折成 4 行、把手机首屏吃掉一大截 */
   .tab-nav {
     flex-wrap: nowrap; gap: 4px;
@@ -24,6 +24,11 @@
     flex: 0 0 auto; min-height: 44px;
     padding: 10px 14px; font-size: 14px;
   }
+  /* 触摸目标 ≥ 44×44pt（iOS HIG）。桌面用指针可以更小，所以只在移动端补偿，
+     与上面的 .tab-nav button 同一套做法。 */
+  .btn.small, .btn-text, .wb-tabs button,
+  .md-study-per .per-chip { min-height: 44px; }
+
   /* 作答控件紧凑档（共享组件，见 components.css） */
   .md-opt { font-size: 14px; gap: 10px; min-height: 46px; }
   .md-opt-key { width: 22px; height: 22px; font-size: 12px; }

@@ -257,8 +257,12 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
 约定不变：
 
 - **移动优先**：媒体查询用 `max-width` 向下覆盖，每个栅格都能塌缩为单列
-- **触摸目标 ≥ 44×44px**，相邻目标间距 ≥ 8px（移动端 Tab 按钮已提到 44px，
-  并把 8 个 Tab 改为单行横向滚动而不是折行——否则 44px 高度会把首屏吃掉一大截）
+- **触摸目标 ≥ 44×44pt（iOS HIG）**，相邻目标间距 ≥ 8px。桌面用指针可以更小，所以
+  `.btn.small` / `.btn-text` / `.wb-tabs button` / `.per-chip` / `.tab-nav button` 的 44px
+  补偿统一写在 `responsive.css` 的 600px 块；表单控件（`.paper-switch select`、
+  `.cat-type-select`）与 `.btn` / `.src-actions input` 一样直接按 44px 全局设。
+  唯一例外是答题卡题号：桌面侧栏 5 列约 32px（指针操作可接受），移动端面板变宽后
+  同样 5 列会自然长到 48–53px，无需特例
 - **可见焦点态**：统一 `:focus-visible` 描边，键盘可达一切交互元素
 - **尊重 `prefers-reduced-motion`**：动画降级为无过渡
 - **背景不用纯白/纯灰**：渐变打底营造纵深

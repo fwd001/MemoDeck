@@ -93,6 +93,13 @@
 - 移除模板里 5 处**从未有定义**的类：`md-home-quick`、`md-home-trend`（首页两张卡片上的
   空修饰符）、`resume-actions` ×3（恢复横幅的按钮组包装）。它们在六份 CSS 里一条规则都
   没有，纯粹是「看着像有样式」的误导源。元素本身保留，布局不变。
+- **补齐触摸目标（iOS HIG 44×44pt）**：项目文档一直声明「触摸目标 ≥ 44px」，实际有 6 类
+  交互控件低于这个值 —— `.btn.small`(32)、`.btn-text`(32)、`.wb-tabs button`(40)、
+  `.md-study-per .per-chip`(≈29 无 min-height)、`.paper-switch select`(40)、
+  `.cat-type-select`(40)。移动端补偿集中写在 `responsive.css` 的 600px 块（与既有
+  `.tab-nav button` 同一套做法，桌面指针操作不强行放大）；两个 select 直接按 44 全局设，
+  与相邻的 `.btn` / `.src-actions input` 对齐。答题卡题号是有意例外（桌面 5 列约 32px
+  走指针，移动端面板变宽后自然到 48–53px）。
 - 断点覆盖整理（部分）：作答控件的移动端紧凑档从 `pages.css` 移进 `responsive.css`，与共享
   组件的分工对齐；新组件的颜色全部走 token，无一处硬编码。`pages.css` 仍留 3 处页面级
   `@media`（首页 / 学习 / 考试），逐条核对过没有被后面的基础规则同特异度顶掉，要不要一并
