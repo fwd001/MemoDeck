@@ -17,7 +17,9 @@ jobs:
           node-version: '22'
 
       - name: 运行单元测试
-        run: node test/core.test.js
+        # 两个套件都要跑：extensions.test.js 覆盖 progress / session / stats /
+        # migration / 错题本 v2 / Leitner v2，只跑 core 会让一半契约失守
+        run: npm test
 
       - name: 检查 JS 语法
         run: |

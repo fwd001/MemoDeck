@@ -308,8 +308,11 @@ python3 -m http.server 8000
 本地验证：
 
 ```bash
-# 单元测：纯逻辑，零依赖、零框架、零构建
-node test/core.test.js
+# 单元测：纯逻辑，零依赖、零框架、零构建（两个套件共 64 项）
+npm test
+
+# 等价于
+node test/core.test.js && node test/extensions.test.js
 
 # 浏览器：起个静态服务器
 python3 -m http.server 8000   # 打开 http://localhost:8000

@@ -404,9 +404,15 @@ test('_dayKey 按本地日历日归桶，不按 UTC 日界', () => {
 });
 
 test('computeWeekTrend 返回指定天数的桶', () => {
+  // 时间戳必须相对 now 生成：写死日期会让这条断言只在它生日那天能通过
+  const isoDaysAgo = n => {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.toISOString();
+  };
   const p = {
-    a: { lastReviewedAt: '2026-09-15T10:00:00Z', masteredAt: '2026-09-15T10:00:00Z', wrong: 1 },
-    b: { lastReviewedAt: '2026-09-10T10:00:00Z' },
+    a: { lastReviewedAt: isoDaysAgo(0), masteredAt: isoDaysAgo(0), wrong: 1 },
+    b: { lastReviewedAt: isoDaysAgo(5) },
   };
   const trend = Stats.computeWeekTrend(p, 7);
   eq(trend.length, 7);
@@ -415,6 +421,10 @@ test('computeWeekTrend 返回指定天数的桶', () => {
   assert(todayBucket != null);
   eq(todayBucket.reviewed, 1);
   eq(todayBucket.mastered, 1);
+  eq(todayBucket.wrong, 1);
+  eq(trend[trend.length - 1].day, today);              // 最后一个桶是今天
+  eq(trend.reduce((s, d) => s + d.reviewed, 0), 2);    // 5 天前那条也在 7 天窗口内
+  eq(Stats.computeWeekTrend(p, 3).reduce((s, d) => s + d.reviewed, 0), 1); // 窗口收窄后掉出
 });
 
 /* ============== 错题本 v2 状态机 ============== */
