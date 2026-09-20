@@ -82,6 +82,22 @@
       Vue.watch(showDataPanel, function (v) { localStorage.setItem('memo:showDataPanel', v ? '1' : '0'); });
       Vue.watch(themeMode, function () { applyTheme(); });
 
+      /* —— 会话计时器：study / exercise / exam 三处原本逐字重复 —— */
+      function makeSessionTimer(elapsedSec, startAtRef) {
+        let handle = null;
+        return {
+          start() {
+            if (handle) clearInterval(handle);
+            handle = setInterval(() => {
+              elapsedSec.value = Math.floor((Date.now() - startAtRef.value) / 1000);
+            }, 1000);
+          },
+          stop() {
+            if (handle) { clearInterval(handle); handle = null; }
+          }
+        };
+      }
+
       /* ============ 共享取题管线 ============ */
       // 算法本体在 js/queue.js（纯逻辑、可在 Node 单测）；这里只把 Vue 的 ref 喂给它。
       function queueCtx(overrides) {
@@ -180,7 +196,7 @@
 
       // summary 统计
       const studyElapsedSec = ref(0);
-      let studyTimer = null;
+      const studyClock = makeSessionTimer(studyElapsedSec, studyStartAt);
 
       // computed：当前题目 item
       const studyCurrentItem = computed(() => {
@@ -269,10 +285,7 @@
 
         // 计时器
         studyElapsedSec.value = 0;
-        if (studyTimer) clearInterval(studyTimer);
-        studyTimer = setInterval(() => {
-          studyElapsedSec.value = Math.floor((Date.now() - studyStartAt.value) / 1000);
-        }, 1000);
+        studyClock.start();
       }
 
       function studyResume() {
@@ -295,10 +308,7 @@
         studyStartAt.value = Date.now();
         studyMode.value = 'running';
         studyElapsedSec.value = 0;
-        if (studyTimer) clearInterval(studyTimer);
-        studyTimer = setInterval(() => {
-          studyElapsedSec.value = Math.floor((Date.now() - studyStartAt.value) / 1000);
-        }, 1000);
+        studyClock.start();
       }
 
       function studyAbandonResume() {
@@ -345,7 +355,7 @@
 
       function studyFinish() {
         studyMode.value = 'summary';
-        if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
+        studyClock.stop();
         Session.clearResumePoint('study');
         refreshProgress();
       }
@@ -354,7 +364,7 @@
         // 主动退出 running → 暂停，恢复点已在 saveResumePoint/touchResumePoint 里
         if (studyMode.value === 'running') {
           toast('已暂停，下次打开可继续', true);
-          if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
+          studyClock.stop();
           studyMode.value = 'setup';
           refreshResume();
           switchTab('home');
@@ -368,7 +378,7 @@
         studyMode.value = 'setup';
         studySwipeX.value = 0;
         studyShowAnswer.value = false;
-        if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
+        studyClock.stop();
         Session.clearResumePoint('study');
         refreshResume();
       }
@@ -480,7 +490,6 @@
       const exerciseQueueGids = ref([]);
       const exerciseIndex = ref(0);
       const exerciseStartAt = ref(0);
-      let exerciseTimer = null;
 
       // 每题作答
       const exerciseAnswerSubmitted = ref(false);
@@ -498,6 +507,7 @@
       const exerciseNewWrong = ref(0);
       const exerciseNewMastered = ref(0);
       const exerciseElapsedSec = ref(0);
+      const exerciseClock = makeSessionTimer(exerciseElapsedSec, exerciseStartAt);
 
       // 手势
       const exerciseSwipeX = ref(0);
@@ -595,10 +605,7 @@
         // 恢复点
         Session.saveResumePoint({ bankId: bankIdOf(), paperId: currentPaperId.value, mode: 'exercise', queueGids: queueGids, currentIndex: 0 });
 
-        if (exerciseTimer) clearInterval(exerciseTimer);
-        exerciseTimer = setInterval(() => {
-          exerciseElapsedSec.value = Math.floor((Date.now() - exerciseStartAt.value) / 1000);
-        }, 1000);
+        exerciseClock.start();
       }
 
       function exerciseResume() {
@@ -611,10 +618,7 @@
         exerciseNewWrong.value = 0; exerciseNewMastered.value = 0;
         exerciseStartAt.value = Date.now(); exerciseElapsedSec.value = 0;
         exerciseMode.value = 'running';
-        if (exerciseTimer) clearInterval(exerciseTimer);
-        exerciseTimer = setInterval(() => {
-          exerciseElapsedSec.value = Math.floor((Date.now() - exerciseStartAt.value) / 1000);
-        }, 1000);
+        exerciseClock.start();
       }
 
       function exerciseAbandonResume() { toast('已放弃上次进度'); }
@@ -677,7 +681,7 @@
 
       function exerciseFinish() {
         exerciseMode.value = 'summary';
-        if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
+        exerciseClock.stop();
         Session.clearResumePoint('exercise');
         refreshProgress();
       }
@@ -685,7 +689,7 @@
       function exerciseExit() {
         if (exerciseMode.value === 'running') {
           toast('已暂停，下次打开可继续', true);
-          if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
+          exerciseClock.stop();
           exerciseMode.value = 'setup';
           refreshResume();
           switchTab('home'); setTimeout(() => switchTab('exercise'), 50);
@@ -698,7 +702,7 @@
         exerciseMode.value = 'setup';
         resetExerciseAnswer();
         exerciseSwipeX.value = 0;
-        if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
+        exerciseClock.stop();
         Session.clearResumePoint('exercise');
         refreshResume();
       }
@@ -784,7 +788,7 @@
       const examIndex = ref(0);
       const examStartAt = ref(0);
       const examElapsedSec = ref(0);
-      let examTimer = null;
+      const examClock = makeSessionTimer(examElapsedSec, examStartAt);
       // 核心：每题独立存答案（可随时回看改答）
       const examAnswers = reactive({});   // { [gid]: { choice, multiSel, input, answered: bool } }
       const examSubmitted = ref(false);   // 是否已交卷
@@ -870,15 +874,8 @@
         examElapsedSec.value = 0;
         examMode.value = 'running';
 
-        _examStartTimer();
+        examClock.start();
         _examPersist();
-      }
-
-      function _examStartTimer() {
-        if (examTimer) clearInterval(examTimer);
-        examTimer = setInterval(() => {
-          examElapsedSec.value = Math.floor((Date.now() - examStartAt.value) / 1000);
-        }, 1000);
       }
 
       // 把逐题答案 + 当前下标写回恢复点。只在跳题 / 选项变更 / 离开页面时写，
@@ -912,7 +909,7 @@
         examStartAt.value = isNaN(started) ? Date.now() : started;
         examElapsedSec.value = Math.floor((Date.now() - examStartAt.value) / 1000);
         examMode.value = 'running';
-        _examStartTimer();
+        examClock.start();
       }
 
       function examJump(idx) {
@@ -1029,7 +1026,7 @@
         refreshProgress();
 
         // 计时停止
-        if (examTimer) { clearInterval(examTimer); examTimer = null; }
+        examClock.stop();
         Session.clearResumePoint('exam');
         examMode.value = 'summary';
       }
@@ -1057,7 +1054,7 @@
       // 退出 = 暂停：保留已答内容与恢复点，考试页会出现「继续上次」。
       // 此前这里是无确认直接清空整份答卷，手机上误点一下就全没了。
       function examExit() {
-        if (examTimer) { clearInterval(examTimer); examTimer = null; }
+        examClock.stop();
         if (examAnsweredCount.value) {
           if (!confirm('考试尚未交卷，确定退出吗？\n已答内容会保留，可在考试页「继续上次」接着做。')) return;
           _examPersist();
@@ -1075,7 +1072,7 @@
         examSubmitted.value = false;
         examIndex.value = 0;
         for (const k of Object.keys(examAnswers)) delete examAnswers[k];
-        if (examTimer) { clearInterval(examTimer); examTimer = null; }
+        examClock.stop();
         Session.clearResumePoint('exam');
         refreshResume();
       }
@@ -1115,9 +1112,9 @@
         window.removeEventListener('keydown', examKeyDown);
         window.removeEventListener('beforeunload', _examPersist);
         window.removeEventListener('hashchange', onHashChange);
-        if (studyTimer) clearInterval(studyTimer);
-        if (exerciseTimer) clearInterval(exerciseTimer);
-        if (examTimer) clearInterval(examTimer);
+        studyClock.stop();
+        exerciseClock.stop();
+        examClock.stop();
       });
 
       /* ============ AI 提示词（弹窗） ============ */
