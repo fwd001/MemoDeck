@@ -202,7 +202,7 @@
           </div>
 
           <!-- 快捷入口 -->
-          <div class="md-home-card md-home-quick">
+          <div class="md-home-card">
             <div class="md-home-card-head">
               <span class="md-home-card-title">🚀 快捷入口</span>
             </div>
@@ -223,7 +223,7 @@
           </div>
 
           <!-- 最近 7 天趋势 -->
-          <div class="md-home-card md-home-trend" v-if="dashboard.weekTrend && dashboard.weekTrend.length">
+          <div class="md-home-card" v-if="dashboard.weekTrend && dashboard.weekTrend.length">
             <div class="md-home-card-head">
               <span class="md-home-card-title">📈 最近 7 天</span>
             </div>
@@ -277,7 +277,7 @@
                 <span class="resume-icon">💾</span>
                 <span>上次学习做到第 {{ resumeStudy.currentIndex + 1 }} / {{ resumeStudy.queueGids.length }} 题</span>
               </div>
-              <div class="resume-actions">
+              <div>
                 <button class="btn small" @click="studyResume">继续上次</button>
               </div>
             </div>
@@ -495,7 +495,7 @@
 
             <div class="md-study-resume" v-if="resumeExercise">
               <div class="resume-info"><span class="resume-icon">💾</span><span>上次练习做到第 {{ resumeExercise.currentIndex + 1 }} / {{ resumeExercise.queueGids.length }} 题</span></div>
-              <div class="resume-actions">
+              <div>
                 <button class="btn small" @click="exerciseResume">继续上次</button>
               </div>
             </div>
@@ -782,7 +782,7 @@
 
             <div class="md-study-resume" v-if="resumeExam">
               <div class="resume-info"><span class="resume-icon">💾</span><span>上次考试做到第 {{ resumeExam.currentIndex + 1 }} / {{ resumeExam.queueGids.length }} 题</span></div>
-              <div class="resume-actions">
+              <div>
                 <button class="btn small" @click="examResume">继续上次</button>
               </div>
             </div>

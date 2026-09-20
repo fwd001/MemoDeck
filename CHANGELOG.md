@@ -90,6 +90,9 @@
   判断题按钮在分类考试里是另一套 `.btn good/bad` + `picked`（现与其它模式同款中性按钮 +
   `selected`，`picked` 规则随之成为死代码并删除）、反馈条 `.feedback.ok` 的边框与背景同色
   （等于没有边框，现改用 `--success-border` / `--danger-border`）。
+- 移除模板里 5 处**从未有定义**的类：`md-home-quick`、`md-home-trend`（首页两张卡片上的
+  空修饰符）、`resume-actions` ×3（恢复横幅的按钮组包装）。它们在六份 CSS 里一条规则都
+  没有，纯粹是「看着像有样式」的误导源。元素本身保留，布局不变。
 - 断点覆盖整理（部分）：作答控件的移动端紧凑档从 `pages.css` 移进 `responsive.css`，与共享
   组件的分工对齐；新组件的颜色全部走 token，无一处硬编码。`pages.css` 仍留 3 处页面级
   `@media`（首页 / 学习 / 考试），逐条核对过没有被后面的基础规则同特异度顶掉，要不要一并
