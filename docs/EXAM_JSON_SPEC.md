@@ -250,7 +250,7 @@
       "failLabel": "😥 没记住 (重刷)"
     }
   },
-  "exam": {
+  "preview": {
     "enabled": true,
     "label": "摸底速览",
     "icon": "📝",
@@ -266,9 +266,21 @@
 | `icon` | string | 图标（emoji 或文本）。 |
 | `config` | object | 该功能的可扩展配置项。 |
 
-- 应用读取 `features`，为每个 `enabled: true` 的功能生成模式按钮并运行。
-- 新增功能只需新增一个 `features` 键，并在应用里注册对应模块（见 §5）。
-- 若省略 `features`，应用按默认配置运行（记忆闯关 + 摸底速览）。
+**目前应用真正消费的 `features` 键只有 `practice` 和 `preview` 两个**，键名必须与之一致：
+
+| 键 | 对应模式 | `enabled: false` 能隐藏吗 |
+|---|---|---|
+| `practice` | 🕹️ 记忆闯关 | ✅ 可以，`label`/`icon`/`config` 也生效 |
+| `preview` | 📝 摸底速览 | ✅ 可以 |
+| `exam` | 🎓 模拟考试 | ❌ 不能（`exam` 不是速览，写在这里不会有任何效果） |
+
+> ⚠️ 历史版本的本规范曾把 `exam` 键示例标注为「摸底速览」——那是错的：应用里
+> `exam` 是模拟考试、`preview` 才是摸底速览。出题时请按上表用键名。
+
+首页 / 学习 / 练习 / 模拟考试 / 分类考试 / 错题本六个入口是无条件挂载的，
+`features` 隐藏不了它们（见 [架构设计 §八](./ARCHITECTURE.md)）。
+
+- 若省略 `features`，应用按默认配置运行（记忆闯关 + 摸底速览都显示）。
 
 ---
 
@@ -314,7 +326,7 @@ const TYPE_REGISTRY = {
   "meta": { "title": "考试题库（示例）" },
   "features": {
     "practice": { "enabled": true, "label": "记忆闯关", "icon": "🕹️" },
-    "exam": { "enabled": true, "label": "摸底速览", "icon": "📝" }
+    "preview": { "enabled": true, "label": "摸底速览", "icon": "📝" }
   },
   "papers": [
     {

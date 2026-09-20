@@ -67,14 +67,24 @@ Vue 已本地化到 `vendor/`，零 CDN 依赖。飞机上、内网里、U 盘�
 
 ---
 
-## 四个模式
+## 八个入口
 
-| | 模式 | 干什么用 | 关键机制 |
+v1 是四个模式；v2 在此之上加了首页与三个新的刷题模式，共 8 个 Tab。
+
+| | 入口 | 干什么用 | 关键机制 |
 |---|---|---|---|
-| 🕹️ | **记忆闯关** | 日常主刷 | 记住一次即掌握；没记住埋到 5~7 张后重来 |
+| 🏠 | **首页** | 看今天该学什么 | 到期数、掌握率、7 天趋势、本周活跃天数 |
+| 📖 | **学习** | 背诵卡片（推荐日常用） | 选范围与每次数量的 SRS；看答案后自评「记住了 / 还不会」，可左右滑动 |
+| ✍️ | **练习** | 自己作答、系统判分 | 客观题自动判分，主观题对照参考答案自评；进度写入跨会话记忆 |
+| 🎓 | **模拟考试** | 正式计时自测 | 过程中不反馈对错、答题卡可回看改答、交卷一次性判分；未答题单独统计、不污染错题本；主观题在成绩页自评后计入 |
+| 🕹️ | **记忆闯关** | 日常主刷（v1） | 记住一次即掌握；没记住埋到 5~7 张后重来 |
 | 📝 | **摸底速览** | 考前快速过一遍 | 逐题展开答案，一键加入错题本 |
-| 🎯 | **分类考试** | 正式自测 | 按题型筛选、随机出题、实时判分、自动跳题 |
-| 📕 | **错题本** | 攻克薄弱点 | 三来源分类、加强练习、重考答对即移除 |
+| 🎯 | **分类考试** | 按题型自测（v1） | 按题型筛选、随机出题、实时判分、自动跳题 |
+| 📕 | **错题本** | 攻克薄弱点 | 按五种出错来源分 Tab；**连续答对 3 次**自动移出 |
+
+> 「学习」与「记忆闯关」是两套并行的记忆模型（前者跨会话、连对 5 次算掌握；后者会话内、
+> 一次即掌握）。这是 v2 叠加新功能留下的历史结构，差别见
+> [架构设计 §3.2](./docs/ARCHITECTURE.md)。
 
 ---
 
@@ -157,7 +167,7 @@ memodeck/
 │   ├── themes.css                # Dark 模式覆盖 + 主题切换（auto/light/dark）
 │   ├── components.css            # Header / TabNav / Button / Card 组件
 │   ├── pages.css                 # 首页 / 学习 / 练习 / 考试 / 错题本 页面
-│   ├── responsive.css           # 移动端断点（375/390/430/768/1024）
+│   ├── responsive.css              # 移动端断点（max-width 600px / 760px）
 │   ├── accessibility.css         # a11y: focus-visible / reduced-motion
 │   └── style.css                 # 旧版遗留（不再被 index.html 引用）
 ├── js/
@@ -171,6 +181,7 @@ memodeck/
 │   ├── migration.js                # v1→v2 数据迁移
 │   ├── backup.js                   # v2 一键备份/恢复
 │   ├── utils.js                    # 轻量工具（shuffle/groupBy）
+│   ├── queue.js                    # v2 取题管线（范围→题型→排序→截断，纯逻辑）
 │   ├── ai-prompt.js                # AI 题库转换提示词
 │   └── app.js                      # Vue 应用：全部状态与交互
 ├── vendor/
@@ -183,7 +194,8 @@ memodeck/
 ├── service-worker.js              # PWA 离线缓存（HTML network-first, 静态 cache-first）
 ├── test/
 │   ├── core.test.js              # 纯逻辑单元测试（26 项，零依赖）
-│   └── extensions.test.js         # v2 扩展测试（progress/session/stats/migration/wrongbook v2，37 项）
+│   ├── queue.test.js              # v2 取题管线测试（21 项，含 48 组合不变式遍历）
+│   └── extensions.test.js         # v2 扩展测试（progress/session/stats/migration/wrongbook v2，38 项）
 ├── docs/
 │   ├── USAGE.md            # 使用说明
 │   ├── ARCHITECTURE.md     # 架构设计（面向二次开发）
@@ -221,7 +233,7 @@ memodeck/
 
 | 文档 | 面向 | 内容 |
 |---|---|---|
-| [使用说明](./docs/USAGE.md) | 使用者 | 导入题库、四个模式、AI 生成、数据存储、常见问题 |
+| [使用说明](./docs/USAGE.md) | 使用者 | 导入题库、八个入口、AI 生成、数据存储、常见问题 |
 | [部署指南](./docs/DEPLOYMENT.md) | 部署者 | 6 种部署方式、配置片段、CORS、自检清单 |
 | [架构设计](./docs/ARCHITECTURE.md) | 开发者 | 模块划分、数据流、算法细节、模板书写约定 |
 | [JSON 规范](./docs/EXAM_JSON_SPEC.md) | 题库作者 | 完整字段定义、题型结构、旧格式兼容 |
@@ -287,7 +299,10 @@ python3 -m http.server 8000
 目标服务器需允许跨域（CORS）。不允许就改用「粘贴 JSON」或「选择文件」。
 
 **数据存在哪？**
-浏览器 localStorage（`examBankCache:v2`、`examWrongbook:v1`），不上传任何服务器。换设备请用「⬇️ 下载 JSON」导出再导入。
+浏览器 localStorage，共 8 个 `exam*` / `memo:*` 键（题库缓存、错题本、学习进度、会话恢复、
+设置、闯关队列、主题、面板开关），完整清单见
+[架构设计 §4.3](./docs/ARCHITECTURE.md)。不上传任何服务器。换设备请用「💾 数据备份与恢复」
+导出全量备份再导入（只导出 JSON 题库不含进度与错题）。
 
 更多见 [使用说明 · 常见问题](./docs/USAGE.md#六常见问题)。
 
@@ -300,19 +315,24 @@ python3 -m http.server 8000
 这是刻意的选择——为了保住「双击即用」这个核心体验。改动时请遵守：
 
 1. **不引入构建步骤**，不引入 ES Module（`file://` 下会被 CORS 拦截）
-2. **纯逻辑不碰 DOM/Vue**：`core.js` / `leitner.js` / `store.js` / `wrongbook.js` 保持可单测
+2. **纯逻辑不碰 DOM/Vue**：`core` / `store` / `leitner` / `wrongbook` / `utils` / `queue` /
+   `migration` / `progress` / `session` / `stats` 保持可单测；能脱离响应式系统成立的逻辑
+   就往这些模块里挪，别留在 `app.js`
 3. **模板属性值内不写 `>` 或 `=>`**，抽成 computed（原因见 [架构设计](./docs/ARCHITECTURE.md#五模板书写约定重要)）
-4. **新增题型**只改 `TYPE_REGISTRY` + `normalizeQuestion()` + `renderAnswer()`
+4. **新增题型**要动四处：`TYPE_REGISTRY` + `normalizeQuestion()`/`renderAnswer()` +
+   `isObjective()`/`judgeObjective()` + 模板的作答区与题型勾选框
 5. 保持 44px 触摸目标、可见焦点态、`prefers-reduced-motion` 降级
+6. **同一个行为只允许有一份实现**：判分 `judgeObjective`、取题 `ExamQueue`、计时器
+   `makeSessionTimer`、滑动 `makeSwipe` 都是这么收敛来的，加新模式时复用而不是再抄一份
 
 本地验证：
 
 ```bash
-# 单元测：纯逻辑，零依赖、零框架、零构建（两个套件共 64 项）
+# 单元测：纯逻辑，零依赖、零框架、零构建（三个套件共 85 项）
 npm test
 
 # 等价于
-node test/core.test.js && node test/extensions.test.js
+node test/core.test.js && node test/queue.test.js && node test/extensions.test.js
 
 # 浏览器：起个静态服务器
 python3 -m http.server 8000   # 打开 http://localhost:8000
