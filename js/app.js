@@ -98,6 +98,49 @@
         };
       }
 
+      /* —— 滑动手势：study / exercise 两处原本各有一套平行的 start/move/end —— */
+      // 首个超出死区的位移一次性定轴：判为纵向就把滚动交还浏览器，且本次触摸不再改判，
+      // 否则斜着拖会在「滑卡」和「滚页」之间反复横跳。
+      function makeSwipe(opts) {
+        const AXIS_DEADZONE = 8;
+        const x = ref(0);
+        const active = ref(false);
+        const axis = { locked: false, horizontal: false };
+        let startX = 0, startY = 0;
+        return {
+          x, active,
+          onStart(e) {
+            if (!opts.enabled()) return;
+            const pt = e.touches ? e.touches[0] : e;
+            startX = pt.clientX; startY = pt.clientY;
+            x.value = 0;
+            axis.locked = false; axis.horizontal = false;
+            active.value = true;
+          },
+          onMove(e) {
+            if (!active.value) return;
+            const pt = e.touches ? e.touches[0] : e;
+            const dx = pt.clientX - startX;
+            const dy = pt.clientY - startY;
+            if (!axis.locked) {
+              if (Math.abs(dx) < AXIS_DEADZONE && Math.abs(dy) < AXIS_DEADZONE) return;
+              axis.locked = true;
+              axis.horizontal = Math.abs(dx) > Math.abs(dy);
+            }
+            if (!axis.horizontal) return;
+            x.value = dx;
+            if (e.cancelable) e.preventDefault();
+          },
+          onEnd() {
+            if (!active.value) return;
+            active.value = false;
+            const moved = x.value;
+            x.value = 0;
+            opts.onSwipe(moved);
+          }
+        };
+      }
+
       /* ============ 共享取题管线 ============ */
       // 算法本体在 js/queue.js（纯逻辑、可在 Node 单测）；这里只把 Vue 的 ref 喂给它。
       function queueCtx(overrides) {
@@ -186,12 +229,16 @@
       const studyNewWrong = ref(0);
       const studyMaxStreak = ref(0);
 
-      // 手势状态
-      const studySwipeX = ref(0);                    // 当前卡片的水平位移 px
-      const studySwipeActive = ref(false);
-      let studySwipeStartX = 0;
-      let studySwipeStartY = 0;
-      const studySwipeAxis = { locked: false, horizontal: false };
+      // 手势：右滑=记住了 / 左滑=还不会，必须先看过答案才允许滑动
+      const studySwipe = makeSwipe({
+        enabled: () => studyMode.value === 'running' && studyShowAnswer.value,
+        onSwipe: x => {
+          if (x >= STUDY_SWIPE_THRESHOLD) studyMark(true);
+          else if (x <= -STUDY_SWIPE_THRESHOLD) studyMark(false);
+        }
+      });
+      const studySwipeX = studySwipe.x;
+      const studySwipeActive = studySwipe.active;
       const STUDY_SWIPE_THRESHOLD = 120;             // 触发阈值 px
 
       // summary 统计
@@ -383,53 +430,10 @@
         refreshResume();
       }
 
-      // ====== 手势：移动端左右滑动 ======
-      // 首个超出死区的位移一次性定轴：判为纵向就返回 null 并交还浏览器滚动，
-      // 之后本次触摸不再改判——否则斜着拖会在「滑卡」和「滚页」之间反复横跳。
-      const SWIPE_AXIS_DEADZONE = 8;
-      function swipeAxisDx(axis, dx, dy) {
-        if (!axis.locked) {
-          if (Math.abs(dx) < SWIPE_AXIS_DEADZONE && Math.abs(dy) < SWIPE_AXIS_DEADZONE) return null;
-          axis.locked = true;
-          axis.horizontal = Math.abs(dx) > Math.abs(dy);
-        }
-        return axis.horizontal ? dx : null;
-      }
-
-      function studyOnSwipeStart(e) {
-        if (studyMode.value !== 'running') return;
-        if (!studyShowAnswer.value) return; // 必须先看答案才能滑动
-        const pt = e.touches ? e.touches[0] : e;
-        studySwipeStartX = pt.clientX;
-        studySwipeStartY = pt.clientY;
-        studySwipeX.value = 0;
-        studySwipeAxis.locked = false;
-        studySwipeAxis.horizontal = false;
-        studySwipeActive.value = true;
-      }
-      function studyOnSwipeMove(e) {
-        if (!studySwipeActive.value) return;
-        const pt = e.touches ? e.touches[0] : e;
-        const dx = swipeAxisDx(studySwipeAxis, pt.clientX - studySwipeStartX, pt.clientY - studySwipeStartY);
-        if (dx === null) return;
-        studySwipeX.value = dx;
-        if (e.cancelable) e.preventDefault();
-      }
-      function studyOnSwipeEnd() {
-        if (!studySwipeActive.value) return;
-        studySwipeActive.value = false;
-        const x = studySwipeX.value;
-        if (x >= STUDY_SWIPE_THRESHOLD) {
-          // 右滑 → 记住了 ✅
-          studyMark(true);
-        } else if (x <= -STUDY_SWIPE_THRESHOLD) {
-          // 左滑 → 还不会 🤦
-          studyMark(false);
-        } else {
-          // 阈值不够，弹回
-          studySwipeX.value = 0;
-        }
-      }
+      // ====== 手势处理器绑定（实现见 makeSwipe / studySwipe） ======
+      const studyOnSwipeStart = studySwipe.onStart;
+      const studyOnSwipeMove = studySwipe.onMove;
+      const studyOnSwipeEnd = studySwipe.onEnd;
 
       // 多行/复合输入控件里，Enter 是用户的编辑键不是导航键：简答题 textarea 内
       // 回车要换行，选项下拉展开时 Enter 不能把焦点抢走。
@@ -509,11 +513,14 @@
       const exerciseElapsedSec = ref(0);
       const exerciseClock = makeSessionTimer(exerciseElapsedSec, exerciseStartAt);
 
-      // 手势
-      const exerciseSwipeX = ref(0);
-      const exerciseSwipeActive = ref(false);
-      const exerciseSwipeAxis = { locked: false, horizontal: false };
-      let exerciseSwipeStartX = 0, exerciseSwipeStartY = 0;
+      // 手势：判完分后左右任意滑都进下一题（与学习模式不同，这里不分方向）
+      const EXERCISE_SWIPE_THRESHOLD = 80;
+      const exerciseSwipe = makeSwipe({
+        enabled: () => exerciseMode.value === 'running' && exerciseAnswerSubmitted.value,
+        onSwipe: x => { if (Math.abs(x) >= EXERCISE_SWIPE_THRESHOLD) exerciseNext(); }
+      });
+      const exerciseSwipeX = exerciseSwipe.x;
+      const exerciseSwipeActive = exerciseSwipe.active;
 
       // computed
       const exerciseCurrentItem = computed(() => {
@@ -724,33 +731,10 @@
         return exerciseMultiSel.value.indexOf(val) >= 0;
       }
 
-      // 手势
-      function exerciseOnSwipeStart(e) {
-        if (exerciseMode.value !== 'running') return;
-        if (!exerciseAnswerSubmitted.value) return; // 只有判完分才能滑
-        const pt = e.touches ? e.touches[0] : e;
-        exerciseSwipeStartX = pt.clientX;
-        exerciseSwipeStartY = pt.clientY;
-        exerciseSwipeX.value = 0;
-        exerciseSwipeAxis.locked = false;
-        exerciseSwipeAxis.horizontal = false;
-        exerciseSwipeActive.value = true;
-      }
-      function exerciseOnSwipeMove(e) {
-        if (!exerciseSwipeActive.value) return;
-        const pt = e.touches ? e.touches[0] : e;
-        const dx = swipeAxisDx(exerciseSwipeAxis, pt.clientX - exerciseSwipeStartX, pt.clientY - exerciseSwipeStartY);
-        if (dx === null) return;
-        exerciseSwipeX.value = dx;
-        if (e.cancelable) e.preventDefault();
-      }
-      function exerciseOnSwipeEnd() {
-        if (!exerciseSwipeActive.value) return;
-        exerciseSwipeActive.value = false;
-        const x = exerciseSwipeX.value;
-        if (Math.abs(x) >= 80) { exerciseNext(); }
-        else { exerciseSwipeX.value = 0; }
-      }
+      // 手势处理器绑定（实现见 makeSwipe / exerciseSwipe）
+      const exerciseOnSwipeStart = exerciseSwipe.onStart;
+      const exerciseOnSwipeMove = exerciseSwipe.onMove;
+      const exerciseOnSwipeEnd = exerciseSwipe.onEnd;
 
       // 键盘
       function exerciseKeyDown(e) {
