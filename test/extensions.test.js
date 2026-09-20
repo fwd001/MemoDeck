@@ -305,6 +305,76 @@ test('saveResumePoint / loadResumePoint / clearResumePoint', () => {
   eq(Session.loadResumePoint(), null, '清除后应返回 null');
 });
 
+test('恢复点按模式分桶：三个模式互不顶包', () => {
+  resetAll();
+  const mk = (mode, index) => Session.saveResumePoint({
+    bankId: 'test-bank', paperId: '卷1', mode,
+    queueGids: ['卷1::1', '卷1::2'], currentIndex: index
+  });
+
+  mk('study', 1);
+  mk('exercise', 0);
+  mk('exam', 1);
+
+  eq(Session.loadResumePoint('test-bank', 'study').currentIndex, 1, '学习恢复点仍在');
+  eq(Session.loadResumePoint('test-bank', 'exercise').currentIndex, 0, '练习恢复点仍在');
+  eq(Session.loadResumePoint('test-bank', 'exam').currentIndex, 1, '考试恢复点仍在');
+
+  // 清掉考试不影响另外两个
+  Session.clearResumePoint('exam');
+  eq(Session.loadResumePoint('test-bank', 'exam'), null, '考试恢复点已清');
+  assert(Session.loadResumePoint('test-bank', 'study') != null, '学习恢复点不受影响');
+  assert(Session.loadResumePoint('test-bank', 'exercise') != null, '练习恢复点不受影响');
+
+  // 无 mode 时给最近触碰的那个（把 study 的时间戳拨旧，避开同毫秒并列）
+  const raw = JSON.parse(localStorage.getItem('examSession:v1'));
+  raw.resumes.study.lastTouchedAt = '2020-01-01T00:00:00.000Z';
+  localStorage.setItem('examSession:v1', JSON.stringify(raw));
+  Session.touchResumePoint(0, 'exercise');
+  eq(Session.loadResumePoint('test-bank').mode, 'exercise', '无 mode 应返回最近触碰的恢复点');
+
+  // 清空全部
+  Session.clearResumePoint();
+  eq(Session.loadResumePoint('test-bank', 'study'), null);
+  eq(Session.loadResumePoint('test-bank', 'exercise'), null);
+});
+
+test('touchResumePoint 只写自己的桶', () => {
+  resetAll();
+  Session.saveResumePoint({ bankId: 'b', paperId: 'p', mode: 'study', queueGids: ['g1', 'g2', 'g3'], currentIndex: 0 });
+  Session.saveResumePoint({ bankId: 'b', paperId: 'p', mode: 'exam', queueGids: ['g1', 'g2', 'g3'], currentIndex: 0 });
+
+  eq(Session.touchResumePoint(2, 'exam'), true, '存在的桶应返回 true');
+  eq(Session.loadResumePoint('b', 'exam').currentIndex, 2, '考试桶下标已更新');
+  eq(Session.loadResumePoint('b', 'study').currentIndex, 0, '学习桶下标不受影响');
+  eq(Session.touchResumePoint(1, 'practice'), false, '没有恢复点的模式返回 false');
+});
+
+test('examSession v1 单槽数据就地升级为 v2 分桶', () => {
+  resetAll();
+  localStorage.setItem('examSession:v1', JSON.stringify({
+    version: 1,
+    resume: {
+      bankId: 'old-bank', paperId: '卷1', mode: 'exam',
+      queueGids: ['卷1::1', '卷1::2'], currentIndex: 1,
+      startedAt: '2026-09-01T00:00:00.000Z', lastTouchedAt: '2026-09-01T00:00:00.000Z',
+      segment: null, answers: { '卷1::1': { choice: 'A', multiSel: [], input: '', answered: true } }
+    }
+  }));
+
+  const rp = Session.loadResumePoint('old-bank', 'exam');
+  assert(rp != null, '旧恢复点应可读');
+  eq(rp.currentIndex, 1);
+  eq(rp.answers['卷1::1'].choice, 'A', '作答快照不丢');
+
+  // 写入新模式的恢复点后，存储升级为 v2，旧恢复点仍在
+  Session.saveResumePoint({ bankId: 'old-bank', paperId: '卷1', mode: 'study', queueGids: ['卷1::1'], currentIndex: 0 });
+  const raw = JSON.parse(localStorage.getItem('examSession:v1'));
+  eq(raw.version, 2, '内部版本升级到 2');
+  eq(Object.keys(raw.resumes).sort(), ['exam', 'study']);
+  assert(Session.loadResumePoint('old-bank', 'exam') != null, '升级后旧恢复点仍是 exam 桶');
+});
+
 test('sliceSegment 按题目序号切分（1-based）', () => {
   resetAll();
   const all = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];

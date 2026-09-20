@@ -11,7 +11,7 @@
  *   migration.js → progress.js → session.js（必须在 progress 之后加载）
  *
  * 存储 key：
- *   examSession:v1   — 恢复点 & 当前分段
+ *   examSession:v1   — 恢复点（内部 version 2：按模式分桶）& 当前分段
  *   examSettings:v1  — 每日学习量等设置
  *
  * 不依赖 Vue / DOM，可在 Node 里单测。
@@ -21,6 +21,8 @@
 
   const SESSION_KEY = 'examSession:v1';
   const SETTINGS_KEY = 'examSettings:v1';
+  // 1 = 单槽 { resume }；2 = 分桶 { resumes: { study, exercise, exam } }
+  const SESSION_VERSION = 2;
 
   // —— 读写辅助 ——
   function readJSON(key) {
@@ -34,10 +36,21 @@
     catch (e) { return false; }
   }
 
+  function emptySession() { return { version: SESSION_VERSION, resumes: {} }; }
+
+  /**
+   * 读会话存储。v1（单槽）就地升级为 v2（按 mode 分桶），旧恢复点归还到它自己的桶里。
+   * 读取不写回：真正的迁移发生在下一次写入时，避免只读操作也产生副作用。
+   * @returns {{ version: number, resumes: Record<string, object> }}
+   */
   function readSession() {
     const v = readJSON(SESSION_KEY);
-    if (v && v.version === 1) return v;
-    return { version: 1, resume: null };
+    if (v && v.version === SESSION_VERSION && v.resumes && typeof v.resumes === 'object') return v;
+    const sess = emptySession();
+    if (v && v.version === 1 && v.resume && v.resume.mode) {
+      sess.resumes[String(v.resume.mode)] = v.resume;
+    }
+    return sess;
   }
   function writeSession(session) { return writeJSON(SESSION_KEY, session); }
 
@@ -58,14 +71,17 @@
 
   // =====================================================
   //  恢复点（resume）
+  //
+  //  按 mode 分桶存放：三个模式（study / exercise / exam）各自持有互不干扰的恢复点，
+  //  开始一种模式不会顶掉另一种模式未完成的会话。
   // =====================================================
 
   /**
-   * 保存一个恢复点。
+   * 保存一个恢复点（覆盖该 mode 自己的桶，其它模式不受影响）。
    * @param {object} params
    * @param {string} params.bankId       题库唯一标识（来自 cache.source / meta.title / url）
    * @param {string} params.paperId      当前卷 id
-   * @param {string} params.mode         'study' | 'practice' | 'exam'
+   * @param {string} params.mode         'study' | 'exercise' | 'exam'
    * @param {string[]} params.queueGids  session 内题目顺序（gid 数组）
    * @param {number}   params.currentIndex  当前做到第几题（0-based）
    * @param {object}  [params.segment]   可选：分段范围 { start: 1, end: 500, perSession: 20 }
@@ -74,10 +90,11 @@
    */
   function saveResumePoint(params) {
     const sess = readSession();
-    sess.resume = {
+    const mode = String(params.mode || 'study');
+    sess.resumes[mode] = {
       bankId: String(params.bankId || ''),
       paperId: String(params.paperId || ''),
-      mode: String(params.mode || 'study'),
+      mode: mode,
       queueGids: Array.isArray(params.queueGids) ? params.queueGids : [],
       currentIndex: Math.max(0, Number(params.currentIndex) || 0),
       startedAt: params.startedAt || new Date().toISOString(),
@@ -86,46 +103,57 @@
       answers: params.answers || null
     };
     writeSession(sess);
-    return sess.resume;
+    return sess.resumes[mode];
   }
 
   /**
    * 读取恢复点。
    * @param {string} [bankId] 可选：只返回匹配这个题库的恢复点
-   * @param {string} [mode]   可选：只返回匹配这个模式（study/exercise/exam）的恢复点，
-   *                          避免「学习」页顶到「练习」留下的恢复点
+   * @param {string} [mode]   可选：只返回该模式的恢复点。省略时在全部模式里取最近触碰过的一个
    * @returns {object | null}
    */
   function loadResumePoint(bankId, mode) {
-    const sess = readSession();
-    if (!sess.resume) return null;
-    if (bankId && sess.resume.bankId !== String(bankId)) return null;
-    if (mode && sess.resume.mode !== String(mode)) return null;
-    return sess.resume;
+    const resumes = readSession().resumes;
+    const modes = mode ? [String(mode)] : Object.keys(resumes);
+    let best = null;
+    modes.forEach(m => {
+      const r = resumes[m];
+      if (!r) return;
+      if (bankId && r.bankId !== String(bankId)) return;
+      if (!best || String(r.lastTouchedAt || '') > String(best.lastTouchedAt || '')) best = r;
+    });
+    return best;
   }
 
   /**
    * 清除恢复点。
-   * @param {string} [mode] 可选：只清除该模式的恢复点，其它模式的保持不变
+   * @param {string} [mode] 省略时清空全部模式；给定 mode 时只清该模式的桶
    */
   function clearResumePoint(mode) {
-    if (mode) {
-      const sess = readSession();
-      if (sess.resume && sess.resume.mode !== String(mode)) return;
-    }
-    writeSession({ version: 1, resume: null });
+    if (!mode) { writeSession(emptySession()); return; }
+    const sess = readSession();
+    const m = String(mode);
+    if (!sess.resumes[m]) return;
+    delete sess.resumes[m];
+    writeSession(sess);
   }
 
-  /** 刷新恢复点的 lastTouchedAt 与作答进度（每做一题调用） */
-  function touchResumePoint(currentIndex) {
+  /**
+   * 刷新恢复点的 lastTouchedAt 与作答进度（每做一题调用）。
+   * @param {number} currentIndex 当前下标
+   * @param {string} mode         必填：更新哪个模式的恢复点
+   * @returns {boolean} 该模式存在恢复点并已写回
+   */
+  function touchResumePoint(currentIndex, mode) {
     const sess = readSession();
-    if (sess.resume) {
-      sess.resume.lastTouchedAt = new Date().toISOString();
-      if (typeof currentIndex === 'number') {
-        sess.resume.currentIndex = Math.max(0, Number(currentIndex) || 0);
-      }
-      writeSession(sess);
+    const r = sess.resumes[String(mode)];
+    if (!r) return false;
+    r.lastTouchedAt = new Date().toISOString();
+    if (typeof currentIndex === 'number') {
+      r.currentIndex = Math.max(0, Number(currentIndex) || 0);
     }
+    writeSession(sess);
+    return true;
   }
 
   // =====================================================
@@ -236,7 +264,7 @@
   }
 
   global.ExamSession = {
-    SESSION_KEY, SETTINGS_KEY,
+    SESSION_KEY, SETTINGS_KEY, SESSION_VERSION,
 
     // 恢复点
     saveResumePoint, loadResumePoint, clearResumePoint, touchResumePoint,

@@ -162,7 +162,7 @@ MIN_FAIL_GAP = 5   // 答错后至少埋到 5 张之后（+0~2 随机），保�
 | `examWrongbook:v1` | `{ entries: [...] }` **运行时错题本真相源** | wrongbook.js |
 | `examWrongbook:v2` | 迁移导出格式（v1 条目的 v2 视图） | migration.js |
 | `examProgress:v1` | `{ version, progress: { [gid]: ProgressEntry } }` | progress.js |
-| `examSession:v1` | 恢复点（含考试模式的逐题答案快照 `answers`） | session.js |
+| `examSession:v1` | 恢复点（内部 version 2：按 mode 分桶 `resumes: { study, exercise, exam }`，考试桶含逐题答案快照 `answers`） | session.js |
 | `examSettings:v1` | 每日学习量等设置 | session.js |
 | `examLeitnerQueue:v1` | 闯关队列持久化 | leitner.js |
 | `memo:theme` / `memo:showDataPanel` | 主题与数据面板开关 | app.js |
@@ -292,9 +292,10 @@ DevVue.compile(document.querySelector('#app').innerHTML)
   没有消费者（详见 EXAM_JSON_SPEC.md §3.2.2）。
 - **两套"掌握"模型并存**：闯关的「一次即掌握」与 progress 的「连对 5 次」互不干涉，
   见 §3.2。这不算 bug，但意味着「掌握了多少」在两个入口下数字不同。
-- **恢复点是单一槽位**：`examSession:v1` 只存一份 resume，开始新模式会覆盖上一个模式
-  未完成的恢复点。按模式分桶（`resumes: { study, exercise, exam }`）需要改存储
-  schema 与迁移，尚未做。
+- **恢复点按模式分桶**：`examSession:v1` 内部为 `{ version: 2, resumes: { study, exercise, exam } }`，
+  开始一种模式只会覆盖它自己的桶。旧的单槽数据（`version: 1`）在读取时归还到它自己的 mode 桶，
+  下一次写入时落盘为 v2，无需手动迁移。`loadResumePoint` / `clearResumePoint` 的 `mode`
+  参数决定读写哪个桶；`touchResumePoint(index, mode)` 的 mode 必填，该模式桶不存在时返回 false。
 
 **交互**
 - **卡片的左右滑动只在「看过答案 / 判过分」之后生效**，且纵向滚动始终交还浏览器

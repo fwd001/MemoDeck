@@ -358,11 +358,6 @@
         studyClock.start();
       }
 
-      function studyAbandonResume() {
-        // 放弃上次 → 保持 setup 模式，等用户重新开始
-        toast('已放弃上次进度，重新设置');
-      }
-
       // ====== running：mark + next ======
       function studyMark(remembered) {
         const item = studyCurrentItem.value;
@@ -396,7 +391,7 @@
           studyIndex.value++;
           studySwipeX.value = 0;
           // 位置必须写回恢复点，否则「继续上次」永远从第 1 题重来
-          Session.touchResumePoint(studyIndex.value);
+          Session.touchResumePoint(studyIndex.value, 'study');
         }
       }
 
@@ -628,8 +623,6 @@
         exerciseClock.start();
       }
 
-      function exerciseAbandonResume() { toast('已放弃上次进度'); }
-
       // ====== running ======
       function exerciseSubmit() {
         const cur = exerciseCurrentItem.value;
@@ -682,7 +675,7 @@
           exerciseIndex.value++;
           resetExerciseAnswer();
           exerciseSwipeX.value = 0;
-          Session.touchResumePoint(exerciseIndex.value);
+          Session.touchResumePoint(exerciseIndex.value, 'exercise');
         }
       }
 
@@ -864,17 +857,16 @@
 
       // 把逐题答案 + 当前下标写回恢复点。只在跳题 / 选项变更 / 离开页面时写，
       // 不按键入次数写，避免手机上每秒反复序列化整份答案表。
+      // startedAt 取内存里的 examStartAt：续答时它已由 examResume 还原成原开始时间。
       function _examPersist() {
         if (examMode.value !== 'running' || examSubmitted.value) return;
-        const bankId = bankIdOf();
-        const prev = Session.loadResumePoint(bankId, 'exam');
         Session.saveResumePoint({
-          bankId: bankId,
+          bankId: bankIdOf(),
           paperId: currentPaperId.value,
           mode: 'exam',
           queueGids: examQueueGids.value,
           currentIndex: examIndex.value,
-          startedAt: (prev && prev.startedAt) || new Date(examStartAt.value).toISOString(),
+          startedAt: new Date(examStartAt.value).toISOString(),
           answers: JSON.parse(JSON.stringify(examAnswers))
         });
       }
@@ -1871,7 +1863,7 @@
         studyElapsedSec, studyCurrentItem, studyNextItem,
         studyTotal, studyProgressPct, studyCurrentProgress, studyPrevHint,
         studyScopeCounts, studyCustomCount, studyAvailableCount,
-        studyStart, studyResume, studyAbandonResume, studyMark, studyNext,
+        studyStart, studyResume, studyMark, studyNext,
         studyExit, studyRestart, studyFinish, studyFormatDuration,
         studyOnSwipeStart, studyOnSwipeMove, studyOnSwipeEnd,
         studyAutoFillCustomEnd,
@@ -1885,7 +1877,7 @@
         exerciseSwipeX, exerciseSwipeActive,
         exerciseCurrentItem, exerciseNextItem, exerciseTotal, exerciseProgressPct,
         exerciseCurrentProgress, exercisePrevHint, exerciseBadgeCount, exerciseWrongbookCount,
-        exerciseStart, exerciseResume, exerciseAbandonResume,
+        exerciseStart, exerciseResume,
         exerciseSubmit, exerciseSelfJudge, exerciseNext, exerciseExit, exerciseRestart, exerciseFinish,
         exerciseOptionClick, exerciseIsOptionOn, exerciseAutoFillCustomEnd,
         exerciseOnSwipeStart, exerciseOnSwipeMove, exerciseOnSwipeEnd,
