@@ -311,10 +311,9 @@ DevVue.compile(document.querySelector('#app').innerHTML)
   练习与模拟考试用 `.md-exercise-option` + `.md-exercise-opt-key`（`pages.css`）。
   徽标尺寸/配色/移动端降级已统一成同一套值，但类名与规则尚未合并；且只有后者有
   `.correct` / `.wrong` 态。改一处选项样式必须同时检查两处。
-- **按模式切换的空状态插画永不命中**：`components.css` 里
-  `section[v-show*="wrongbook"] .empty-hint::before` 这类选择器依赖 `v-show` 属性留在 DOM 中，
-  而 Vue 编译后把它转成 `style`（实测 `document.querySelectorAll('[v-show]').length === 0`），
-  所以错题本/摸底速览/分类考试都只显示默认的「书」图标。
+- **空状态图标只有一套**：`.empty-hint::before` 的书本图标。曾经按模式切换专属图标的
+  三条规则已删——它们用 `section[v-show*="..."]` 选中，而 Vue 把 `v-show` 编译成 `style`，
+  DOM 里没有这个属性，规则永不命中。要按场景区分图标，请在模板上挂真实类名。
 
 **交互**
 - **卡片的左右滑动只在「看过答案 / 判过分」之后生效**，且纵向滚动始终交还浏览器
