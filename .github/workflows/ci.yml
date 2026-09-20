@@ -116,3 +116,28 @@ jobs:
               sys.exit('✗ 存在断链：\n' + '\n'.join(broken))
           print('✓ 全部可达')
           PY
+
+      # var(--x) 引用了没定义的变量时，整条声明「computed-value 阶段失效」，
+      # 表现是背景变透明 / 颜色回落继承值，且不报任何错——只能靠机器查。
+      # （--surface-sub 曾被 14 处引用却全站没定义，就是这么潜伏着的）
+      - name: 检查 CSS 变量都有定义
+        run: |
+          set -e
+          node -e "
+          const fs=require('fs');
+          const files=fs.readdirSync('css').map(f=>'css/'+f);
+          const strip=s=>s.replace(/\/\*[\s\S]*?\*\//g,'');
+          const defined=new Set();
+          for(const f of files)
+            for(const m of strip(fs.readFileSync(f,'utf8')).matchAll(/(--[\w-]+)\s*:/g)) defined.add(m[1]);
+          const bad=new Map();
+          for(const f of files)
+            for(const m of strip(fs.readFileSync(f,'utf8')).matchAll(/var\(\s*(--[\w-]+)(\s*,[^)]*)?\)/g))
+              if(!defined.has(m[1])&&!m[2]) bad.set(m[1],(bad.get(m[1])||0)+1);
+          if(bad.size){
+            console.error('✗ 引用了未定义且无 fallback 的 CSS 变量（这些声明全部失效）：');
+            for(const [v,n] of bad) console.error('   '+v+'  共 '+n+' 处');
+            process.exit(1);
+          }
+          console.log('  ok  '+defined.size+' 个自定义属性，全部 var() 引用有定义（或带 fallback）');
+          "

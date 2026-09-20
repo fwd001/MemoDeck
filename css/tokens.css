@@ -57,6 +57,7 @@
   --text-tertiary:   #8E8E93;
   --text-disabled:   rgba(60, 60, 67, 0.30);
   --text-placeholder: rgba(60, 60, 67, 0.36);
+  --on-primary:       #FFFFFF;  /* primary 底上的前景色，两套主题都是白 */
 
   /* —— SURFACES —— */
   --bg:              #F2F2F7;
@@ -66,6 +67,8 @@
   --surface-elevated:#FFFFFF;
   --surface-hover:   #E8E8ED;
   --surface-pressed: #D1D1D6;
+  /* 卡片内的次级底：走半透明 fill，明暗两套主题各自覆盖 --fill-*，这里不必重复声明 */
+  --surface-sub:     var(--fill-secondary);
 
   /* Legacy aliases */
   --card-bg:         #FFFFFF;
