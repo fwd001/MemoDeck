@@ -25,4 +25,5 @@
     padding: 10px 14px; font-size: 14px;
   }
   .option-btn { min-height: 46px; }
+  .option-btn .opt-key { width: 22px; height: 22px; line-height: 22px; font-size: 12px; }
 }

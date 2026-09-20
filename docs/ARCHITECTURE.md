@@ -306,6 +306,16 @@ DevVue.compile(document.querySelector('#app').innerHTML)
   下一次写入时落盘为 v2，无需手动迁移。`loadResumePoint` / `clearResumePoint` 的 `mode`
   参数决定读写哪个桶；`touchResumePoint(index, mode)` 的 mode 必填，该模式桶不存在时返回 false。
 
+**样式**
+- **选项按钮仍是两套类名**：分类考试用 `.option-btn` + `.opt-key`（`components.css`），
+  练习与模拟考试用 `.md-exercise-option` + `.md-exercise-opt-key`（`pages.css`）。
+  徽标尺寸/配色/移动端降级已统一成同一套值，但类名与规则尚未合并；且只有后者有
+  `.correct` / `.wrong` 态。改一处选项样式必须同时检查两处。
+- **按模式切换的空状态插画永不命中**：`components.css` 里
+  `section[v-show*="wrongbook"] .empty-hint::before` 这类选择器依赖 `v-show` 属性留在 DOM 中，
+  而 Vue 编译后把它转成 `style`（实测 `document.querySelectorAll('[v-show]').length === 0`），
+  所以错题本/摸底速览/分类考试都只显示默认的「书」图标。
+
 **交互**
 - **卡片的左右滑动只在「看过答案 / 判过分」之后生效**，且纵向滚动始终交还浏览器
   （`touch-action: pan-y` + 一次性轴锁定）。桌面端同一段代码也接受鼠标拖拽。

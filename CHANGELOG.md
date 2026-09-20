@@ -60,6 +60,9 @@
   深色 rgba，于是远程导入输入框、粘贴框、切卷下拉、今日进度条、拖拽区在「系统 dark +
   用户手动 light」下会顶着深色底。7 条选择器统一加 `html:not([data-theme="light"])` 前缀
   （auto 模式下 `applyTheme` 是移除属性，所以 auto 与手动 dark 两种情况仍照常命中）。
+- **分类考试的题号徽标和练习/模拟考试长得不一样**：26px vs 24px、`--surface-2` vs
+  `--fill-primary`、14px vs 13px，而且只有练习/考试在移动端降到 22px、分类考试不降。
+  统一为 24px（≤600px 降到 22px）+ `--fill-primary` + `vertical-align: middle`。
 - **14 处背景声明从未生效**：`--surface-sub` 被引用 14 次却全站没有定义，无 fallback 的
   `var()` 让整条 `background` 在 computed-value 阶段静默失效——练习/考试的选项行、禁用的
   填空/简答输入框、若干小徽标全是透明底。`.toast` 同理引用了未定义的 `--on-primary`，

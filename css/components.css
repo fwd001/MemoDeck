@@ -337,7 +337,9 @@ section[v-show*="category"] .empty-hint::before {
 .option-btn:hover { border-color: var(--primary); }
 .option-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .option-btn.on { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); font-weight: 600; }
-.option-btn .opt-key { display: inline-block; min-width: 26px; height: 26px; line-height: 26px; text-align: center; border-radius: 50%; background: var(--surface-2); font-weight: 600; margin-right: 10px; font-size: 14px; }
+/* 徽标与练习/模拟考试（.md-exercise-opt-key）保持一致：24px 圆、--fill-primary 底、
+   13px 字号；移动端统一降到 22px（见 responsive.css） */
+.option-btn .opt-key { display: inline-block; vertical-align: middle; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; background: var(--fill-primary); color: var(--text-muted); font-weight: 600; margin-right: 10px; font-size: 13px; }
 .option-btn.on .opt-key { background: var(--primary); color: #fff; }
 
 .cat-type-select { min-height: 40px; padding: 6px 10px; border: 1px solid var(--border-sub); border-radius: var(--radius-sm); font-size: 15px; font-family: inherit; background: var(--surface); color: var(--text-main); box-shadow: var(--shadow-input); }
