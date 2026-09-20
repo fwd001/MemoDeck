@@ -111,8 +111,17 @@
       const customForm = reactive({ question: '', type: 'single_choice', options: '', answer: '' });
 
       /* ============ 错题本 ============ */
+      // 错题来源注册表：新增模式只改这里，Tab / 计数 / 标签自动跟上。
+      // 之前写死 practice/preview/exam 三个，study / exercise 产生的错题只能从「全部」里看到。
+      const WRONG_SOURCES = [
+        { key: 'study',    label: '学习' },
+        { key: 'exercise', label: '练习' },
+        { key: 'practice', label: '记忆闯关' },
+        { key: 'preview',  label: '摸底速览' },
+        { key: 'exam',     label: '考试' }
+      ];
       const wrongEntries = ref([]);
-      const wrongTab = ref('practice');              // practice | preview | exam | all
+      const wrongTab = ref('all');                   // all | WRONG_SOURCES[].key
       const wrongPracticeQueue = ref([]);
       const wrongPracticeShow = ref(false);
 
@@ -1319,14 +1328,18 @@
       const wrongCount = computed(() => wrongEntries.value.length);
       const wrongBySource = computed(() => {
         const g = Utils.groupBy(wrongEntries.value, e => e.source);
-        return {
-          practice: g.practice || [],
-          preview: g.preview || [],
-          exam: g.exam || [],
-          all: wrongEntries.value
-        };
+        const out = { all: wrongEntries.value };
+        WRONG_SOURCES.forEach(s => { out[s.key] = g[s.key] || []; });
+        return out;
       });
-      const wrongFiltered = computed(() => wrongBySource.value[wrongTab.value] || wrongEntries.value);
+      // 只列真实有题的来源：5 个固定 Tab 在手机上会折成两行、且大多是 0
+      const wrongSourceTabs = computed(() => WRONG_SOURCES
+        .map(s => ({ key: s.key, label: s.label, count: wrongBySource.value[s.key].length }))
+        .filter(s => s.count));
+      const wrongFiltered = computed(() => {
+        const list = wrongBySource.value[wrongTab.value];
+        return list && list.length ? list : wrongEntries.value;
+      });
       const wrongItems = computed(() => wrongFiltered.value.map(e => e.item));
       // v2：错题本状态分布（new / learning / weak）
       const wrongStatusDist = computed(() => {
@@ -1344,7 +1357,8 @@
         toastTimer = setTimeout(() => { toastMsg.value = ''; }, 2200);
       }
       function sourceLabel(s) {
-        return { practice: '记忆闯关', preview: '摸底速览', exam: '分类考试' }[s] || s;
+        const hit = WRONG_SOURCES.find(x => x.key === s);
+        return hit ? hit.label : s;
       }
       function makeEnvelope(source, url, data) {
         return { source, url: url || '', fetchedAt: new Date().toISOString(), data };
@@ -1945,7 +1959,7 @@
         catStage, catSelected, catInput, catChoice, catMultiSel, catRevealed, catFeedback,
         catPool, catIndex, catStats, catWrongItems, catError, catCurrent, catNextLabel, hasPrevCat, catElapsed, catTypes, catAllSelected,
         showCustomForm, customForm,
-        wrongEntries, wrongTab, wrongCount, wrongFiltered, wrongItems, wrongBySource, wrongStatusDist,
+        wrongEntries, wrongTab, wrongCount, wrongFiltered, wrongItems, wrongSourceTabs, wrongStatusDist,
         wrongPracticeQueue, wrongPracticeShow,
         showAiModal, aiPrompt, aiCopied,
         catFillInput, insertCatSep,

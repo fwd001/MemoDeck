@@ -1199,11 +1199,9 @@
             <h3 style="margin:0;" data-page-node-id="VbUFEhDLou6QWoCyW9Fzr2">📕 错题本</h3>
             <button class="btn danger small" @click="wrongClear()" v-if="wrongCount" data-page-node-id="oApBxqYficjAunonN7FY13">🗑 清空全部</button>
           </div>
-          <div class="wb-tabs" data-page-node-id="uZoGosohrXhBmcO6jf4I6G">
-            <button :class="{ on: wrongTab === 'practice' }" @click="wrongTab = 'practice'" data-page-node-id="JqCWAc5Vs9yruR7s5tykUj">记忆闯关错题 ({{ wrongBySource.practice.length }})</button>
-            <button :class="{ on: wrongTab === 'preview' }" @click="wrongTab = 'preview'" data-page-node-id="NXT3xyJdQoKyox5TYGBtRe">摸底速览错题 ({{ wrongBySource.preview.length }})</button>
-            <button :class="{ on: wrongTab === 'exam' }" @click="wrongTab = 'exam'" data-page-node-id="jNwsFZytB3QVJpFbpFwAlh">考试错题 ({{ wrongBySource.exam.length }})</button>
-            <button :class="{ on: wrongTab === 'all' }" @click="wrongTab = 'all'" data-page-node-id="WUAFhFtSgZQNa9QwnUa2gl">全部 ({{ wrongCount }})</button>
+          <div class="wb-tabs">
+            <button v-for="t in wrongSourceTabs" :key="t.key" :class="{ on: wrongTab === t.key }" @click="wrongTab = t.key">{{ t.label }}错题 ({{ t.count }})</button>
+            <button :class="{ on: wrongTab === 'all' }" @click="wrongTab = 'all'">全部 ({{ wrongCount }})</button>
           </div>
           <!-- v2：状态分布（错题本状态面板） -->
           <div class="wb-status-bar" v-if="wrongCount">

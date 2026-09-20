@@ -392,6 +392,8 @@ section[v-show*="category"] .empty-hint::before {
 
 .wb-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 12px; }
 .wb-item .src-tag { font-size: 12px; padding: 2px 8px; border-radius: var(--radius-sm); font-weight: 600; }
+.wb-item .src-tag.study { background: var(--success-bg); color: var(--success); }
+.wb-item .src-tag.exercise { background: var(--info-bg); color: var(--info); }
 .wb-item .src-tag.practice { background: var(--primary-bg); color: var(--primary); }
 .wb-item .src-tag.preview { background: var(--warn-bg); color: var(--warn); }
 .wb-item .src-tag.exam { background: var(--danger-bg); color: var(--danger); }
