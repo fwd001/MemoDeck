@@ -40,9 +40,14 @@
   --success:       #34C759;
   --success-bg:    rgba(52, 199, 89, 0.12);
   --success-border: rgba(52, 199, 89, 0.30);
+  /* 承载 --on-accent 文字的语义填充档。浅色模式必须用深档：
+     白字压 #34C759 只有 2.22:1，压 #1E7A32 是 5.41:1（AA 正文要 4.5:1）。
+     深色模式语义色本身更亮，改由 themes.css 把 --on-accent 压成近黑，此档等于亮色本体。 */
+  --success-fill:  #1E7A32;
   --danger:        #FF3B30;
   --danger-bg:     rgba(255, 59, 48, 0.10);
   --danger-border: rgba(255, 59, 48, 0.28);
+  --danger-fill:   #D70015;   /* 白字 5.38:1（原 #FF3B30 只有 3.55:1） */
   --warn:          #FF9500;
   --warn-bg:       rgba(255, 149, 0, 0.12);
   --info:          #5AC8FA;

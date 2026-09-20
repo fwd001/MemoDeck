@@ -68,10 +68,10 @@
 .btn.gray:hover { background: var(--fill-secondary); }
 .btn.gray:active { background: var(--fill-tertiary); }
 
-.btn.good { background: var(--success); }
-.btn.bad  { background: var(--danger); }
+.btn.good { background: var(--success-fill); }
+.btn.bad  { background: var(--danger-fill); }
 
-.btn.danger { background: var(--danger); }
+.btn.danger { background: var(--danger-fill); }
 .btn.danger:hover { opacity: 0.9; }
 
 .btn.small {
@@ -216,7 +216,7 @@ font-weight: 600;
 }
 .tab-nav .badge {
 position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px;
-background: var(--danger); color: var(--on-accent); font-size: 11px; line-height: 18px; border-radius: var(--radius-sm); font-weight: 600;
+background: var(--danger-fill); color: var(--on-accent); font-size: 11px; line-height: 18px; border-radius: var(--radius-sm); font-weight: 600;
 }
 /* ============ 进度条 ============ */
 .progress-bar-container { width: 100%; height: 8px; background: var(--border-sub); border-radius: var(--radius-sm); margin-bottom: 14px; overflow: hidden; }
@@ -244,8 +244,8 @@ background: var(--danger); color: var(--on-accent); font-size: 11px; line-height
 .question { font-size: 19px; font-weight: 600; margin: 20px 0 22px; white-space: pre-wrap; line-height: 1.5; }
 .btn-group { display: flex; gap: 14px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
 .btn.wide { background: var(--primary); }
-.btn.good { background: var(--success); flex: 1; max-width: 220px; }
-.btn.bad  { background: var(--danger);  flex: 1; max-width: 220px; }
+.btn.good { flex: 1; max-width: 220px; }
+.btn.bad  { flex: 1; max-width: 220px; }
 
 /* 答案展示 — iOS 风格 */
 .answer-box {
@@ -348,9 +348,9 @@ background: var(--danger); color: var(--on-accent); font-size: 11px; line-height
 .md-opt.selected { border-color: var(--primary); background: var(--primary-bg); }
 .md-opt.selected .md-opt-key { background: var(--primary); color: var(--on-accent); }
 .md-opt.correct { border-color: var(--success-border); background: var(--success-bg); }
-.md-opt.correct .md-opt-key { background: var(--success); color: var(--on-accent); }
+.md-opt.correct .md-opt-key { background: var(--success-fill); color: var(--on-accent); }
 .md-opt.wrong { border-color: var(--danger-border); background: var(--danger-bg); }
-.md-opt.wrong .md-opt-key { background: var(--danger); color: var(--on-accent); }
+.md-opt.wrong .md-opt-key { background: var(--danger-fill); color: var(--on-accent); }
 
 /* 判断题：两个等宽大按钮，同一套状态语义 */
 .md-tf { display: flex; gap: 12px; }
@@ -463,4 +463,4 @@ textarea.ai-prompt:focus-visible { outline: none; border-color: var(--primary); 
   background: var(--primary); color: var(--on-accent); padding: 12px 20px; border-radius: var(--radius-sm); font-size: 14px;
   box-shadow: var(--shadow-popover); z-index: 100; max-width: 90vw;
 }
-.toast.err { background: var(--danger); }
+.toast.err { background: var(--danger-fill); }

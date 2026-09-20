@@ -45,8 +45,10 @@
 html[data-theme="dark"] {
   --primary:#0A84FF;--primary-hover:#409CFF;--primary-active:#0066CC;
   --primary-bg:rgba(10,132,255,0.24);--primary-bg-hover:rgba(10,132,255,0.32);
-  --success:#30D158;--success-bg:rgba(48,209,88,0.18);--success-border:rgba(48,209,88,0.35);
-  --danger:#FF453A;--danger-bg:rgba(255,69,58,0.16);--danger-border:rgba(255,69,58,0.32);
+  --success:#30D158;--success-bg:rgba(48,209,88,0.18);--success-border:rgba(48,209,88,0.35);--success-fill:#30D158;
+  --danger:#FF453A;--danger-bg:rgba(255,69,58,0.16);--danger-border:rgba(255,69,58,0.32);--danger-fill:#FF453A;
+  /* 深色模式语义色更亮，白字压上去只有 2.0–3.7:1，所以改为近黑前景（5.8–10.4:1） */
+  --on-accent:#000000;
   --warn:#FF9F0A;--warn-bg:rgba(255,159,10,0.18);
   --info:#64D2FF;--info-bg:rgba(100,210,255,0.18);
   --text-main:#F2F2F7;--text-muted:#98989D;--text-tertiary:#636366;
@@ -71,8 +73,10 @@ html[data-theme="dark"] {
   :root {
     --primary:#0A84FF;--primary-hover:#409CFF;--primary-active:#0066CC;
     --primary-bg:rgba(10,132,255,0.24);--primary-bg-hover:rgba(10,132,255,0.32);
-    --success:#30D158;--success-bg:rgba(48,209,88,0.18);--success-border:rgba(48,209,88,0.35);
-    --danger:#FF453A;--danger-bg:rgba(255,69,58,0.16);--danger-border:rgba(255,69,58,0.32);
+    --success:#30D158;--success-bg:rgba(48,209,88,0.18);--success-border:rgba(48,209,88,0.35);--success-fill:#30D158;
+    --danger:#FF453A;--danger-bg:rgba(255,69,58,0.16);--danger-border:rgba(255,69,58,0.32);--danger-fill:#FF453A;
+    /* 深色模式语义色更亮，白字压上去只有 2.0–3.7:1，所以改为近黑前景（5.8–10.4:1） */
+    --on-accent:#000000;
     --warn:#FF9F0A;--warn-bg:rgba(255,159,10,0.18);
     --info:#64D2FF;--info-bg:rgba(100,210,255,0.18);
     --text-main:#F2F2F7;--text-muted:#98989D;--text-tertiary:#636366;
@@ -112,8 +116,10 @@ html[data-theme="dark"] .md-home-week-ring svg circle:first-child {
   html[data-theme="light"] {
     --primary:#007AFF;--primary-hover:#0A84FF;--primary-active:#0066CC;
     --primary-bg:rgba(0,122,255,0.10);--primary-bg-hover:rgba(0,122,255,0.16);
-    --success:#34C759;--success-bg:rgba(52,199,89,0.12);--success-border:rgba(52,199,89,0.30);
-    --danger:#FF3B30;--danger-bg:rgba(255,59,48,0.10);--danger-border:rgba(255,59,48,0.28);
+    --success:#34C759;--success-bg:rgba(52,199,89,0.12);--success-border:rgba(52,199,89,0.30);--success-fill:#1E7A32;
+    --danger:#FF3B30;--danger-bg:rgba(255,59,48,0.10);--danger-border:rgba(255,59,48,0.28);--danger-fill:#D70015;
+    /* 强制浅色：回到白字 + 深档填充 */
+    --on-accent:#FFFFFF;
     --warn:#FF9500;--warn-bg:rgba(255,149,0,0.12);
     --info:#5AC8FA;--info-bg:rgba(90,200,250,0.12);
     --text-main:#1C1C1E;--text-muted:#6E6E73;--text-tertiary:#8E8E93;
