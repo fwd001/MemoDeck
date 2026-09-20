@@ -26,6 +26,7 @@ const PRECACHE_URLS = [
   "./js/wrongbook.js",
   "./js/store.js",
   "./js/utils.js",
+  "./js/queue.js",
   "./js/progress.js",
   "./js/session.js",
   "./js/stats.js",

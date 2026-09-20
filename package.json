@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "test": "node test/core.test.js && node test/extensions.test.js"
+    "test": "node test/core.test.js && node test/queue.test.js && node test/extensions.test.js"
   },
   "devDependencies": {
     "sharp": "^0.35.4"

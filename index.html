@@ -307,7 +307,7 @@
                 <input type="radio" value="wrongbook" v-model="studyScope">
                 <span class="radio-dot"></span>
                 <span class="radio-label">错题本</span>
-                <span class="md-study-badge">{{ wrongCount }}</span>
+                <span class="md-study-badge">{{ studyScopeCounts.wrongbook }}</span>
               </label>
               <label class="md-study-radio" :class="{ active: studyScope === 'custom' }">
                 <input type="radio" value="custom" v-model="studyScope">
@@ -518,7 +518,7 @@
                 <input type="radio" value="wrongbook" v-model="exerciseScope">
                 <span class="radio-dot"></span>
                 <span class="radio-label">错题本</span>
-                <span class="md-study-badge">{{ wrongCount }}</span>
+                <span class="md-study-badge">{{ exerciseWrongbookCount }}</span>
               </label>
               <label class="md-study-radio" :class="{ active: exerciseScope === 'custom' }">
                 <input type="radio" value="custom" v-model="exerciseScope">
@@ -1289,6 +1289,7 @@
   <script src="js/migration.js"></script>
   <script src="js/progress.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/queue.js"></script>
   <script src="js/ai-prompt.js"></script>
   <script src="js/session.js"></script>
   <script src="js/stats.js"></script>

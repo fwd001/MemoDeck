@@ -13,6 +13,7 @@
   const Wrongbook = global.ExamWrongbook;
   const AIPrompt = global.ExamAIPrompt;
   const Utils = global.ExamUtils;
+  const Queue = global.ExamQueue;
   // —— 阶段 0 新增模块 ——
   const Migration = global.ExamMigration;
   const Progress = global.ExamProgress;
@@ -80,6 +81,26 @@
       /* —— watchers：面板/主题状态持久化 —— */
       Vue.watch(showDataPanel, function (v) { localStorage.setItem('memo:showDataPanel', v ? '1' : '0'); });
       Vue.watch(themeMode, function () { applyTheme(); });
+
+      /* ============ 共享取题管线 ============ */
+      // 算法本体在 js/queue.js（纯逻辑、可在 Node 单测）；这里只把 Vue 的 ref 喂给它。
+      function queueCtx(overrides) {
+        const all = bankGids.value;
+        return Object.assign({
+          allGids: all,
+          progressMap: Progress.getAll(),
+          wrongGids: new Set(wrongEntries.value.map(e => e.item && e.item.gid).filter(Boolean)),
+          dueGids: Progress.getDueQuestions(all),
+          itemsByGid: new Map(bank.value.map(it => [it.gid, it])),
+          dailyTask: Session.generateDailyTask
+        }, overrides || {});
+      }
+      function buildQueueGids(cfg) {
+        return Queue.buildQueueGids(Object.assign(queueCtx(), { cfg: cfg }), cfg);
+      }
+      function queueCountOf(cfg) {
+        return Queue.queueCountOf(Object.assign(queueCtx(), { cfg: cfg }), cfg);
+      }
 
       /* ============ 记忆闯关 ============ */
       const practiceQueue = ref([]);
@@ -195,94 +216,33 @@
         parts.push('streak ' + e.streak);
         return '之前：' + parts.join(' · ');
       });
-      // setup 时实时计算各范围的题数
+      // setup 时实时计算各范围的题数：与 studyStart 走同一套管线，
+      // 保证界面显示的「将学习 N 题」就是实际排队出来的题数
+      function studyCfg() {
+        return {
+          scope: studyScope.value, start: studyCustomStart.value, end: studyCustomEnd.value,
+          types: studyTypes.value, strategy: studyStrategy.value,
+          perSession: studyPerSession.value, perSessionCustom: studyPerSessionCustom.value
+        };
+      }
       const studyScopeCounts = computed(() => {
-        const gids = bankGids.value;
-        const pm = progressMap.value;
-        const out = {};
-        out.all = gids.length;
-        out.today = Progress.getDueQuestions(gids).length;
-        out.unmastered = gids.filter(g => {
-          const e = pm[g]; return !e || e.status !== 'mastered';
-        }).length;
-        out.wrongbook = wrongEntries.value.length;
-        // custom 数量需要在选 custom 时动态算
-        return out;
+        const ctx = queueCtx({ progressMap: progressMap.value });
+        const cnt = sc => Queue.scopeGidsOf(sc, ctx).length;
+        return {
+          all: ctx.allGids.length,
+          today: cnt('today'),
+          unmastered: cnt('unmastered'),
+          wrongbook: cnt('wrongbook')
+        };
       });
-      const studyCustomCount = computed(() => {
-        const start = Math.max(1, studyCustomStart.value || 1);
-        const end = studyCustomEnd.value > 0 ? studyCustomEnd.value : bank.value.length;
-        const s = Math.min(start, end), e = Math.max(start, end);
-        // 过滤题型
-        const typesSelected = Object.values(studyTypes.value).some(Boolean);
-        let count = 0;
-        for (let i = s - 1; i < Math.min(e, bank.value.length); i++) {
-          const t = bank.value[i].rawType;
-          if (!typesSelected || studyTypes.value[t]) count++;
-        }
-        return count;
-      });
-      const studyAvailableCount = computed(() => {
-        if (studyScope.value === 'custom') return studyCustomCount.value;
-        return (studyScopeCounts.value[studyScope.value] !== undefined) ? studyScopeCounts.value[studyScope.value] : studyScopeCounts.value.all;
-      });
-      const studyBadgeCount = computed(() => {
-        if (studyScope.value === 'custom') return studyCustomCount.value;
-        const c = studyScopeCounts.value;
-        return c[studyScope.value] !== undefined ? c[studyScope.value] : c.all;
-      });
+      const studyCustomCount = computed(() =>
+        queueCountOf(Object.assign(studyCfg(), { scope: 'custom' })));
+      const studyAvailableCount = computed(() => queueCountOf(studyCfg()));
 
       // ====== setup → running ======
       function studyStart() {
         if (!studyAvailableCount.value) { toast('当前条件下没有可学习的题目', false); return; }
-        const all = bankGids.value;
-        let scopeGids = all.slice();
-
-        // 1. 按 scope 切
-        if (studyScope.value === 'unmastered') {
-          const pm = Progress.getAll();
-          scopeGids = all.filter(g => {
-            const e = pm[g]; return !e || e.status !== 'mastered';
-          });
-        } else if (studyScope.value === 'wrongbook') {
-          const wg = new Set(wrongEntries.value.map(e => e.item && e.item.gid).filter(Boolean));
-          scopeGids = all.filter(g => wg.has(g));
-        } else if (studyScope.value === 'custom') {
-          const start = Math.max(1, studyCustomStart.value || 1);
-          const end = Math.min(bank.value.length, studyCustomEnd.value > 0 ? studyCustomEnd.value : bank.value.length);
-          scopeGids = all.slice(start - 1, end);
-          // 再按题型过滤
-          const ts = studyTypes.value;
-          const hasType = Object.values(ts).some(Boolean);
-          if (hasType) {
-            scopeGids = scopeGids.filter(g => {
-              const it = bank.value.find(b => b.gid === g);
-              return it && ts[it.rawType];
-            });
-          }
-        } else if (studyScope.value === 'today') {
-          scopeGids = Progress.getDueQuestions(all);
-        }
-
-        // 2. 按 strategy 排
-        let queueGids;
-        if (studyStrategy.value === 'sequential') {
-          queueGids = scopeGids.slice();
-        } else if (studyStrategy.value === 'random') {
-          queueGids = scopeGids.slice();
-          for (let i = queueGids.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [queueGids[i], queueGids[j]] = [queueGids[j], queueGids[i]];
-          }
-        } else {
-          // due 优先：Session.generateDailyTask
-          const perSession = studyPerSession.value === 'custom'
-            ? studyPerSessionCustom.value
-            : Number(studyPerSession.value) || 30;
-          const r = Session.generateDailyTask(all, perSession, scopeGids);
-          queueGids = r.queue;
-        }
-
+        const queueGids = buildQueueGids(studyCfg());
         if (!queueGids.length) { toast('队列生成为空，请换范围', false); return; }
 
         // 3. 启动
@@ -576,27 +536,17 @@
         else if (e.wrong > 0) parts.push('上次答错');
         return '之前：' + parts.join(' · ');
       });
-      const exerciseBadgeCount = computed(() => {
-        const all = bankGids.value;
-        let scopeGids = all.slice();
-        if (exerciseScope.value === 'unmastered') {
-          const pm = Progress.getAll();
-          scopeGids = all.filter(g => { const e = pm[g]; return !e || e.status !== 'mastered'; });
-        } else if (exerciseScope.value === 'wrongbook') {
-          const wg = new Set(wrongEntries.value.map(e => e.item && e.item.gid).filter(Boolean));
-          scopeGids = all.filter(g => wg.has(g));
-        } else if (exerciseScope.value === 'custom') {
-          const s = Math.max(1, exerciseCustomStart.value || 1);
-          const e = Math.min(bank.value.length, exerciseCustomEnd.value > 0 ? exerciseCustomEnd.value : bank.value.length);
-          scopeGids = all.slice(s - 1, e);
-          const ts = exerciseTypes.value;
-          const hasType = Object.values(ts).some(Boolean);
-          if (hasType) scopeGids = scopeGids.filter(g => {
-            const it = bank.value.find(b => b.gid === g); return it && ts[it.rawType];
-          });
-        }
-        return scopeGids.length;
-      });
+      function exerciseCfg() {
+        return {
+          scope: exerciseScope.value, start: exerciseCustomStart.value, end: exerciseCustomEnd.value,
+          types: exerciseTypes.value, strategy: exerciseStrategy.value,
+          perSession: exercisePerSession.value, perSessionCustom: exercisePerSessionCustom.value
+        };
+      }
+      const exerciseBadgeCount = computed(() => queueCountOf(exerciseCfg()));
+      // 徽标要与实际排队口径一致：错题本范围取的是「本卷内的错题」，不是全部错题数
+      const exerciseWrongbookCount = computed(() =>
+        queueCountOf(Object.assign(exerciseCfg(), { scope: 'wrongbook' })));
 
       // 判分核心（纯函数，不读写任何 ref）——学习/练习/模拟考试/分类考试共用这一份
       // 未作答必须先判错：否则判断题 answer=false 时 (null==='true')===false 会白送一分
@@ -628,43 +578,7 @@
       // ====== setup → running ======
       function exerciseStart() {
         if (!exerciseBadgeCount.value) { toast('当前条件下没有可练习的题目', false); return; }
-        const all = bankGids.value;
-        let scopeGids = all.slice();
-        if (exerciseScope.value === 'unmastered') {
-          const pm = Progress.getAll();
-          scopeGids = all.filter(g => { const e = pm[g]; return !e || e.status !== 'mastered'; });
-        } else if (exerciseScope.value === 'wrongbook') {
-          const wg = new Set(wrongEntries.value.map(e => e.item && e.item.gid).filter(Boolean));
-          scopeGids = all.filter(g => wg.has(g));
-        } else if (exerciseScope.value === 'custom') {
-          const s = Math.max(1, exerciseCustomStart.value || 1);
-          const e = Math.min(bank.value.length, exerciseCustomEnd.value > 0 ? exerciseCustomEnd.value : bank.value.length);
-          scopeGids = all.slice(s - 1, e);
-          const ts = exerciseTypes.value;
-          const hasType = Object.values(ts).some(Boolean);
-          if (hasType) scopeGids = scopeGids.filter(g => {
-            const it = bank.value.find(b => b.gid === g); return it && ts[it.rawType];
-          });
-        }
-
-        let queueGids;
-        if (exerciseStrategy.value === 'sequential') {
-          queueGids = scopeGids.slice();
-        } else if (exerciseStrategy.value === 'random') {
-          queueGids = scopeGids.slice();
-          for (let i = queueGids.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [queueGids[i], queueGids[j]] = [queueGids[j], queueGids[i]];
-          }
-        } else {
-          queueGids = scopeGids.slice();
-        }
-
-        let perSession = exercisePerSession.value === 'custom' ? exercisePerSessionCustom.value : exercisePerSession.value;
-        if (perSession !== 'all' && Number(perSession) > 0) {
-          queueGids = queueGids.slice(0, Number(perSession));
-        }
-
+        const queueGids = buildQueueGids(exerciseCfg());
         if (!queueGids.length) { toast('队列为空', false); return; }
 
         exerciseQueueGids.value = queueGids;
@@ -912,23 +826,14 @@
         if (!examTotal.value) return '0/0';
         return (examIndex.value + 1) + '/' + examTotal.value;
       });
-      const examBadgeCount = computed(() => {
-        const all = bankGids.value;
-        let scopeGids = all.slice();
-        if (examScope.value === 'custom') {
-          const s = Math.max(1, examCustomStart.value || 1);
-          const e = Math.min(bank.value.length, examCustomEnd.value > 0 ? examCustomEnd.value : bank.value.length);
-          scopeGids = all.slice(s - 1, e);
-          const ts = examTypes.value;
-          const hasType = Object.values(ts).some(Boolean);
-          if (hasType) scopeGids = scopeGids.filter(g => {
-            const it = bank.value.find(b => b.gid === g); return it && ts[it.rawType];
-          });
-        }
-        let n = examPerSession.value === 'custom' ? examPerSessionCustom.value : examPerSession.value;
-        if (n !== 'all' && Number(n) > 0 && Number(n) < scopeGids.length) return Number(n);
-        return scopeGids.length;
-      });
+      function examCfg() {
+        return {
+          scope: examScope.value, start: examCustomStart.value, end: examCustomEnd.value,
+          types: examTypes.value, strategy: examStrategy.value,
+          perSession: examPerSession.value, perSessionCustom: examPerSessionCustom.value
+        };
+      }
+      const examBadgeCount = computed(() => queueCountOf(examCfg()));
 
       function _examGetAnswer(gid) {
         if (!examAnswers[gid]) examAnswers[gid] = { choice: null, multiSel: [], input: '', answered: false };
@@ -950,30 +855,7 @@
       // setup → running
       function examStart() {
         if (!examBadgeCount.value) { toast('当前条件下没有可考试的题目', false); return; }
-        const all = bankGids.value;
-        let scopeGids = all.slice();
-        if (examScope.value === 'custom') {
-          const s = Math.max(1, examCustomStart.value || 1);
-          const e = Math.min(bank.value.length, examCustomEnd.value > 0 ? examCustomEnd.value : bank.value.length);
-          scopeGids = all.slice(s - 1, e);
-          const ts = examTypes.value;
-          const hasType = Object.values(ts).some(Boolean);
-          if (hasType) scopeGids = scopeGids.filter(g => {
-            const it = bank.value.find(b => b.gid === g); return it && ts[it.rawType];
-          });
-        }
-
-        let queueGids;
-        if (examStrategy.value === 'sequential') { queueGids = scopeGids.slice(); }
-        else {
-          queueGids = scopeGids.slice();
-          for (let i = queueGids.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [queueGids[i], queueGids[j]] = [queueGids[j], queueGids[i]];
-          }
-        }
-        let n = examPerSession.value === 'custom' ? examPerSessionCustom.value : examPerSession.value;
-        if (n !== 'all' && Number(n) > 0) queueGids = queueGids.slice(0, Number(n));
+        const queueGids = buildQueueGids(examCfg());
 
         if (!queueGids.length) { toast('队列为空', false); return; }
 
@@ -2007,7 +1889,7 @@
         studySwipeX, studySwipeActive,
         studyElapsedSec, studyCurrentItem, studyNextItem,
         studyTotal, studyProgressPct, studyCurrentProgress, studyPrevHint,
-        studyScopeCounts, studyCustomCount, studyAvailableCount, studyBadgeCount,
+        studyScopeCounts, studyCustomCount, studyAvailableCount,
         studyStart, studyResume, studyAbandonResume, studyMark, studyNext,
         studyExit, studyRestart, studyFinish, studyFormatDuration,
         studyOnSwipeStart, studyOnSwipeMove, studyOnSwipeEnd,
@@ -2021,7 +1903,7 @@
         exercisePassCount, exerciseFailCount, exerciseNewWrong, exerciseNewMastered, exerciseElapsedSec,
         exerciseSwipeX, exerciseSwipeActive,
         exerciseCurrentItem, exerciseNextItem, exerciseTotal, exerciseProgressPct,
-        exerciseCurrentProgress, exercisePrevHint, exerciseBadgeCount,
+        exerciseCurrentProgress, exercisePrevHint, exerciseBadgeCount, exerciseWrongbookCount,
         exerciseStart, exerciseResume, exerciseAbandonResume,
         exerciseSubmit, exerciseSelfJudge, exerciseNext, exerciseExit, exerciseRestart, exerciseFinish,
         exerciseOptionClick, exerciseIsOptionOn, exerciseAutoFillCustomEnd,
