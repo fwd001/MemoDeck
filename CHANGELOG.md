@@ -77,6 +77,8 @@
   `.feedback-pass` / `.feedback-fail` 动画（注释说「mark 后由 js 加 class」，实际从无 JS 应用）、
   `index.html` 里 184 个 `data-page-node-id`（外部工具残留，无代码读取）；
   CI「关键文件完整」检查由 `css/style.css` 改盯六件套 CSS。
+- `setup()` 返回值瘦身：删掉 18 个模板从不引用的绑定（返回值只服务模板，应用没有 `this.`，
+  用不上就是死重），含 write-only 的 `exerciseStudentAnswer` 与只声明未使用的 `showCustomForm`。
 
 ### 文档
 

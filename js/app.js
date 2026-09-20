@@ -187,7 +187,6 @@
       let autoNextTimer = null;            // 答对自动进下一题的定时器
       const catWrongItems = ref([]);
       const catError = ref('');
-      const showCustomForm = ref(false);
       const customForm = reactive({ question: '', type: 'single_choice', options: '', answer: '' });
 
       /* ============ 错题本 ============ */
@@ -498,7 +497,6 @@
 
       // 每题判分结果
       const exerciseFeedback = ref(null);     // { correct: true/false, reveal: true }
-      const exerciseStudentAnswer = ref('');  // 渲染"你的答案"（主观题或填空）
 
       // summary 统计
       const exercisePassCount = ref(0);
@@ -584,7 +582,6 @@
         exerciseInput.value = '';
         exerciseAnswerSubmitted.value = false;
         exerciseFeedback.value = null;
-        exerciseStudentAnswer.value = '';
       }
 
       // ====== setup → running ======
@@ -1834,10 +1831,10 @@
         practiceQueue, practiceShowAnswer, practiceCard, practiceMastered, practiceProgress,
         passLabel, failLabel, totalQuestions, tabs,
         previewRevealed,
-        catStage, catSelected, catInput, catChoice, catMultiSel, catRevealed, catFeedback,
-        catPool, catIndex, catStats, catWrongItems, catError, catCurrent, catNextLabel, hasPrevCat, catElapsed, catTypes, catAllSelected,
-        showCustomForm, customForm,
-        wrongEntries, wrongTab, wrongCount, wrongFiltered, wrongItems, wrongSourceTabs, wrongStatusDist,
+        catStage, catSelected, catInput, catChoice, catRevealed, catFeedback,
+        catIndex, catStats, catWrongItems, catError, catCurrent, catNextLabel, hasPrevCat, catElapsed, catTypes, catAllSelected,
+        customForm,
+        wrongTab, wrongCount, wrongFiltered, wrongItems, wrongSourceTabs, wrongStatusDist,
         wrongPracticeQueue, wrongPracticeShow,
         showAiModal, aiPrompt, aiCopied,
         catFillInput, insertCatSep,
@@ -1846,53 +1843,51 @@
         doExportBackup, onImportBackup, doClearAll, confirmClearAll,
         resetPractice, mark, togglePreview, addPreviewToWrongbook,
         toggleCatType, selectAllTypes, startCat, catSubmit, catSelfJudge, catNext, catPrev,
-        toggleCatMulti, catOptionClick, isCatOptionOn, catRestart, addCustomQuestion, isObjective,
+        catOptionClick, isCatOptionOn, catRestart, addCustomQuestion, isObjective,
         sourceLabel,
-        loadWrongbook, wrongRemove, wrongClear, startWrongPractice, wrongMark, startWrongExam,
+        wrongRemove, wrongClear, startWrongPractice, wrongMark, startWrongExam,
         copyAiPrompt, downloadAiPrompt,
         // —— 阶段 0/1 新增：首页数据 & 学习状态 ——
-        bankGids, progressMap, dashboard, dailyTask, weekActiveDays, weekGoalDays,
+        bankGids, dashboard, dailyTask, weekActiveDays, weekGoalDays,
         resumeStudy, resumeExercise, resumeExam,
-        refreshProgress,
         // —— 阶段 2 新增：学习/背诵模式 ——
         studyMode, studyScope, studyCustomStart, studyCustomEnd, studyStrategy,
         studyPerSession, studyPerSessionCustom, studyTypes,
-        studyQueueGids, studyIndex, studyShowAnswer,
+        studyShowAnswer,
         studyPassCount, studyFailCount, studyNewMastered, studyNewWrong, studyMaxStreak,
         studySwipeX, studySwipeActive,
         studyElapsedSec, studyCurrentItem, studyNextItem,
         studyTotal, studyProgressPct, studyCurrentProgress, studyPrevHint,
         studyScopeCounts, studyCustomCount, studyAvailableCount,
         studyStart, studyResume, studyMark, studyNext,
-        studyExit, studyRestart, studyFinish, studyFormatDuration,
+        studyExit, studyRestart, studyFormatDuration,
         studyOnSwipeStart, studyOnSwipeMove, studyOnSwipeEnd,
         studyAutoFillCustomEnd,
         // —— 阶段 3 新增：练习模式 ——
         exerciseMode, exerciseScope, exerciseCustomStart, exerciseCustomEnd, exerciseStrategy,
         exercisePerSession, exercisePerSessionCustom, exerciseTypes,
-        exerciseQueueGids, exerciseIndex, exerciseStartAt,
+        exerciseIndex,
         exerciseAnswerSubmitted, exerciseChoice, exerciseMultiSel, exerciseInput,
-        exerciseFeedback, exerciseStudentAnswer,
+        exerciseFeedback,
         exercisePassCount, exerciseFailCount, exerciseNewWrong, exerciseNewMastered, exerciseElapsedSec,
         exerciseSwipeX, exerciseSwipeActive,
         exerciseCurrentItem, exerciseNextItem, exerciseTotal, exerciseProgressPct,
         exerciseCurrentProgress, exercisePrevHint, exerciseBadgeCount, exerciseWrongbookCount,
         exerciseStart, exerciseResume,
-        exerciseSubmit, exerciseSelfJudge, exerciseNext, exerciseExit, exerciseRestart, exerciseFinish,
+        exerciseSubmit, exerciseSelfJudge, exerciseNext, exerciseExit, exerciseRestart,
         exerciseOptionClick, exerciseIsOptionOn, exerciseAutoFillCustomEnd,
         exerciseOnSwipeStart, exerciseOnSwipeMove, exerciseOnSwipeEnd,
         // —— 阶段 4 新增：模拟考试 ——
         examMode, examScope, examCustomStart, examCustomEnd, examStrategy,
         examPerSession, examPerSessionCustom, examTypes,
-        examQueueGids, examIndex, examStartAt, examElapsedSec,
-        examAnswers, examSubmitted, examSheetOpen, examPassCount, examFailCount, examWrongItems,
+        examQueueGids, examIndex, examElapsedSec,
+        examAnswers, examSheetOpen, examPassCount, examFailCount, examWrongItems,
         examPendingItems, examBlankItems, examGradedCount, examScorePct,
         examAnsweredCount, examCurrentItem, examTotal, examProgressPct,
         examIndexLabel, examBadgeCount,
         examStart, examResume, examJump, examPrev, examNext, examSubmit, examSelfJudge, examExit, examRestart,
         examOptionClick, examIsOptionOn, examAutoFillCustomEnd,
-        examInputProxy, examChoiceProxy,
-        _examGetAnswer
+        examInputProxy, examChoiceProxy
       };
     }
   });
