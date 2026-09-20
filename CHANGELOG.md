@@ -73,6 +73,10 @@
   上躺了 5 天没人发现）；本地与 CI 共用 `npm test`。
 - 消除测试时间炸弹：`computeWeekTrend` 断言原本把日期写死，只在它被写下的那天能过。
 - `js/app.js` 净减约 195 行；新增纯逻辑层与可单测边界写入 `ARCHITECTURE.md`。
+- 删除死代码：`css/style.css`（273 行，v1 单文件遗留，长期不被 `index.html` 引用）、
+  `.feedback-pass` / `.feedback-fail` 动画（注释说「mark 后由 js 加 class」，实际从无 JS 应用）、
+  `index.html` 里 184 个 `data-page-node-id`（外部工具残留，无代码读取）；
+  CI「关键文件完整」检查由 `css/style.css` 改盯六件套 CSS。
 
 ### 文档
 

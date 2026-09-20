@@ -83,7 +83,9 @@ jobs:
       - name: 检查关键文件完整
         run: |
           set -e
-          for f in index.html config.js default-bank.js css/style.css \
+          for f in index.html config.js default-bank.js \
+                   css/tokens.css css/components.css css/pages.css \
+                   css/responsive.css css/themes.css css/accessibility.css \
                    js/core.js js/store.js js/leitner.js js/wrongbook.js \
                    js/ai-prompt.js js/app.js vendor/vue.global.prod.js; do
             test -f "$f" && echo "  ok  $f" || { echo "✗ 缺失 $f"; exit 1; }

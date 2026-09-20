@@ -4,7 +4,7 @@
 
 ## 零、部署前先确认
 
-所有资源都用**相对路径**引用（`css/style.css`、`js/app.js`、`vendor/...`），所以：
+所有资源都用**相对路径**引用（`css/tokens.css`、`js/app.js`、`vendor/...`），所以：
 
 - ✅ 放在站点根目录能跑
 - ✅ 放在子目录（如 `example.com/exam/`）也能跑
@@ -16,7 +16,7 @@
 index.html
 config.js
 default-bank.js
-css/style.css
+css/*.css
 js/*.js
 vendor/vue.global.prod.js
 docs/EXAM_JSON_SPEC.md   （可选，供「📘 JSON 规则」按钮下载）
@@ -170,10 +170,10 @@ https://<用户名>.github.io/<仓库名>/
 **① 不要以 `/` 开头的绝对路径引用本地资源**
 
 ```html
-<!-- ✗ 错误：/css/style.css 会被解析到 https://<用户名>.github.io/css/style.css -->
-<link rel="stylesheet" href="/css/style.css">
-<!-- ✓ 正确：css/style.css 相对当前页解析到 /<仓库名>/css/style.css -->
-<link rel="stylesheet" href="css/style.css">
+<!-- ✗ 错误：/css/tokens.css 会被解析到 https://<用户名>.github.io/css/tokens.css -->
+<link rel="stylesheet" href="/css/tokens.css">
+<!-- ✓ 正确：css/tokens.css 相对当前页解析到 /<仓库名>/css/tokens.css -->
+<link rel="stylesheet" href="css/tokens.css">
 ```
 
 以 `/` 开头的写法只在「用户/组织根站点」才成立；放到子路径的项目站点一律 404。
@@ -182,11 +182,11 @@ https://<用户名>.github.io/<仓库名>/
 
 | 场景 | 写法 |
 |---|---|
-| `index.html`（站点根）引用根级资源 | `css/style.css`、`js/app.js`、`./data.json` 均可 |
-| 内层页面（如 `docs/a.html`）引用根级资源 | `../css/style.css`（多一层目录多一个 `../`） |
+| `index.html`（站点根）引用根级资源 | `css/tokens.css`、`js/app.js`、`./data.json` 均可 |
+| 内层页面（如 `docs/a.html`）引用根级资源 | `../css/tokens.css`（多一层目录多一个 `../`） |
 | JS 里 `fetch` 远程/本地 JSON | 与 HTML 相同规则：`fetch('./data.json')` 可，`fetch('/data.json')` 会 404 |
 
-**本项目的现状（已正确）**：`index.html` 里全部使用无前导斜杠的相对路径（`css/style.css`、`js/*.js`、`vendor/vue.global.prod.js`），因此同一套代码同时兼容 `file://` 双击直开、`localhost` 与 GitHub Pages 子路径三种场景，无需改动。后续新增资源（图片、字体、题库文件）也请沿用「相对路径、不加 `/`」的约定。
+**本项目的现状（已正确）**：`index.html` 里全部使用无前导斜杠的相对路径（`css/tokens.css`、`js/*.js`、`vendor/vue.global.prod.js`），因此同一套代码同时兼容 `file://` 双击直开、`localhost` 与 GitHub Pages 子路径三种场景，无需改动。后续新增资源（图片、字体、题库文件）也请沿用「相对路径、不加 `/`」的约定。
 
 **关于跨域**：远程题库请求的 CORS 已在服务端解决，前端无需代理；GitHub Pages 只托管静态文件、无法自定义响应头，因此**跨域策略只能在数据源服务器上配置**，部署到 Pages 不影响这一点。
 

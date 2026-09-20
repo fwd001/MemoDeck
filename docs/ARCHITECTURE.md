@@ -252,8 +252,7 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
 | `themes.css` | 深色模式与主题切换 |
 | `accessibility.css` | `prefers-reduced-motion` 等可访问性降级 |
 
-> `css/style.css` 是 v1 遗留的**单文件全量样式，已不再被 `index.html` 引用**，内容与
-> 六件套重复。清理它需要同时改 CI 的「关键文件完整」检查，故暂时保留。
+> v1 的单文件 `css/style.css` 已在 2.1.0 删除（长期不再被 `index.html` 引用）。
 
 约定不变：
 

@@ -168,8 +168,7 @@ memodeck/
 │   ├── components.css            # Header / TabNav / Button / Card 组件
 │   ├── pages.css                 # 首页 / 学习 / 练习 / 考试 / 错题本 页面
 │   ├── responsive.css              # 移动端断点（max-width 600px / 760px）
-│   ├── accessibility.css         # a11y: focus-visible / reduced-motion
-│   └── style.css                 # 旧版遗留（不再被 index.html 引用）
+│   └── accessibility.css         # a11y: focus-visible / reduced-motion
 ├── js/
 │   ├── core.js                   # 纯逻辑：格式识别、归一化、条目构建
 │   ├── store.js                    # localStorage 缓存 + 错题本存储
