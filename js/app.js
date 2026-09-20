@@ -1256,23 +1256,17 @@
         progressTick.value; // 依赖信号
         return Progress.getAll();
       });
-      // wrongbookV2Entries：读取 v2 错题本
-      const wrongbookV2Entries = computed(() => {
-        progressTick.value;
-        try {
-          const raw = localStorage.getItem(Migration.WRONGBOOK_V2_KEY);
-          if (!raw) return [];
-          const v = JSON.parse(raw);
-          return v && Array.isArray(v.entries) ? v.entries : [];
-        } catch (e) { return []; }
-      });
       // dashboard：首页聚合
+      // 错题一律读 wrongEntries（Wrongbook.list()，即运行时唯一真相源 examWrongbook:v1）。
+      // 之前读的是 examWrongbook:v2 —— 那只是 Migration 在加载题库时写的一次性快照，
+      // 且 migrateWrongbook 幂等跳过，此后本次会话新增的错题永远进不去，
+      // 导致首页「错题」与错题本角标对不上。
       const dashboard = computed(() => {
         progressTick.value;
         return Stats.buildDashboard({
           allGids: bankGids.value,
           progressMap: progressMap.value,
-          wrongbookEntries: wrongbookV2Entries.value
+          wrongbookEntries: wrongEntries.value
         });
       });
       // dailyTask：今日任务生成
@@ -2003,7 +1997,7 @@
         copyAiPrompt, downloadAiPrompt,
         // —— 阶段 0/1 新增：首页数据 & 学习状态 ——
         bankGids, progressMap, dashboard, dailyTask, weekActiveDays, weekGoalDays,
-        resumeStudy, resumeExercise, resumeExam, wrongbookV2Entries,
+        resumeStudy, resumeExercise, resumeExam,
         refreshProgress,
         // —— 阶段 2 新增：学习/背诵模式 ——
         studyMode, studyScope, studyCustomStart, studyCustomEnd, studyStrategy,
