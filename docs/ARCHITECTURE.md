@@ -319,6 +319,10 @@ DevVue.compile(document.querySelector('#app').innerHTML)
   参数决定读写哪个桶；`touchResumePoint(index, mode)` 的 mode 必填，该模式桶不存在时返回 false。
 
 **样式**
+- **白字压在语义色上对比度不足**：`--on-accent`（#FFFFFF）对 `--success`（#34C759）只有
+  约 **2.2 : 1**、对 `--danger` 约 3.6 : 1、对 `--primary` 约 4.0 : 1，都不满足 WCAG AA
+  正文的 4.5 : 1（答对/答错的徽标与自评估按钮 hover 态都受影响）。现在这类前景色已收拢到
+  一个 token，要修只需为「填充底」引入一档更深的语义色，不必再全站改。
 - **作答输入框仍有两套**：填空 / 简答在练习与考试用 `.md-exercise-blank-input` /
   `.md-exercise-essay-input`，分类考试用 `.cat-answer-input`（后者还兼做手动录题表单的输入，
   合并要先拆清职责）。选项与判断题按钮已收敛为共享组件。

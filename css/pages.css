@@ -41,7 +41,7 @@
 
 /* 到期徽章：红色气泡，紧贴标题行右侧 */
 .md-home-due-badge {
-  background: var(--danger); color: #fff; font-size: 12px; font-weight: 600;
+  background: var(--danger); color: var(--on-accent); font-size: 12px; font-weight: 600;
   padding: 4px 10px; border-radius: var(--radius-lg2); letter-spacing: 0.02em;
   box-shadow: 0 2px 6px rgba(255, 59, 48, 0.32);
   animation: badgePulse 2.5s ease-in-out infinite;
@@ -223,7 +223,7 @@
   background: var(--fill-primary); color: var(--text-muted); font-weight: 600;
 }
 .md-study-radio.active .md-study-badge {
-  background: var(--primary); color: #fff;
+  background: var(--primary); color: var(--on-accent);
 }
 
 /* 自定义子表单 */
@@ -285,7 +285,7 @@
 
 .md-study-start-btn {
   width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
-  color: #fff; background: var(--primary); border: none; border-radius: var(--radius-sm);
+  color: var(--on-accent); background: var(--primary); border: none; border-radius: var(--radius-sm);
   cursor: pointer; font-family: inherit; transition: all .15s;
   box-shadow: var(--shadow-hover);
 }
@@ -451,7 +451,7 @@
   box-shadow: var(--shadow-card);
 }
 .md-study-pass-btn {
-  background: var(--success); color: #fff;
+  background: var(--success); color: var(--on-accent);
 }
 .md-study-pass-btn:hover { background: var(--success); }
 .md-study-fail-btn {
@@ -581,9 +581,9 @@
   cursor: pointer; font-family: inherit; transition: all .15s;
 }
 .md-exercise-self-btn.ok { color: var(--success); border-color: var(--success); background: var(--success-bg); }
-.md-exercise-self-btn.ok:hover { background: var(--success); color: #fff; }
+.md-exercise-self-btn.ok:hover { background: var(--success); color: var(--on-accent); }
 .md-exercise-self-btn.no { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
-.md-exercise-self-btn.no:hover { background: var(--danger); color: #fff; }
+.md-exercise-self-btn.no:hover { background: var(--danger); color: var(--on-accent); }
 
 /* ============ 阶段 4：模拟考试（md-exam- 前缀） ============ */
 .md-exam { display: flex; flex-direction: column; gap: 14px; }
@@ -626,7 +626,7 @@
 }
 .md-exam-sheet-num:hover { border-color: var(--primary-hover); }
 .md-exam-sheet-num.current {
-  border-color: var(--primary); background: var(--primary); color: #fff;
+  border-color: var(--primary); background: var(--primary); color: var(--on-accent);
 }
 .md-exam-sheet-num.answered:not(.current) {
   background: var(--success-bg); border-color: var(--success);
@@ -664,7 +664,7 @@
 .md-exam-footer .btn { flex-shrink: 0; }
 .md-exam-submit-btn {
   flex: 1; padding: 12px 24px; font-size: 15px; font-weight: 600;
-  color: #fff; background: var(--primary); border: none; border-radius: var(--radius-sm);
+  color: var(--on-accent); background: var(--primary); border: none; border-radius: var(--radius-sm);
   cursor: pointer; font-family: inherit; transition: all .15s;
   box-shadow: var(--shadow-hover);
 }
@@ -777,7 +777,7 @@
   }
   .md-exam-sheet-toggle:active { background: var(--primary-bg); }
   .md-exam-sheet-toggle .ans-count {
-    background: var(--primary); color: #fff; font-size: 11px;
+    background: var(--primary); color: var(--on-accent); font-size: 11px;
     padding: 1px 7px; border-radius: var(--radius-sm); font-weight: 600;
   }
   .md-exam-sheet-toggle .arrow {

@@ -54,7 +54,8 @@
   --text-tertiary:   #8E8E93;
   --text-disabled:   rgba(60, 60, 67, 0.30);
   --text-placeholder: rgba(60, 60, 67, 0.36);
-  --on-primary:       #FFFFFF;  /* primary 底上的前景色，两套主题都是白 */
+  /* 填充 accent（primary / success / danger）之上的前景色，两套主题都是白 */
+  --on-accent:        #FFFFFF;
 
   /* —— SURFACES —— */
   --bg:              #F2F2F7;
