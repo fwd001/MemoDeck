@@ -672,6 +672,9 @@
 /* 考试主区域：答题卡 + 题目卡 */
 .md-exam-main {
   display: flex; gap: 16px; align-items: flex-start;
+  /* 底部操作栏是 position: fixed，不留白则最后一个选项被压住
+     （与 .md-study-stage 的 padding-bottom 同一手法） */
+  padding-bottom: 88px;
 }
 
 /* 答题卡（桌面端左栏） */
@@ -871,13 +874,22 @@
     border: none; border-top: 1.5px solid var(--border);
     padding: 14px 16px; margin-bottom: 0;
     transform: translateY(100%); opacity: 0;
-    transition: transform .3s cubic-bezier(.4,.1,.3,1), opacity .2s ease;
+    /* 收起态必须真正移出命中测试与 Tab 序列：只靠 opacity:0 的话，
+       平移到屏幕外的面板仍有约 60px 压在视口底部挡住点击，且上百个
+       题号按钮始终可被键盘 Tab 聚焦 */
+    visibility: hidden; pointer-events: none;
+    transition: transform .3s cubic-bezier(.4,.1,.3,1), opacity .2s ease,
+                visibility 0s linear .3s;
     z-index: 50;
     overflow-y: auto;
+    overscroll-behavior: contain;
     box-shadow: var(--shadow-card);
   }
   .md-exam-sheet.open {
     transform: translateY(0); opacity: 1;
+    visibility: visible; pointer-events: auto;
+    transition: transform .3s cubic-bezier(.4,.1,.3,1), opacity .2s ease,
+                visibility 0s linear 0s;
   }
   .md-exam-sheet-grid { grid-template-columns: repeat(10, 1fr); gap: 4px; }
   .md-exam-sheet-num { font-size: 11px; }

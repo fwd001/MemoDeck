@@ -11,7 +11,18 @@
   .question { font-size: 17px; }
   .btn-group { gap: 10px; }
   .src-actions input[type="text"] { min-width: 100%; }
-  .tab-nav { gap: 6px; }
-  .tab-nav button { padding: 8px 12px; font-size: 14px; flex: 1 1 40%; }
+  /* 触摸目标 ≥44px（ARCHITECTURE.md:161）；同时改横向滚动为单行，
+     否则 8 个 Tab 按 flex 1 1 40% 会折成 4 行、把手机首屏吃掉一大截 */
+  .tab-nav {
+    flex-wrap: nowrap; gap: 4px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-nav button {
+    flex: 0 0 auto; min-height: 44px;
+    padding: 10px 14px; font-size: 14px;
+  }
   .option-btn { min-height: 46px; }
 }
