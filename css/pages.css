@@ -547,25 +547,8 @@
    （.md-opt-list / .md-opt / .md-tf / .md-feedback），此处只留本页布局与输入控件。 */
 .md-exercise-answer { margin-top: 16px; }
 
-/* 填空 / 简答 */
+/* 填空 / 简答：输入框本体是共享组件 .md-field（见 components.css），这里只留布局 */
 .md-exercise-blank { margin-top: 12px; }
-.md-exercise-blank-input {
-  width: 100%; padding: 12px 14px; font-size: 15px; font-family: inherit;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  outline: none; transition: border-color .15s;
-  background: var(--surface); color: var(--text-main); box-shadow: var(--shadow-input);
-}
-.md-exercise-blank-input:focus:not(:disabled) { border-color: var(--primary); }
-.md-exercise-blank-input:disabled { background: var(--surface-sub); }
-
-.md-exercise-essay-input {
-  width: 100%; padding: 12px 14px; font-size: 15px; font-family: inherit;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  outline: none; resize: vertical; min-height: 120px;
-  background: var(--surface); color: var(--text-main); box-shadow: var(--shadow-input);
-}
-.md-exercise-essay-input:focus:not(:disabled) { border-color: var(--primary); }
-.md-exercise-essay-input:disabled { background: var(--surface-sub); }
 
 /* 主观题自评 */
 .md-exercise-self-judge {

@@ -282,7 +282,10 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   否则它会以透明状态继续拦截点击并留在键盘 Tab 序列里（移动端答题卡踩过这个坑）
 - **全局兜底规则必须保持零特异度**：防 flex 溢出的 `min-width: 0` 早先写成 `#app *`
   （特异度 `1,0,0`，比任何组件规则都高），把全站 6 处 `min-width` 静默吃掉，徽标被压成
-  竖椭圆。兜底类规则一律用 `* > *`（特异度 0），让组件的声明永远能盖过它
+  竖椭圆。兜底类规则一律用 `* > *`（特异度 0），让组件的声明永远能盖过它。
+  同一条也适用于元素级基础档：`input[type="text"] / textarea / select` 的默认样式现在包在
+  `:where(...)` 里（特异度归 0），否则 `(0,1,1)` 会反过来吃掉 `.md-field` 这类 `(0,1,0)`
+  组件的边框与禁用态 —— 同一个坑的第二个变体
 - **`var(--x)` 引用的 token 必须有定义**：未定义且不带 fallback 时，整条声明在
   computed-value 阶段失效且**不报任何错**（`--surface-sub` 曾被引用 14 次而全站没定义，
   表现为背景透明）。CI 的「检查 CSS 变量都有定义」兜住这一类问题
@@ -327,9 +330,9 @@ DevVue.compile(document.querySelector('#app').innerHTML)
   新增按钮/徽标不要直接拿 `--success` / `--danger` 当背景配白字，也不要在组件里写 `#fff`。
 - **主按钮的品牌蓝是有意保留的偏差**：`--primary` #007AFF 压白字 4.02:1（深色模式
   #0A84FF 为 3.65:1），未达 AA 正文的 4.5:1；降到 #0066CC 可到 5.57:1，为品牌一致性暂不动。
-- **作答输入框仍有两套**：填空 / 简答在练习与考试用 `.md-exercise-blank-input` /
-  `.md-exercise-essay-input`，分类考试用 `.cat-answer-input`（后者还兼做手动录题表单的输入，
-  合并要先拆清职责）。选项与判断题按钮已收敛为共享组件。
+- **作答与表单输入框是一份实现**：`.md-field`（`components.css`），多行加 `.tall`。
+  曾经的 `.md-exercise-blank-input` / `.md-exercise-essay-input` / `.cat-answer-input`
+  三份已合并。
 - **空状态图标只有一套**：`.empty-hint::before` 的书本图标。曾经按模式切换专属图标的
   三条规则已删——它们用 `section[v-show*="..."]` 选中，而 Vue 把 `v-show` 编译成 `style`，
   DOM 里没有这个属性，规则永不命中。要按场景区分图标，请在模板上挂真实类名。

@@ -190,11 +190,15 @@
   font-style: normal;
 }
 
-input[type="text"],
+/* 输入控件基础档。用 :where() 把特异度压到 0：这是一份「兜底」，
+   任何组件类（如 .md-field）都必须能盖过它。写成裸选择器时
+   input[type="text"] 是 (0,1,1)，会反过来吃掉 (0,1,0) 的组件边框——
+   和之前 `#app *` 吃掉 min-width 是同一类坑。 */
+:where(input[type="text"],
 input[type="number"],
 input[type="password"],
 textarea,
-select {
+select) {
   font-family: inherit;
   font-size: var(--font-lg);
   line-height: 1.5;
@@ -209,22 +213,22 @@ select {
               background var(--dur-fast) var(--ease-out);
 }
 
-input[type="text"]:hover,
+:where(input[type="text"]:hover,
 textarea:hover,
-select:hover {
+select:hover) {
   box-shadow: var(--shadow-input);
 }
 
-input[type="text"]:focus,
+:where(input[type="text"]:focus,
 textarea:focus,
-select:focus {
+select:focus) {
   box-shadow: var(--shadow-input-focus);
   background: var(--surface);
 }
 
-input[type="text"]:disabled,
+:where(input[type="text"]:disabled,
 textarea:disabled,
-select:disabled {
+select:disabled) {
   color: var(--text-disabled);
   background: var(--surface-2);
   cursor: not-allowed;

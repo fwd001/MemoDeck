@@ -661,14 +661,14 @@
                   <template v-else-if="['fill_blank', 'special_fill_blank'].indexOf(exerciseCurrentItem.rawType) >= 0">
                     <div class="md-exercise-blank">
                       <input type="text" v-model="exerciseInput" :disabled="exerciseAnswerSubmitted"
-                             :placeholder="'请输入答案'" class="md-exercise-blank-input">
+                             :placeholder="'请输入答案'" class="md-field">
                     </div>
                   </template>
 
                   <!-- 简答 -->
                   <template v-else-if="exerciseCurrentItem.rawType === 'essay'">
                     <textarea v-model="exerciseInput" :disabled="exerciseAnswerSubmitted" rows="4"
-                              class="md-exercise-essay-input" placeholder="请写出你的答案..."></textarea>
+                              class="md-field tall" placeholder="请写出你的答案..."></textarea>
                   </template>
 
                   <!-- 判分结果 + 标准答案 -->
@@ -930,13 +930,13 @@
                       <div class="md-exercise-blank">
                         <input type="text" v-model="examInputProxy"
                                :placeholder="'请输入你的答案'"
-                               class="md-exercise-blank-input">
+                               class="md-field">
                       </div>
                     </template>
 
                     <template v-else-if="examCurrentItem.rawType === 'essay'">
                       <textarea v-model="examInputProxy" rows="4"
-                                class="md-exercise-essay-input" placeholder="请写出你的答案..."></textarea>
+                                class="md-field tall" placeholder="请写出你的答案..."></textarea>
                     </template>
                   </div>
                 </div>
@@ -1094,7 +1094,7 @@
           <details style="margin-top:14px;">
             <summary class="sub" style="cursor:pointer;">➕ 手动添加题目</summary>
             <div style="margin-top:10px;">
-              <textarea class="cat-answer-input" v-model="customForm.question" placeholder="题干（填空用 ____ 表示空位）"></textarea>
+              <textarea class="md-field" v-model="customForm.question" placeholder="题干（填空用 ____ 表示空位）"></textarea>
               <div class="select-row">
                 <select class="cat-type-select" v-model="customForm.type">
                   <option value="single_choice">单选题</option>
@@ -1104,10 +1104,10 @@
                   <option value="essay">问答题</option>
                 </select>
               </div>
-              <textarea v-if="customForm.type === 'single_choice' || customForm.type === 'multi_choice'" class="cat-answer-input" v-model="customForm.options" placeholder="选项（每行一个）：A. 选项一&#10;B. 选项二" style="min-height:80px;"></textarea>
-              <input v-else class="cat-answer-input" v-model="customForm.answer" :placeholder="customForm.type === 'fill_blank' ? '答案（多空用 | 分隔，如：鸦片|1840）' : (customForm.type === 'true_false' ? '答案：对 或 错' : '参考答案')">
+              <textarea v-if="customForm.type === 'single_choice' || customForm.type === 'multi_choice'" class="md-field" v-model="customForm.options" placeholder="选项（每行一个）：A. 选项一&#10;B. 选项二" style="min-height:80px;"></textarea>
+              <input v-else class="md-field" v-model="customForm.answer" :placeholder="customForm.type === 'fill_blank' ? '答案（多空用 | 分隔，如：鸦片|1840）' : (customForm.type === 'true_false' ? '答案：对 或 错' : '参考答案')">
               <div v-if="customForm.type === 'single_choice' || customForm.type === 'multi_choice'" class="select-row">
-                <input class="cat-answer-input" v-model="customForm.answer" :placeholder="customForm.type === 'single_choice' ? '正确答案字母，如：C' : '正确答案字母（逗号分隔），如：A,C'">
+                <input class="md-field" v-model="customForm.answer" :placeholder="customForm.type === 'single_choice' ? '正确答案字母，如：C' : '正确答案字母（逗号分隔），如：A,C'">
               </div>
               <button class="btn" style="margin-top:8px;" @click="addCustomQuestion">✅ 添加题目</button>
             </div>
@@ -1133,8 +1133,8 @@
             <button class="md-tf-btn" :class="{ selected: catChoice === 'false' }" @click="catChoice = 'false'" :disabled="catRevealed">✗ 错误</button>
           </div>
           <div v-else>
-            <textarea v-if="catCurrent.rawType === 'essay'" class="cat-answer-input" v-model="catInput" placeholder="输入你的答案…" :disabled="catRevealed"></textarea>
-            <input v-else ref="catFillInput" class="cat-answer-input" v-model="catInput" :placeholder="(catCurrent.rawType === 'fill_blank' || catCurrent.rawType === 'special_fill_blank') ? '输入答案（多空用 | 分隔）' : '输入你的答案…'" :disabled="catRevealed">
+            <textarea v-if="catCurrent.rawType === 'essay'" class="md-field tall" v-model="catInput" placeholder="输入你的答案…" :disabled="catRevealed"></textarea>
+            <input v-else ref="catFillInput" class="md-field" v-model="catInput" :placeholder="(catCurrent.rawType === 'fill_blank' || catCurrent.rawType === 'special_fill_blank') ? '输入答案（多空用 | 分隔）' : '输入你的答案…'" :disabled="catRevealed">
             <div class="insert-sep-row" v-if="catCurrent.rawType === 'fill_blank' || catCurrent.rawType === 'special_fill_blank'">
               <button class="btn-text small" @click="insertCatSep" :disabled="catRevealed">｜ 插入分隔符</button>
               <span class="sub">填空有多个空时，答案之间用它隔开</span>

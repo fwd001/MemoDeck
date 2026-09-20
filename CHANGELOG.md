@@ -112,6 +112,12 @@
   `.tab-nav button` 同一套做法，桌面指针操作不强行放大）；两个 select 直接按 44 全局设，
   与相邻的 `.btn` / `.src-actions input` 对齐。答题卡题号是有意例外（桌面 5 列约 32px
   走指针，移动端面板变宽后自然到 48–53px）。
+- 输入框合并为一份实现：练习与考试的 `.md-exercise-blank-input` / `.md-exercise-essay-input`
+  和分类考试（还兼着手动录题表单）的 `.cat-answer-input`，统一为 `components.css` 的
+  `.md-field`（多行加 `.tall`），10 处模板同步。合并时暴露并修掉一个特异度坑：
+  `tokens.css` 里 `input[type="text"] / textarea / select` 基础档的特异度是 `(0,1,1)`，
+  反而吃掉 `(0,1,0)` 组件类的边框与禁用态（`.md-field` 的边框在 `<input>` 上不生效），
+  现整体包进 `:where(...)` 归零 —— 与 `#app *` 那次是同一个坑的第二个变体。
 - 颜色 token 收口：新增 `--on-accent`（填充 accent 之上的前景色），替换全站 13 处硬编码
   `color: #fff`；上一版临时命名的 `--on-primary` 一并改名，因为它实际也用在 success /
   danger 底上。取值不变（`#FFFFFF`），纯改名 + 去硬编码，改对比度从此只动一处。
