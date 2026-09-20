@@ -272,6 +272,10 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
 - **`var(--x)` 引用的 token 必须有定义**：未定义且不带 fallback 时，整条声明在
   computed-value 阶段失效且**不报任何错**（`--surface-sub` 曾被引用 14 次而全站没定义，
   表现为背景透明）。CI 的「检查 CSS 变量都有定义」兜住这一类问题
+- **暗色覆盖里凡是写死颜色（不走 token）的选择器，必须带 light 守卫**：
+  `@media (prefers-color-scheme: dark)` 中的深色 rgba 若不加 `html:not([data-theme="light"])`，
+  「系统深色 + 用户手动选浅色」时会把深色底漏进浅色界面。走 token 的规则不受影响，
+  因为 `html[data-theme="light"]` 的特异度更高、会把 token 换回浅色值
 
 ## 七、调试技巧
 

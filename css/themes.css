@@ -3,7 +3,9 @@
  * — 手动 dark: html[data-theme="dark"]
  * — 手动 light (系统 dark): @media dark { html[data-theme="light"] }
  * — auto + 系统 dark: @media dark { :root }  ← 新增！之前缺这
- * — 组件硬编码: 跟 tokens.css @media dark 里的保持一致（两份，应对手动+系统两种来源）
+ * — auto + 系统 dark: @media dark { :root }  ← 新增！之前缺这
+ * — 组件硬编码: 跟 tokens.css @media dark 里的保持一致（两份，应对手动+系统两种来源；
+ *   tokens.css 那份带 html:not([data-theme="light"]) 守卫，防止系统 dark + 手动 light 漏深色）
  * ============================================================ */
 
 /* —— 主题切换按钮 —— */

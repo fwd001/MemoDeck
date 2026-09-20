@@ -149,30 +149,35 @@
  * DARK (auto) — 组件硬编码覆盖
  * Token 全由 themes.css 的 @media dark / html[data-theme="dark"] 负责
  * 这里只放无法 token 化的 rgba 背景
+ *
+ * ⚠️ 每条都必须带 `html:not([data-theme="light"])` 守卫：这些是写死的深色 rgba，
+ * 只靠 @media 判断的话，「系统 dark + 用户手动选 light」时会把深色底漏进浅色界面
+ * （输入框 / 粘贴框 / 下拉 / 今日进度条 / 拖拽区）。auto 模式下 applyTheme 是
+ * 移除 data-theme 属性，所以 :not() 能同时覆盖 auto 与手动 dark 两种情况。
  * ============================================================ */
 @media (prefers-color-scheme: dark) {
-  .tab-nav { background: var(--surface-3); box-shadow: var(--shadow-inset); }
-  .tab-nav button.active { background: var(--surface); box-shadow: var(--shadow-card); }
+  html:not([data-theme="light"]) .tab-nav { background: var(--surface-3); box-shadow: var(--shadow-inset); }
+  html:not([data-theme="light"]) .tab-nav button.active { background: var(--surface); box-shadow: var(--shadow-card); }
 
-  .src-actions input[type="text"],
-  textarea.paste-box,
-  .paper-switch select {
+  html:not([data-theme="light"]) .src-actions input[type="text"],
+  html:not([data-theme="light"]) textarea.paste-box,
+  html:not([data-theme="light"]) .paper-switch select {
     background: rgba(118, 118, 128, 0.24);
     color: var(--text-main);
   }
-  .src-actions input[type="text"]:focus-visible,
-  textarea.paste-box:focus-visible { background: var(--surface); }
+  html:not([data-theme="light"]) .src-actions input[type="text"]:focus-visible,
+  html:not([data-theme="light"]) textarea.paste-box:focus-visible { background: var(--surface); }
 
-  .drop-zone {
+  html:not([data-theme="light"]) .drop-zone {
     border-color: var(--border);
     background: rgba(118, 118, 128, 0.12);
   }
 
-  .md-home-today-bar {
+  html:not([data-theme="light"]) .md-home-today-bar {
     background: rgba(118, 118, 128, 0.24);
   }
 
-  .md-home-week-ring svg circle:first-child {
+  html:not([data-theme="light"]) .md-home-week-ring svg circle:first-child {
     stroke: rgba(118, 118, 128, 0.32);
   }
 }
