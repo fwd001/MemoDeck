@@ -461,8 +461,18 @@
         }
       }
 
+      // 多行/复合输入控件里，Enter 是用户的编辑键不是导航键：简答题 textarea 内
+      // 回车要换行，选项下拉展开时 Enter 不能把焦点抢走。
+      // 单行 input（填空作答）不在此列——那里 Enter→提交/下一题本来就是想要的。
+      function isEditableTarget(e) {
+        const el = e.target;
+        if (!el || !el.tagName) return false;
+        return el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable === true;
+      }
+
       // 桌面端也支持：点击"记住了/还不会"按钮 或 键盘 1/2 或 ←/→
       function studyKeyDown(e) {
+        if (isEditableTarget(e)) return;
         if (activeTab.value !== 'study') return;
         if (studyMode.value !== 'running') return;
         if (e.key === ' ' || e.key === 'Enter') {
@@ -826,6 +836,7 @@
 
       // 键盘
       function exerciseKeyDown(e) {
+        if (isEditableTarget(e)) return;
         if (activeTab.value !== 'exercise') return;
         if (exerciseMode.value !== 'running') return;
         if (exerciseAnswerSubmitted.value) {
@@ -1195,6 +1206,7 @@
 
       // 键盘（考试中 Enter = 下一题，方便快速跳过）
       function examKeyDown(e) {
+        if (isEditableTarget(e)) return;
         if (activeTab.value !== 'exam') return;
         if (examMode.value !== 'running' || examSubmitted.value) return;
         if (e.key === 'Enter') { examNext(); e.preventDefault(); }
