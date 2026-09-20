@@ -2,7 +2,97 @@
 
 本项目所有版本均遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [2.1.0] - 2026-09-20
+
+移动端考试体验修复 + 重复逻辑收敛。起因是手机上实测「考试点几下就不对」与
+「卡片左右滑会挡住上下滑」两个反馈，随后对全项目做了一次审计。
+
+### 修复
+
+- **移动端纵向滚动被滑动手势吞掉**：模板上的 `@touchmove.prevent` 修饰符会无条件
+  `preventDefault`，让 `app.js` 里的轴优先判断形同虚设——卡片高达 945px 而 `overflow: hidden`，
+  手机上根本滚不到题干下半截。改为 `touch-action: pan-y pinch-zoom` + 一次性轴锁定。
+- **客观题白送分**：判断题 `answer=false` 时 `(null==='true')===false` 返回 `true`，
+  交白卷也能拿到这道题的分（实测 13 题卷交白卷得 1 分）。判分合并为唯一实现
+  `judgeObjective()` 并加未作答守卫。
+- **模拟考试主观题一律计错**：答了的填空/简答也被记为答错、写进度、进错题本，而成绩页
+  没有任何自评入口——对以填空题为主的题库，正确率被系统性压低。
+- **模拟考试未作答的题被当成答错批量塞进错题本**：交白卷实测污染 12 条。现未作答不计分、
+  不写进度、不入库，成绩页单列「未作答」区；正确率分母改为已判分题数。
+- **首页统计「待复习」超过题库总题数**：`weak` 把重叠维度 `due` 也加了进去
+  （实测 13 题全错一遍显示 26）。
+- **按天统计跨日界错位**：`_dayKey` 用 UTC 日界而趋势桶用本地日生成，东八区用户
+  每天 00:00–07:59 的学习被记到前一天，影响 7 天趋势与「本周活跃天数」。
+- **恢复点跨模式顶包**：`hasResume` 不分模式，且 `studyResume()` 漏了 `rp.mode` 校验，
+  「练习」留下的会话会在「学习」页顶出「上次学习还没做完」。
+- **恢复点位置从不持久化**：`touchResumePoint()` 只刷新时间戳，`currentIndex` 永远停在 0，
+  「继续上次」每次都从第 1 题重来。
+- **模拟考试退出即毁卷**：无二次确认直接清空全部作答；且考试从不写恢复点，与 README 声称的
+  「考试会话恢复」相反。现退出改为暂停保留、支持从考试页续答，交卷/放弃时清除。
+- **错题本三个来源 Tab 漏掉 `study` / `exercise`**：在学习或练习里答错的题只在「全部」可见，
+  且标签漏出英文原词、无对应配色。改为来源注册表派生 Tab，默认停在「全部」。
+- **首页错题数读的是迁移快照而非真相源**：`dashboard` 读 `examWrongbook:v2`（仅加载时写一次），
+  运行时错题全写在 `:v1`，导致角标显示 2、首页显示 0。
+- **简答题无法换行**：三个模式的快捷键不判断事件来源，`textarea` 里回车被吞掉并跳题。
+- **移动端考试底栏遮挡与隐形点击层**：固定操作栏压住最后一个选项；答题卡收起态只有
+  `opacity:0`，仍有约 60px 透明面板拦截点击、且上百个题号按钮留在键盘 Tab 序列里。
+- **移动端 Tab 触摸目标 36px**，违反 README/ARCHITECTURE/DEPLOYMENT 三处声明的 44px；
+  提到 44px 后改为单行横向滚动，避免 8 个 Tab 折成 4 行吃掉首屏。
+- **`index.html` 末尾内联脚本被截断**（`e0f72e5` 引入），数组与闭合标签丢失，
+  `window.FALLBACK_RULES` 恒为 `undefined`，`file://` 场景下载「JSON 规则」得到空文件。
+- **PWA 预缓存漏 `js/backup.js`**：完全离线冷启动时备份/恢复整块功能不可用。
+- **`manifest.json` 三个桌面快捷方式全部失效**：应用从不读 `location.hash`，三个入口都只
+  会打开首页；第二个的 url/description 也指错模式。
+- **首页快捷入口跳错 Tab**：「模拟考试」跳到分类考试、「摸底速览」跳到模拟考试。
+- **取题计数与实际队列不一致**：学习/练习的「将学习 N 题」不应用每次数量的截断；
+  自定义范围填 `start>end` 时徽标显示正数而队列为空；错题本徽标算全部错题数而排队只取本卷。
+
+### 新增
+
+- **hash 深链**：`#/study` `#/exam` 等直达对应入口，刷新不再退回首页（同时让 manifest
+  shortcuts 真正可用）。
+- **`js/queue.js`（`ExamQueue`）纯逻辑模块**：三套逐字重复的取题管线（范围→题型→排序→
+  截断）收敛为一处，依赖全部由调用方注入，可在 Node 单测。
+- **`test/queue.test.js` 21 项**，含 48 个 (scope × strategy × perSession) 组合的
+  不变式遍历：`queueCountOf() === buildQueueGids().length`。
+- **`EXAM_JSON_SPEC.md` 新增 §3.2 判分规则**：此前全仓库没有任何一处定义「怎么算对」，
+  规范只讲数据结构、测试没有一条判分断言——这正是白送分 bug 能长期存在的土壤。
+
+### 变更
+
+- 会话计时器 `makeSessionTimer`、滑动手势 `makeSwipe` 各收敛为一份实现（原本三处、两处）。
+- CI 改为跑满三个套件（此前只跑 `core.test.js`，`extensions.test.js` 里一条红断言在主分支
+  上躺了 5 天没人发现）；本地与 CI 共用 `npm test`。
+- 消除测试时间炸弹：`computeWeekTrend` 断言原本把日期写死，只在它被写下的那天能过。
+- `js/app.js` 净减约 195 行；新增纯逻辑层与可单测边界写入 `ARCHITECTURE.md`。
+
+### 文档
+
+- `ARCHITECTURE.md`：补齐 v2 六个模块与真实加载顺序、条目结构、8 个存储键、错题判重键
+  与五种来源、移除阈值（连续答对 3 次，非「即清除」）、六件套样式与两条新踩的硬规则、
+  「两套掌握模型并存」与已知边界。
+- `README.md` / `USAGE.md`：四个模式更正为八个入口，错题移除规则按代码实际行为重写。
+- `EXAM_JSON_SPEC.md`：修正把 `exam` 键标成「摸底速览」的错误（应用里 `exam`=模拟考试、
+  `preview`=摸底速览），并写明目前只有 `practice`/`preview` 两个 `features` 键被真正消费。
+
+## [2.0.0] - 2026-09-16
+
+> 本节为补记。当时版本号已同步到三处（`config.js`、`index.html`、`service-worker.js`），
+> 但 CHANGELOG 一直没写，`CHANGELOG.md` 停在 1.0.0 + 一节 Unreleased。
+
+**Design System + PWA + 学习进度层**（`615ae7f`、`e0f72e5`）
+
+- 样式由单文件 `css/style.css` 重构为六件套：`tokens` / `components` / `pages` /
+  `responsive` / `themes` / `accessibility`，含深色模式与 auto/light/dark 主题切换
+- PWA：`manifest.json` + `service-worker.js`（HTML network-first、静态资源 cache-first +
+  stale-while-revalidate）、品牌图标、`display: standalone`
+- 新增五个纯逻辑模块：`progress.js`（跨会话 SRS，连对 5 次掌握）、`session.js`（恢复点 /
+  分段 / 每日任务）、`stats.js`（首页聚合）、`migration.js`（v1→v2 迁移）、`backup.js`
+  （全量导出与合并/覆盖导入）
+- 新增首页 / 学习 / 练习 / 模拟考试四个 Tab，与 v1 四模式并存
+- 版本号统一由 `config.js` 提供 `APP_VERSION` / `BACKUP_VERSION` / `VIEW_VERSION`
+
+以下条目原属 `[Unreleased]`，随 2.0.0 一并发布：
 
 ### 变更
 

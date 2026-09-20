@@ -21,6 +21,44 @@ jobs:
         # migration / 错题本 v2 / Leitner v2，只跑 core 会让一半契约失守
         run: npm test
 
+      # config.js 是版本号唯一来源，但 SW 是独立 worker 读不到 window、
+      # index.html 的 meta 是静态 HTML，只能各处再写一遍。这个手工同步清单
+      # 已在文档里写明过，仍多次出现漏改，故改为机器校验。
+      - name: 检查版本号三处一致
+        run: |
+          set -e
+          V_CONFIG=$(node -e "const fs=require('fs'),vm=require('vm');const c={};vm.runInNewContext(fs.readFileSync('config.js','utf8'),{window:c});process.stdout.write(c.EXAM_CONFIG.APP_VERSION)")
+          V_HTML=$(grep -o 'name="version" content="[^"]*"' index.html | sed 's/.*content="//;s/".*//')
+          V_SW=$(grep -o '^const VERSION = "[^"]*"' service-worker.js | sed 's/.*= "//;s/".*//')
+          echo "config.js       = $V_CONFIG"
+          echo "index.html meta = $V_HTML"
+          echo "service-worker  = $V_SW"
+          if [ "$V_CONFIG" != "$V_HTML" ] || [ "$V_CONFIG" != "$V_SW" ]; then
+            echo ""
+            echo "✗ 版本号三处不一致，升级时必须同步 config.js / index.html / service-worker.js"
+            exit 1
+          fi
+          echo "  ok  三处一致：$V_CONFIG"
+
+      - name: 检查预缓存清单覆盖页面资源
+        run: |
+          set -e
+          node -e "
+          const fs=require('fs');
+          const sw=fs.readFileSync('service-worker.js','utf8');
+          const pre=new Set([...sw.matchAll(/\"\.\/([^\"]+)\"/g)].map(m=>m[1]));
+          const html=fs.readFileSync('index.html','utf8');
+          const used=new Set();
+          for(const m of html.matchAll(/<script[^>]+src=\"([^\"]+)\"/g)) used.add(m[1].replace(/^\.\//,''));
+          for(const m of html.matchAll(/<link[^>]+href=\"([^\"]+)\"/g)) used.add(m[1].replace(/^\.\//,''));
+          used.add('manifest.json');
+          const missing=[...used].filter(u=>!pre.has(u)&&fs.existsSync(u));
+          const ghost=[...pre].filter(p=>p&&!fs.existsSync(p));
+          if(missing.length){console.error('✗ 未预缓存（离线时取不到）:',missing.join(', '));process.exit(1);}
+          if(ghost.length){console.error('✗ 清单指向不存在的文件（会让 SW install 整体失败）:',ghost.join(', '));process.exit(1);}
+          console.log('  ok  '+used.size+' 个页面资源全部在预缓存清单内');
+          "
+
       - name: 检查 JS 语法
         run: |
           set -e

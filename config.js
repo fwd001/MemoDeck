@@ -1,13 +1,13 @@
 /**
  * MemoDeck · 运行配置 + 版本号（全项目统一来源）
  *
- * ⚠️ 升级版本只改这里 —— 所有 JS 文件自动从 window.MEMODECK_VERSION 读取
- *    例外：
- *    1. service-worker.js — 独立 worker 不能引用 window，
- *       所以那里硬编码一份，升级时也要同步改（文件顶部有注释标注）
- *    2. index.html 的 <meta name="version"> — HTML 静态，也要同步改
- *    3. default-bank.js / history-example.json — 题库 JSON 里的 viewVersion
- *       是数据格式版本，和应用版本解耦，升级独立
+ * ⚠️ 升级版本要同步三处：本文件的 APP_VERSION、index.html 的 <meta name="version">、
+ *    service-worker.js 的 VERSION。
+ *    前两者之外之所以要重写一遍：SW 是独立 worker，读不到 window；HTML meta 是静态的。
+ *    这个手工清单由 CI 的「检查版本号三处一致」兜底，漏改会直接拦下。
+ *
+ *    default-bank.js / history-example.json 里的 viewVersion 是【数据格式版本】，
+ *    与应用版本解耦，独立升级。
  */
 window.EXAM_CONFIG = {
   /**
@@ -30,8 +30,10 @@ window.EXAM_CONFIG = {
    * 版本号（升级时只改这三个值）
    * ============================================================ */
 
-  /** MemoDeck 应用版本 — 语义化 SemVer，也是 SW 缓存命名空间 */
-  APP_VERSION: '2.0.0',
+  /** MemoDeck 应用版本 — 语义化 SemVer，也是 SW 缓存命名空间
+      ⚠️ 必须与 index.html 的 <meta name="version"> 和 service-worker.js 的 VERSION
+         完全一致；CI 的「版本号三处一致」检查会拦住不同步的提交。 */
+  APP_VERSION: '2.1.0',
   /** 备份文件 schema 版本 — 用于导出/导入时判断是否需要迁移 */
   BACKUP_VERSION: '2.0',
   /** 题库 JSON (exam-bank) 格式版本 — ai-prompt.js / FALLBACK_RULES / app.js 自动读取

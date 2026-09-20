@@ -338,7 +338,8 @@ node test/core.test.js && node test/queue.test.js && node test/extensions.test.j
 python3 -m http.server 8000   # 打开 http://localhost:8000
 ```
 
-推送后会跑 CI，五道检查：单元测试、JS 语法、Vue 模板表达式安全（防白屏）、关键文件完整、文档链接可达。
+推送后会跑 CI，七道检查：单元测试（三个套件 85 项）、JS 语法、Vue 模板表达式安全（防白屏）、
+版本号三处一致、PWA 预缓存清单覆盖页面全部资源、关键文件完整、文档链接可达。
 规则见 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)，本地可直接复现。
 
 ---
