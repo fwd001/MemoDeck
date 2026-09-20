@@ -90,32 +90,15 @@ html[data-theme="dark"] {
   }
 }
 
-/* —— 手动 dark 的组件硬编码 —— */
-html[data-theme="dark"] .tab-nav {
-  background: var(--surface-3);
-  box-shadow: var(--shadow-inset);
-}
-html[data-theme="dark"] .tab-nav button.active {
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-}
-
-html[data-theme="dark"] .src-actions input[type="text"],
-html[data-theme="dark"] textarea.paste-box,
-html[data-theme="dark"] .paper-switch select {
+/* —— 手动 dark 的组件硬编码 ——
+   与 tokens.css 的 @media dark 块保持同一套「只留真正不同」的三条；
+   这里靠 html[data-theme="dark"] 命中，不需要 :not() 守卫。 */
+html[data-theme="dark"] .src-actions input[type="text"] {
   background: rgba(118, 118, 128, 0.24);
-  color: var(--text-main);
 }
-html[data-theme="dark"] .src-actions input[type="text"]:focus-visible,
-html[data-theme="dark"] textarea.paste-box:focus-visible { background: var(--surface); }
 
 html[data-theme="dark"] .drop-zone {
   border-color: var(--border);
-  background: rgba(118, 118, 128, 0.12);
-}
-
-html[data-theme="dark"] .md-home-today-bar {
-  background: rgba(118, 118, 128, 0.24);
 }
 
 html[data-theme="dark"] .md-home-week-ring svg circle:first-child {

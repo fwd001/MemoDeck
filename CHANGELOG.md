@@ -98,6 +98,11 @@
   CI「关键文件完整」检查由 `css/style.css` 改盯六件套 CSS。
 - `setup()` 返回值瘦身：删掉 18 个模板从不引用的绑定（返回值只服务模板，应用没有 `this.`，
   用不上就是死重），含 write-only 的 `exerciseStudentAnswer` 与只声明未使用的 `showCustomForm`。
+- 深色模式的重复覆盖收拢：`tokens.css` 的 `@media dark` 块与 `themes.css` 的手动 dark 块里，
+  有 6 条规则只是把基线在深色下的同一个值重写一遍（`.tab-nav`、`.tab-nav button.active`、
+  `textarea.paste-box`、`.paper-switch select`、`.md-home-today-bar`、`:focus-visible` 那组——
+  例如写死的 `rgba(118,118,128,.24)` 就是深色 `--fill-primary`），删掉后两块只剩真正不同的
+  3 条。实测手动 dark 下各元素计算值与删除前逐一相同。
 - CSS 去重：`tokens.css` 里与 `accessibility.css` 完全相同的 `prefers-reduced-motion` 块、
   重复的 `* { box-sizing: border-box }`、一条指向不存在的规则的 `.md-exercise-card-head .tag`、
   以及一段下面没有规则的孤立注释，全部删掉（实测行为不变：box-sizing 仍全局生效）。
