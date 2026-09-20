@@ -31,6 +31,7 @@ const PRECACHE_URLS = [
   "./js/stats.js",
   "./js/migration.js",
   "./js/ai-prompt.js",
+  "./js/backup.js",
   "./vendor/vue.global.prod.js",
   "./assets/icon-192.png",
   "./assets/icon-512.png"

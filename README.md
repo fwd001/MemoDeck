@@ -258,7 +258,7 @@ python3 -m http.server 8000
 
 ### 离线能力
 
-首次在线打开后，Service Worker 会预缓存全部 24 个静态资源（HTML/CSS/JS/vendor/icons）。之后：
+首次在线打开后，Service Worker 会预缓存 `service-worker.js` 里 `PRECACHE_URLS` 列出的全部静态资源（HTML / CSS / JS / vendor / 图标）。新增文件时记得同步该清单——漏掉的文件在断网时取不到。之后：
 
 - **HTML**：network-first（每次打开先尝试网络，失败回退缓存）
 - **静态资源**：cache-first + stale-while-revalidate（先秒开缓存，后台静默更新）

@@ -27,12 +27,12 @@
     {
       "name": "学习",
       "url": "./index.html#/study",
-      "description": "记忆闯关"
+      "description": "今日复习队列"
     },
     {
       "name": "练习",
-      "url": "./index.html#/practice",
-      "description": "专项练习"
+      "url": "./index.html#/exercise",
+      "description": "答题自动判分"
     },
     {
       "name": "错题本",

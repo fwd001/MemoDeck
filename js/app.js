@@ -1223,12 +1223,16 @@
         window.addEventListener('keydown', examKeyDown);
         // 刷新 / 关标签页前落一次考试答案，弥补「键入不即时写」的窗口
         window.addEventListener('beforeunload', _examPersist);
+        window.addEventListener('hashchange', onHashChange);
+        const initialTab = tabFromHash();
+        if (initialTab) activeTab.value = initialTab;
       });
       onBeforeUnmount(() => {
         window.removeEventListener('keydown', studyKeyDown);
         window.removeEventListener('keydown', exerciseKeyDown);
         window.removeEventListener('keydown', examKeyDown);
         window.removeEventListener('beforeunload', _examPersist);
+        window.removeEventListener('hashchange', onHashChange);
         if (studyTimer) clearInterval(studyTimer);
         if (exerciseTimer) clearInterval(exerciseTimer);
         if (examTimer) clearInterval(examTimer);
@@ -1637,10 +1641,23 @@
       }
 
       /* ============ Tab 切换 ============ */
+      // manifest.json 声明了 #/study #/practice #/wrongbook 三个入口，但应用从不读
+      // hash，三个快捷方式都只会打开首页；读 hash 也顺带让刷新不再退回首页。
+      function tabFromHash() {
+        const m = /^#\/([a-z]+)$/.exec(location.hash || '');
+        return m && tabs.value.some(t => t.key === m[1]) ? m[1] : '';
+      }
       function switchTab(k) {
+        if (!tabs.value.some(t => t.key === k)) return;
         activeTab.value = k;
+        const want = '#/' + k;
+        if (location.hash !== want) location.hash = want; // hashchange 回调里值已相等，不成环
         if (k === 'practice' && practiceQueue.value.length === 0) resetPractice();
         if (k === 'wrongbook') loadWrongbook();
+      }
+      function onHashChange() {
+        const k = tabFromHash();
+        if (k && k !== activeTab.value) switchTab(k);
       }
 
       /* ============ 记忆闯关（Leitner） ============ */
