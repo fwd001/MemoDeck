@@ -69,6 +69,7 @@
    * @param {string[]} params.queueGids  session 内题目顺序（gid 数组）
    * @param {number}   params.currentIndex  当前做到第几题（0-based）
    * @param {object}  [params.segment]   可选：分段范围 { start: 1, end: 500, perSession: 20 }
+   * @param {object}  [params.answers]   可选：考试模式逐题作答快照 { gid: { choice, multiSel, input, answered } }
    * @param {string}  [params.startedAt] 可选：session 开始时间
    */
   function saveResumePoint(params) {
@@ -81,7 +82,8 @@
       currentIndex: Math.max(0, Number(params.currentIndex) || 0),
       startedAt: params.startedAt || new Date().toISOString(),
       lastTouchedAt: new Date().toISOString(),
-      segment: params.segment || null
+      segment: params.segment || null,
+      answers: params.answers || null
     };
     writeSession(sess);
     return sess.resume;

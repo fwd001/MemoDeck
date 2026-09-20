@@ -784,7 +784,17 @@
         <!-- ===== setup ===== -->
         <template v-else-if="examMode === 'setup'">
           <div class="md-study-setup">
-            <div class="md-study-setup-head"><h2>🎓 开始考试</h2></div>
+            <div class="md-study-setup-head">
+              <h2>🎓 开始考试</h2>
+              <button v-if="resumeExam" class="btn ghost small" @click="examRestart">放弃上次</button>
+            </div>
+
+            <div class="md-study-resume" v-if="resumeExam">
+              <div class="resume-info"><span class="resume-icon">💾</span><span>上次考试做到第 {{ resumeExam.currentIndex + 1 }} / {{ resumeExam.queueGids.length }} 题</span></div>
+              <div class="resume-actions">
+                <button class="btn small" @click="examResume">继续上次</button>
+              </div>
+            </div>
 
             <div class="md-study-group">
               <div class="md-study-group-title">考试范围</div>

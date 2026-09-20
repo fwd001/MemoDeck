@@ -387,6 +387,7 @@
           toast('已暂停，下次打开可继续', true);
           if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
           studyMode.value = 'setup';
+          refreshResume();
           switchTab('home');
           setTimeout(() => switchTab('study'), 50);
         } else {
@@ -400,6 +401,7 @@
         studyShowAnswer.value = false;
         if (studyTimer) { clearInterval(studyTimer); studyTimer = null; }
         Session.clearResumePoint('study');
+        refreshResume();
       }
 
       // ====== 手势：移动端左右滑动 ======
@@ -752,6 +754,7 @@
           toast('已暂停，下次打开可继续', true);
           if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
           exerciseMode.value = 'setup';
+          refreshResume();
           switchTab('home'); setTimeout(() => switchTab('exercise'), 50);
         } else {
           exerciseMode.value = 'setup';
@@ -764,6 +767,7 @@
         exerciseSwipeX.value = 0;
         if (exerciseTimer) { clearInterval(exerciseTimer); exerciseTimer = null; }
         Session.clearResumePoint('exercise');
+        refreshResume();
       }
 
       // 选项 / 多选
@@ -964,19 +968,59 @@
         examElapsedSec.value = 0;
         examMode.value = 'running';
 
+        _examStartTimer();
+        _examPersist();
+      }
+
+      function _examStartTimer() {
         if (examTimer) clearInterval(examTimer);
         examTimer = setInterval(() => {
           examElapsedSec.value = Math.floor((Date.now() - examStartAt.value) / 1000);
         }, 1000);
       }
 
+      // 把逐题答案 + 当前下标写回恢复点。只在跳题 / 选项变更 / 离开页面时写，
+      // 不按键入次数写，避免手机上每秒反复序列化整份答案表。
+      function _examPersist() {
+        if (examMode.value !== 'running' || examSubmitted.value) return;
+        const bankId = bankIdOf();
+        const prev = Session.loadResumePoint(bankId, 'exam');
+        Session.saveResumePoint({
+          bankId: bankId,
+          paperId: currentPaperId.value,
+          mode: 'exam',
+          queueGids: examQueueGids.value,
+          currentIndex: examIndex.value,
+          startedAt: (prev && prev.startedAt) || new Date(examStartAt.value).toISOString(),
+          answers: JSON.parse(JSON.stringify(examAnswers))
+        });
+      }
+
+      function examResume() {
+        const rp = Session.loadResumePoint(bankIdOf(), 'exam');
+        if (!rp) return;
+        examQueueGids.value = rp.queueGids || [];
+        examIndex.value = rp.currentIndex || 0;
+        for (const k of Object.keys(examAnswers)) delete examAnswers[k];
+        Object.assign(examAnswers, rp.answers || {});
+        examPassCount.value = 0; examFailCount.value = 0;
+        examWrongItems.value = []; examPendingItems.value = []; examBlankItems.value = [];
+        examSubmitted.value = false;
+        const started = rp.startedAt ? Date.parse(rp.startedAt) : NaN;
+        examStartAt.value = isNaN(started) ? Date.now() : started;
+        examElapsedSec.value = Math.floor((Date.now() - examStartAt.value) / 1000);
+        examMode.value = 'running';
+        _examStartTimer();
+      }
+
       function examJump(idx) {
         if (idx < 0 || idx >= examTotal.value) return;
         examIndex.value = idx;
         examSheetOpen.value = false; // 移动端跳题后自动折叠
+        _examPersist();
       }
-      function examPrev() { if (examIndex.value > 0) examIndex.value--; }
-      function examNext() { if (examIndex.value < examTotal.value - 1) examIndex.value++; }
+      function examPrev() { if (examIndex.value > 0) { examIndex.value--; _examPersist(); } }
+      function examNext() { if (examIndex.value < examTotal.value - 1) { examIndex.value++; _examPersist(); } }
 
       // 选项点击（running 中随时可改）
       function examOptionClick(val) {
@@ -990,6 +1034,7 @@
           if (idx >= 0) a.multiSel.splice(idx, 1); else a.multiSel.push(val);
         }
         _examMarkAnswered(cur.gid);
+        _examPersist();
       }
       function examIsOptionOn(val) {
         const cur = examCurrentItem.value;
@@ -1083,6 +1128,7 @@
 
         // 计时停止
         if (examTimer) { clearInterval(examTimer); examTimer = null; }
+        Session.clearResumePoint('exam');
         examMode.value = 'summary';
       }
 
@@ -1106,10 +1152,18 @@
         refreshProgress();
       }
 
+      // 退出 = 暂停：保留已答内容与恢复点，考试页会出现「继续上次」。
+      // 此前这里是无确认直接清空整份答卷，手机上误点一下就全没了。
       function examExit() {
         if (examTimer) { clearInterval(examTimer); examTimer = null; }
+        if (examAnsweredCount.value) {
+          if (!confirm('考试尚未交卷，确定退出吗？\n已答内容会保留，可在考试页「继续上次」接着做。')) return;
+          _examPersist();
+        } else {
+          Session.clearResumePoint('exam');
+        }
         examMode.value = 'setup';
-        for (const k of Object.keys(examAnswers)) delete examAnswers[k];
+        refreshResume();
       }
 
       function examRestart() {
@@ -1120,6 +1174,8 @@
         examIndex.value = 0;
         for (const k of Object.keys(examAnswers)) delete examAnswers[k];
         if (examTimer) { clearInterval(examTimer); examTimer = null; }
+        Session.clearResumePoint('exam');
+        refreshResume();
       }
 
       function examAutoFillCustomEnd() {
@@ -1144,11 +1200,14 @@
         window.addEventListener('keydown', studyKeyDown);
         window.addEventListener('keydown', exerciseKeyDown);
         window.addEventListener('keydown', examKeyDown);
+        // 刷新 / 关标签页前落一次考试答案，弥补「键入不即时写」的窗口
+        window.addEventListener('beforeunload', _examPersist);
       });
       onBeforeUnmount(() => {
         window.removeEventListener('keydown', studyKeyDown);
         window.removeEventListener('keydown', exerciseKeyDown);
         window.removeEventListener('keydown', examKeyDown);
+        window.removeEventListener('beforeunload', _examPersist);
         if (studyTimer) clearInterval(studyTimer);
         if (exerciseTimer) clearInterval(exerciseTimer);
         if (examTimer) clearInterval(examTimer);
@@ -1204,15 +1263,21 @@
         return trend.filter(d => d.reviewed > 0).length;
       });
       const weekGoalDays = 5; // 每周目标 5 天（硬编码，后续可从 settings 读）
-      // 恢复点按 mode 归属：学习 / 练习 / 考试各认各的，不再互相顶包
+      // 恢复点存在 localStorage，不是响应式源；写入/清除后必须手动 bump 这个信号，
+      // 否则 setup 页的「继续上次」横幅会一直读到缓存里的旧值。
+      // 不复用 progressTick：它会让 dashboard + dailyTask 在每次跳题时全量重算。
+      const resumeTick = ref(0);
+      function refreshResume() { resumeTick.value++; }
       function resumeComputed(mode) {
         return computed(() => {
           progressTick.value;
+          resumeTick.value;
           return Session.loadResumePoint(bankIdOf(), mode);
         });
       }
       const resumeStudy = resumeComputed('study');
       const resumeExercise = resumeComputed('exercise');
+      const resumeExam = resumeComputed('exam');
 
       const tabs = computed(() => {
         // 阶段 3：home + study + exercise + 原功能 tab
@@ -1895,7 +1960,7 @@
         copyAiPrompt, downloadAiPrompt,
         // —— 阶段 0/1 新增：首页数据 & 学习状态 ——
         bankGids, progressMap, dashboard, dailyTask, weekActiveDays, weekGoalDays,
-        resumeStudy, resumeExercise, wrongbookV2Entries,
+        resumeStudy, resumeExercise, resumeExam, wrongbookV2Entries,
         refreshProgress,
         // —— 阶段 2 新增：学习/背诵模式 ——
         studyMode, studyScope, studyCustomStart, studyCustomEnd, studyStrategy,
@@ -1932,7 +1997,7 @@
         examPendingItems, examBlankItems, examGradedCount, examScorePct,
         examAnsweredCount, examCurrentItem, examTotal, examProgressPct,
         examIndexLabel, examBadgeCount,
-        examStart, examJump, examPrev, examNext, examSubmit, examSelfJudge, examExit, examRestart,
+        examStart, examResume, examJump, examPrev, examNext, examSubmit, examSelfJudge, examExit, examRestart,
         examOptionClick, examIsOptionOn, examAutoFillCustomEnd,
         examInputProxy, examChoiceProxy,
         _examGetAnswer
