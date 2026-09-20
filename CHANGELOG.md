@@ -88,6 +88,9 @@
   CI「关键文件完整」检查由 `css/style.css` 改盯六件套 CSS。
 - `setup()` 返回值瘦身：删掉 18 个模板从不引用的绑定（返回值只服务模板，应用没有 `this.`，
   用不上就是死重），含 write-only 的 `exerciseStudentAnswer` 与只声明未使用的 `showCustomForm`。
+- CSS 去重：`tokens.css` 里与 `accessibility.css` 完全相同的 `prefers-reduced-motion` 块、
+  重复的 `* { box-sizing: border-box }`、一条指向不存在的规则的 `.md-exercise-card-head .tag`、
+  以及一段下面没有规则的孤立注释，全部删掉（实测行为不变：box-sizing 仍全局生效）。
 
 ### 文档
 

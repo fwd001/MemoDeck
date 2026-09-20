@@ -1,9 +1,9 @@
 /* ============================================================
  * MemoDeck · Design Tokens + Base
  * — 唯一默认 :root {}（Light tokens）
- * — @media (prefers-reduced-motion: reduce)
  * — @media (prefers-color-scheme: dark) — 只放组件硬编码覆盖
  *   （dark token 全在 themes.css 的 html[data-theme="dark"] 里）
+ *   reduced-motion 归 accessibility.css，此处不再重复
  * ============================================================ */
 
 /* ============================================================
@@ -11,7 +11,7 @@
  * 修 3 个经典溢出坑：
  *   1. box-sizing: border-box — padding 算在 width 里，各文件计算一致
  *   2. flex item 默认 min-width:0 — 长文本/表格不会撑开父容器
- *   3. 全局禁止横向溢出 + 文本自动换行
+ *   3. 禁止横向溢出 + 长文本换行 — 在文件下方 html, body / #app 处
  * ============================================================ */
 
 *,
@@ -27,9 +27,6 @@
 * > * {
   min-width: 0;
 }
-
-/* 全局兜底：禁止横向溢出 + 允许长文本换行 */
-
 
 :root {
   /* —— BRAND —— */
@@ -149,13 +146,6 @@
 }
 
 /* ============================================================
- * Reduced motion — 全局覆盖
- * ============================================================ */
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
-}
-
-/* ============================================================
  * DARK (auto) — 组件硬编码覆盖
  * Token 全由 themes.css 的 @media dark / html[data-theme="dark"] 负责
  * 这里只放无法 token 化的 rgba 背景
@@ -245,8 +235,6 @@ select {
   background-size: 16px;
   padding-right: 36px;
 }
-
-* { box-sizing: border-box; }
 
 /* ============ App Layout ============ */
 html, body {

@@ -241,9 +241,6 @@ background: var(--danger); color: #fff; font-size: 11px; line-height: 18px; bord
 }
 /* 在 flex 头部容器里，tag 不需要绝对定位 */
 .md-study-card-head .tag,
-.md-exercise-card-head .tag {
-  position: static; flex-shrink: 0;
-}
 .question { font-size: 19px; font-weight: 600; margin: 20px 0 22px; white-space: pre-wrap; line-height: 1.5; }
 .btn-group { display: flex; gap: 14px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
 .btn.wide { background: var(--primary); }
