@@ -141,3 +141,35 @@ jobs:
           }
           console.log('  ok  '+defined.size+' 个自定义属性，全部 var() 引用有定义（或带 fallback）');
           "
+
+      # 白字压亮语义色只有 2.0–3.6:1，达不到 WCAG AA 正文的 4.5:1。
+      # 规矩：承载文字的填充面必须用 --success-fill / --danger-fill，
+      # 前景必须用 --on-accent（深色模式下它是近黑）。这里把两条不变量钉住。
+      - name: 检查对比度不变量
+        run: |
+          set -e
+          node -e "
+          const fs=require('fs');
+          // 不承载文字的纯装饰条，允许直接用亮语义色
+          const BARS=['.progress-bar','.md-home-today-bar .bar-fill','.md-home-trend-bar .bar-mastered'];
+          const files=fs.readdirSync('css').map(f=>'css/'+f);
+          const strip=s=>s.replace(/\/\*[\s\S]*?\*\//g,'');
+          const viol=[];
+          for(const f of files)
+            for(const m of strip(fs.readFileSync(f,'utf8')).matchAll(/([^{}]+)\{([^}]*)\}/g)){
+              const sel=m[1].trim().replace(/\s+/g,' ').replace(/,\s*\$/,'');
+              if(sel.startsWith('@')) continue;
+              const body=m[2];
+              if(/(^|;)\s*color\s*:\s*(#fff|#ffffff|white)\s*(;|\$)/i.test(body))
+                viol.push(f+'  ['+sel+']  硬编码白色前景，应改用 var(--on-accent)');
+              if(/(^|;)\s*background(-color)?\s*:\s*var\(--(success|danger)\)\s*(;|\$)/.test(body)
+                 && !BARS.some(b=>sel===b||sel.split(',').map(x=>x.trim()).includes(b)))
+                viol.push(f+'  ['+sel+']  亮语义色做填充底，配白字不达 AA（应改 --success-fill / --danger-fill，或加进 BARS 白名单）');
+            }
+          if(viol.length){
+            console.error('✗ 对比度不变量被破坏：');
+            for(const v of new Set(viol)) console.error('   '+v);
+            process.exit(1);
+          }
+          console.log('  ok  对比度不变量：无硬编码白色前景，亮语义色只用于纯装饰条');
+          "

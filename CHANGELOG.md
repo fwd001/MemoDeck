@@ -64,6 +64,9 @@
   品牌蓝 `--primary` 压白字 4.02:1 按决定保留，作为已知偏差写进 ARCHITECTURE。
   顺带删掉两条与基线同值的空 hover（`.md-study-pass-btn:hover` / `.md-study-fail-btn:hover`）
   和 `.btn.good` / `.btn.bad` 被写两遍的背景声明。
+  CI 新增第 9 步「检查对比度不变量」：禁止硬编码白色前景（必须 `--on-accent`）、禁止把
+  `--success` / `--danger` 直接当填充底（纯装饰条走白名单）。正向通过；在临时副本里注入
+  两处违规均被准确报出并 exit 1。
 - **系统深色 + 手动选浅色时，深色底色漏进浅色界面**：`tokens.css` 的
   `@media (prefers-color-scheme: dark)` 组件硬编码块没有 `data-theme` 守卫，里面是写死的
   深色 rgba，于是远程导入输入框、粘贴框、切卷下拉、今日进度条、拖拽区在「系统 dark +
