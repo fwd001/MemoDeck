@@ -24,6 +24,8 @@
     flex: 0 0 auto; min-height: 44px;
     padding: 10px 14px; font-size: 14px;
   }
-  .option-btn { min-height: 46px; }
-  .option-btn .opt-key { width: 22px; height: 22px; line-height: 22px; font-size: 12px; }
+  /* 作答控件紧凑档（共享组件，见 components.css） */
+  .md-opt { font-size: 14px; gap: 10px; min-height: 46px; }
+  .md-opt-key { width: 22px; height: 22px; font-size: 12px; }
+  .md-tf-btn { font-size: 14px; padding: 14px 0; }
 }

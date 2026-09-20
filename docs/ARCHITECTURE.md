@@ -246,9 +246,9 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
 | 文件 | 职责 |
 |---|---|
 | `tokens.css` | Design Token、明暗两套变量、`#app`/`.container` 宽度约束 |
-| `components.css` | 通用组件（按钮、面板、卡片、Tab 导航、弹窗、Toast、错题条目） |
+| `components.css` | 通用组件（按钮、面板、卡片、Tab 导航、弹窗、Toast、错题条目、**作答控件**） |
 | `pages.css` | 各页面作用域样式，按 `md-study-` / `md-exercise-` / `md-exam-` 前缀隔离 |
-| `responsive.css` | 移动端断点覆盖 |
+| `responsive.css` | 移动端断点覆盖（**全站唯一的断点出口**） |
 | `themes.css` | 深色模式与主题切换 |
 | `accessibility.css` | `prefers-reduced-motion` 等可访问性降级 |
 
@@ -264,6 +264,14 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
 - **背景不用纯白/纯灰**：渐变打底营造纵深
 - **固定底栏必须配底部留白**：`.md-study-stage` / `.md-exam-main` 都留了
   `padding-bottom`，否则最后一个选项会被 `position: fixed` 的操作栏压住
+- **跨页面复用的组件不带页面前缀**：作答控件 `.md-opt-list` / `.md-opt` / `.md-opt-key` /
+  `.md-tf` / `.md-tf-btn` / `.md-feedback` 定义在 `components.css`，练习、模拟考试、分类考试
+  三处共用同一套类名与状态语义（`selected` → `correct` → `wrong`，按此顺序声明以便后者压过前者）。
+  只有单页面专属的样式才用 `md-<页面>-` 前缀
+- **共享组件的移动端紧凑档写在 `responsive.css`**：`.md-opt` 46px / `.md-opt-key` 22px /
+  `.md-tf-btn` 14px 集中在那里，跟组件定义分处两地但按「断点改尺寸」这一条规则可寻。
+  页面级断点目前仍有 3 处留在 `pages.css`（首页 / 学习 / 考试），实测没有被后面的基础规则
+  同特异度顶掉，属可选整理
 - **靠 `opacity` + `transform` 隐藏的浮层必须同时置 `visibility: hidden`**，
   否则它会以透明状态继续拦截点击并留在键盘 Tab 序列里（移动端答题卡踩过这个坑）
 - **全局兜底规则必须保持零特异度**：防 flex 溢出的 `min-width: 0` 早先写成 `#app *`
@@ -307,10 +315,9 @@ DevVue.compile(document.querySelector('#app').innerHTML)
   参数决定读写哪个桶；`touchResumePoint(index, mode)` 的 mode 必填，该模式桶不存在时返回 false。
 
 **样式**
-- **选项按钮仍是两套类名**：分类考试用 `.option-btn` + `.opt-key`（`components.css`），
-  练习与模拟考试用 `.md-exercise-option` + `.md-exercise-opt-key`（`pages.css`）。
-  徽标尺寸/配色/移动端降级已统一成同一套值，但类名与规则尚未合并；且只有后者有
-  `.correct` / `.wrong` 态。改一处选项样式必须同时检查两处。
+- **作答输入框仍有两套**：填空 / 简答在练习与考试用 `.md-exercise-blank-input` /
+  `.md-exercise-essay-input`，分类考试用 `.cat-answer-input`（后者还兼做手动录题表单的输入，
+  合并要先拆清职责）。选项与判断题按钮已收敛为共享组件。
 - **空状态图标只有一套**：`.empty-hint::before` 的书本图标。曾经按模式切换专属图标的
   三条规则已删——它们用 `section[v-show*="..."]` 选中，而 Vue 把 `v-show` 编译成 `style`，
   DOM 里没有这个属性，规则永不命中。要按场景区分图标，请在模板上挂真实类名。

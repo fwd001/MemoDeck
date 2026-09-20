@@ -545,52 +545,9 @@
 /* ============ 阶段 3：练习模式（md-exercise- 前缀；共用 md-study- 布局类） ============ */
 .md-exercise { display: flex; flex-direction: column; gap: 14px; }
 
-/* 作答区（选项按钮） */
+/* 作答区：选项 / 判断 / 反馈条是跨页面共享组件，定义在 components.css
+   （.md-opt-list / .md-opt / .md-tf / .md-feedback），此处只留本页布局与输入控件。 */
 .md-exercise-answer { margin-top: 16px; }
-
-.md-exercise-options {
-  display: flex; flex-direction: column; gap: 10px;
-}
-.md-exercise-option {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 14px 16px; border-radius: var(--radius-sm);
-  background: var(--surface-sub); border: 1.5px solid var(--border);
-  cursor: pointer; font-family: inherit; text-align: left;
-  font-size: 15px; color: var(--text-main);
-  transition: all .15s;
-}
-.md-exercise-option:hover:not(:disabled) { border-color: var(--primary-hover); background: var(--primary-bg); }
-.md-exercise-option:disabled { cursor: default; }
-.md-exercise-opt-key {
-  flex-shrink: 0; width: 24px; height: 24px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; background: var(--fill-primary);
-  font-size: 13px; font-weight: 600; color: var(--text-muted);
-}
-.md-exercise-option.selected { border-color: var(--primary); background: var(--primary-bg); }
-.md-exercise-option.selected .md-exercise-opt-key {
-  background: var(--primary); color: #fff;
-}
-.md-exercise-option.correct { border-color: var(--success); background: var(--success-bg); }
-.md-exercise-option.correct .md-exercise-opt-key { background: var(--success); color: #fff; }
-.md-exercise-option.wrong { border-color: var(--danger); background: var(--danger-bg); }
-.md-exercise-option.wrong .md-exercise-opt-key { background: var(--danger); color: #fff; }
-
-/* 判断 */
-.md-exercise-tf {
-  display: flex; gap: 12px; margin-top: 8px;
-}
-.md-exercise-tf-btn {
-  flex: 1; padding: 16px 0; font-size: 16px; font-weight: 600;
-  border-radius: var(--radius-sm); border: 1.5px solid var(--border);
-  background: var(--surface-sub); cursor: pointer; font-family: inherit;
-  color: var(--text-main); transition: all .15s;
-}
-.md-exercise-tf-btn:hover:not(:disabled) { background: var(--card-bg); }
-.md-exercise-tf-btn:disabled { cursor: default; }
-.md-exercise-tf-btn.selected { border-color: var(--primary); background: var(--primary-bg); color: var(--primary); }
-.md-exercise-tf-btn.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); }
-.md-exercise-tf-btn.wrong { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
 
 /* 填空 / 简答 */
 .md-exercise-blank { margin-top: 12px; }
@@ -612,17 +569,6 @@
 .md-exercise-essay-input:focus:not(:disabled) { border-color: var(--primary); }
 .md-exercise-essay-input:disabled { background: var(--surface-sub); }
 
-/* 判分结果 */
-.md-exercise-feedback {
-  display: flex; gap: 12px; align-items: center;
-  margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-sm);
-}
-.md-exercise-feedback.ok { background: var(--success-bg); border: 1px solid var(--success); }
-.md-exercise-feedback.no { background: var(--danger-bg); border: 1px solid var(--danger); }
-.md-exercise-feedback-icon { font-size: 22px; }
-.md-exercise-feedback-text { font-size: 14px; color: var(--text-main); }
-.md-exercise-feedback-text b { color: var(--primary); }
-
 /* 主观题自评 */
 .md-exercise-self-judge {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -638,13 +584,6 @@
 .md-exercise-self-btn.ok:hover { background: var(--success); color: #fff; }
 .md-exercise-self-btn.no { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
 .md-exercise-self-btn.no:hover { background: var(--danger); color: #fff; }
-
-/* 移动端：选项按钮紧凑 */
-@media (max-width: 600px) {
-  .md-exercise-option { padding: 12px 14px; font-size: 14px; gap: 10px; }
-  .md-exercise-opt-key { width: 22px; height: 22px; font-size: 12px; }
-  .md-exercise-tf-btn { font-size: 14px; padding: 14px 0; }
-}
 
 /* ============ 阶段 4：模拟考试（md-exam- 前缀） ============ */
 .md-exam { display: flex; flex-direction: column; gap: 14px; }

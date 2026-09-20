@@ -611,46 +611,44 @@
 
                   <!-- 单选 -->
                   <template v-if="exerciseCurrentItem.rawType === 'single_choice'">
-                    <div class="md-exercise-options">
+                    <div class="md-opt-list">
                       <button v-for="(val, key) in exerciseCurrentItem.options" :key="key"
-                              class="md-exercise-option"
+                              class="md-opt"
                               :class="{ selected: exerciseChoice === key,
                                         correct: exerciseAnswerSubmitted && key === exerciseCurrentItem.answer,
                                         wrong: exerciseAnswerSubmitted && exerciseChoice === key && key !== exerciseCurrentItem.answer }"
                               :disabled="exerciseAnswerSubmitted"
                               @click="exerciseOptionClick(key)">
-                        <span class="md-exercise-opt-key">{{ key }}</span>
-                        <span class="md-exercise-opt-val">{{ val }}</span>
+                        <span class="md-opt-key">{{ key }}</span>{{ val }}
                       </button>
                     </div>
                   </template>
 
                   <!-- 多选 -->
                   <template v-else-if="exerciseCurrentItem.rawType === 'multi_choice'">
-                    <div class="md-exercise-options">
+                    <div class="md-opt-list">
                       <button v-for="(val, key) in exerciseCurrentItem.options" :key="key"
-                              class="md-exercise-option multi"
+                              class="md-opt"
                               :class="{ selected: exerciseIsOptionOn(key),
                                         correct: exerciseAnswerSubmitted && (Array.isArray(exerciseCurrentItem.answer) && exerciseCurrentItem.answer.includes(key)),
                                         wrong: exerciseAnswerSubmitted && exerciseIsOptionOn(key) && !(Array.isArray(exerciseCurrentItem.answer) && exerciseCurrentItem.answer.includes(key)) }"
                               :disabled="exerciseAnswerSubmitted"
                               @click="exerciseOptionClick(key)">
-                        <span class="md-exercise-opt-key">{{ key }}</span>
-                        <span class="md-exercise-opt-val">{{ val }}</span>
+                        <span class="md-opt-key">{{ key }}</span>{{ val }}
                       </button>
                     </div>
                   </template>
 
                   <!-- 判断 -->
                   <template v-else-if="exerciseCurrentItem.rawType === 'true_false'">
-                    <div class="md-exercise-tf">
-                      <button class="md-exercise-tf-btn"
+                    <div class="md-tf">
+                      <button class="md-tf-btn"
                               :class="{ selected: exerciseChoice === 'true',
                                         correct: exerciseAnswerSubmitted && exerciseCurrentItem.answer === true,
                                         wrong: exerciseAnswerSubmitted && exerciseChoice === 'true' && exerciseCurrentItem.answer !== true }"
                               :disabled="exerciseAnswerSubmitted"
                               @click="exerciseOptionClick('true')">✅ 正确</button>
-                      <button class="md-exercise-tf-btn"
+                      <button class="md-tf-btn"
                               :class="{ selected: exerciseChoice === 'false',
                                         correct: exerciseAnswerSubmitted && exerciseCurrentItem.answer === false,
                                         wrong: exerciseAnswerSubmitted && exerciseChoice === 'false' && exerciseCurrentItem.answer !== false }"
@@ -675,16 +673,9 @@
 
                   <!-- 判分结果 + 标准答案 -->
                   <template v-if="exerciseAnswerSubmitted">
-                    <div class="md-exercise-feedback" :class="exerciseFeedback.correct ? 'ok' : 'no'">
-                      <div class="md-exercise-feedback-icon">{{ exerciseFeedback.correct ? '✅' : '❌' }}</div>
-                      <div class="md-exercise-feedback-text">
-                        <div v-if="exerciseCurrentItem.rawType === 'single_choice' || exerciseCurrentItem.rawType === 'true_false' || exerciseCurrentItem.rawType === 'multi_choice'">
-                          标准答案：<b>{{ exerciseCurrentItem.a }}</b>
-                        </div>
-                        <div v-else>
-                          标准答案：<b>{{ exerciseCurrentItem.a }}</b>
-                        </div>
-                      </div>
+                    <div class="md-feedback" :class="exerciseFeedback.correct ? 'ok' : 'no'">
+                      <div class="md-feedback-icon">{{ exerciseFeedback.correct ? '✅' : '❌' }}</div>
+                      <div class="md-feedback-text">标准答案：<b>{{ exerciseCurrentItem.a }}</b></div>
                     </div>
                   </template>
 
@@ -903,35 +894,33 @@
                   <div class="md-exercise-answer">
 
                     <template v-if="examCurrentItem.rawType === 'single_choice'">
-                      <div class="md-exercise-options">
+                      <div class="md-opt-list">
                         <button v-for="(val, key) in examCurrentItem.options" :key="key"
-                                class="md-exercise-option"
+                                class="md-opt"
                                 :class="{ selected: examChoiceProxy === key }"
                                 @click="examOptionClick(key)">
-                          <span class="md-exercise-opt-key">{{ key }}</span>
-                          <span class="md-exercise-opt-val">{{ val }}</span>
+                          <span class="md-opt-key">{{ key }}</span>{{ val }}
                         </button>
                       </div>
                     </template>
 
                     <template v-else-if="examCurrentItem.rawType === 'multi_choice'">
-                      <div class="md-exercise-options">
+                      <div class="md-opt-list">
                         <button v-for="(val, key) in examCurrentItem.options" :key="key"
-                                class="md-exercise-option multi"
+                                class="md-opt"
                                 :class="{ selected: examIsOptionOn(key) }"
                                 @click="examOptionClick(key)">
-                          <span class="md-exercise-opt-key">{{ key }}</span>
-                          <span class="md-exercise-opt-val">{{ val }}</span>
+                          <span class="md-opt-key">{{ key }}</span>{{ val }}
                         </button>
                       </div>
                     </template>
 
                     <template v-else-if="examCurrentItem.rawType === 'true_false'">
-                      <div class="md-exercise-tf">
-                        <button class="md-exercise-tf-btn"
+                      <div class="md-tf">
+                        <button class="md-tf-btn"
                                 :class="{ selected: examChoiceProxy === 'true' }"
                                 @click="examOptionClick('true')">✅ 正确</button>
-                        <button class="md-exercise-tf-btn"
+                        <button class="md-tf-btn"
                                 :class="{ selected: examChoiceProxy === 'false' }"
                                 @click="examOptionClick('false')">❌ 错误</button>
                       </div>
@@ -1134,14 +1123,14 @@
           </div>
           <div class="question">{{ catCurrent.question }}</div>
 
-          <div v-if="catCurrent.rawType === 'single_choice' || catCurrent.rawType === 'multi_choice'">
-            <button class="option-btn" :class="{ on: isCatOptionOn(k) }" v-for="(v, k) in catCurrent.options" :key="k" @click="catOptionClick(k)" :disabled="catRevealed">
-              <span class="opt-key">{{ k }}</span>{{ v }}
+          <div class="md-opt-list" v-if="catCurrent.rawType === 'single_choice' || catCurrent.rawType === 'multi_choice'">
+            <button class="md-opt" :class="{ selected: isCatOptionOn(k) }" v-for="(v, k) in catCurrent.options" :key="k" @click="catOptionClick(k)" :disabled="catRevealed">
+              <span class="md-opt-key">{{ k }}</span>{{ v }}
             </button>
           </div>
-          <div class="btn-group" v-else-if="catCurrent.rawType === 'true_false'" style="justify-content:flex-start;">
-            <button class="btn good" :class="{ picked: catChoice === 'true' }" @click="catChoice = 'true'" :disabled="catRevealed">✓ 正确</button>
-            <button class="btn bad" :class="{ picked: catChoice === 'false' }" @click="catChoice = 'false'" :disabled="catRevealed">✗ 错误</button>
+          <div class="md-tf" v-else-if="catCurrent.rawType === 'true_false'">
+            <button class="md-tf-btn" :class="{ selected: catChoice === 'true' }" @click="catChoice = 'true'" :disabled="catRevealed">✓ 正确</button>
+            <button class="md-tf-btn" :class="{ selected: catChoice === 'false' }" @click="catChoice = 'false'" :disabled="catRevealed">✗ 错误</button>
           </div>
           <div v-else>
             <textarea v-if="catCurrent.rawType === 'essay'" class="cat-answer-input" v-model="catInput" placeholder="输入你的答案…" :disabled="catRevealed"></textarea>
@@ -1152,8 +1141,9 @@
             </div>
           </div>
 
-          <div v-if="catRevealed && catFeedback" class="feedback" :class="catFeedback.correct ? 'ok' : 'no'">
-            <div class="fb-title">{{ catFeedback.correct ? '✅ 回答正确！' : '❌ 回答错误' }}</div>
+          <div v-if="catRevealed && catFeedback" class="md-feedback" :class="catFeedback.correct ? 'ok' : 'no'">
+            <div class="md-feedback-icon">{{ catFeedback.correct ? '✅' : '❌' }}</div>
+            <div class="md-feedback-text">{{ catFeedback.correct ? '回答正确' : '回答错误' }}</div>
           </div>
 
           <answer-view v-if="catRevealed && catFeedback && !catFeedback.correct && isObjective(catCurrent.rawType)" :item="catCurrent" style="margin-top:12px;"></answer-view>

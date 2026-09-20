@@ -246,7 +246,6 @@ background: var(--danger); color: #fff; font-size: 11px; line-height: 18px; bord
 .btn.wide { background: var(--primary); }
 .btn.good { background: var(--success); flex: 1; max-width: 220px; }
 .btn.bad  { background: var(--danger);  flex: 1; max-width: 220px; }
-.btn.picked { outline: 3px solid rgba(0, 122, 255, 0.45); outline-offset: 2px; border-radius: var(--radius-sm); }
 
 /* 答案展示 — iOS 风格 */
 .answer-box {
@@ -324,27 +323,65 @@ background: var(--danger); color: #fff; font-size: 11px; line-height: 18px; bord
 .type-chip .cnt { font-size: 12px; opacity: .75; margin-left: 4px; }
 .select-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
 
-.option-btn {
-  display: block; width: 100%; text-align: left; min-height: 48px; padding: 12px 14px; margin: 8px 0;
-  border-radius: var(--radius-sm); cursor: pointer; font-size: 15px; font-family: inherit;
-  background: var(--card-bg); border: 1.5px solid var(--border); color: var(--text-main); transition: all .15s;
+/* ============ 作答控件（练习 / 模拟考试 / 分类考试 共用一套） ============
+ * iOS 语义：填充底表示「可点」，状态用 边框 + 填充 + 徽标 三重编码，
+ * 不只靠颜色（色觉障碍也能分辨）。命名不带页面前缀，因为它跨页面复用。 */
+.md-opt-list { display: flex; flex-direction: column; gap: 10px; }
+.md-opt {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%;
+  min-height: 48px; padding: 12px 14px; margin: 0; text-align: left;
+  font-family: inherit; font-size: 15px; line-height: 1.6; color: var(--text-main);
+  background: var(--surface-sub); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer; transition: all .15s;
 }
-.option-btn:hover { border-color: var(--primary); }
-.option-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.option-btn.on { background: var(--primary-bg); border-color: var(--primary); color: var(--primary); font-weight: 600; }
-/* 徽标与练习/模拟考试（.md-exercise-opt-key）保持一致：24px 圆、--fill-primary 底、
-   13px 字号；移动端统一降到 22px（见 responsive.css） */
-.option-btn .opt-key { display: inline-block; vertical-align: middle; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; background: var(--fill-primary); color: var(--text-muted); font-weight: 600; margin-right: 10px; font-size: 13px; }
-.option-btn.on .opt-key { background: var(--primary); color: #fff; }
+.md-opt:hover:not(:disabled) { border-color: var(--primary-hover); background: var(--primary-bg); }
+.md-opt:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.md-opt:disabled { cursor: default; }
+/* 24px 圆徽标：正好等于 15px × 1.6 的一行文字高度，与首行居中对齐 */
+.md-opt-key {
+  flex-shrink: 0; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-full); background: var(--fill-primary);
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+}
+/* 状态层：selected → correct → wrong（交卷后 correct/wrong 覆盖 selected） */
+.md-opt.selected { border-color: var(--primary); background: var(--primary-bg); }
+.md-opt.selected .md-opt-key { background: var(--primary); color: var(--on-primary); }
+.md-opt.correct { border-color: var(--success-border); background: var(--success-bg); }
+.md-opt.correct .md-opt-key { background: var(--success); color: var(--on-primary); }
+.md-opt.wrong { border-color: var(--danger-border); background: var(--danger-bg); }
+.md-opt.wrong .md-opt-key { background: var(--danger); color: var(--on-primary); }
+
+/* 判断题：两个等宽大按钮，同一套状态语义 */
+.md-tf { display: flex; gap: 12px; }
+.md-tf-btn {
+  flex: 1; min-height: 48px; padding: 14px 0;
+  font-family: inherit; font-size: 16px; font-weight: 600; color: var(--text-main);
+  background: var(--surface-sub); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer; transition: all .15s;
+}
+.md-tf-btn:hover:not(:disabled) { border-color: var(--primary-hover); background: var(--primary-bg); }
+.md-tf-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.md-tf-btn:disabled { cursor: default; }
+.md-tf-btn.selected { border-color: var(--primary); background: var(--primary-bg); color: var(--primary); }
+.md-tf-btn.correct { border-color: var(--success-border); background: var(--success-bg); color: var(--success); }
+.md-tf-btn.wrong { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger); }
+
+/* 判分反馈条：图标 + 文案，边框用 semantic-border 而非同色填充 */
+.md-feedback {
+  display: flex; gap: 12px; align-items: center;
+  margin-top: 14px; padding: 14px 16px;
+  border-radius: var(--radius-sm); font-size: 14px;
+}
+.md-feedback.ok { background: var(--success-bg); border: 1px solid var(--success-border); }
+.md-feedback.no { background: var(--danger-bg); border: 1px solid var(--danger-border); }
+.md-feedback-icon { font-size: 22px; }
+.md-feedback-text { color: var(--text-main); }
+.md-feedback-text b { color: var(--primary); }
 
 .cat-type-select { min-height: 40px; padding: 6px 10px; border: 1px solid var(--border-sub); border-radius: var(--radius-sm); font-size: 15px; font-family: inherit; background: var(--surface); color: var(--text-main); box-shadow: var(--shadow-input); }
 .cat-answer-input { width: 100%; min-height: 52px; padding: 12px 14px; border: 1px solid var(--border-sub); border-radius: var(--radius-sm); font-size: 15px; font-family: inherit; resize: vertical; background: var(--surface); color: var(--text-main); box-shadow: var(--shadow-input); }
 .cat-answer-input:focus-visible { outline: none; border-color: var(--primary); box-shadow: var(--focus-ring); }
-
-.feedback { padding: 14px 16px; border-radius: var(--radius-sm); margin-top: 14px; font-size: 15px; }
-.feedback.ok { background: var(--success-bg); border: 1px solid var(--success-bg); color: var(--success); }
-.feedback.no { background: var(--danger-bg); border: 1px solid var(--danger-bg); color: var(--danger); }
-.feedback .fb-title { font-weight: 600; margin-bottom: 4px; }
 
 .score-board { display: flex; gap: 14px; justify-content: center; margin: 18px 0; flex-wrap: wrap; }
 .score-card { flex: 1; min-width: 110px; max-width: 180px; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }

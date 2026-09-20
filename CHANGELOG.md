@@ -82,6 +82,18 @@
 
 ### 变更
 
+- **作答控件收敛为一套共享组件**：分类考试的 `.option-btn` / `.opt-key` 与练习、模拟考试的
+  `.md-exercise-option` / `.md-exercise-opt-key` / `.md-exercise-tf*` / `.md-exercise-feedback*`
+  合并为 `components.css` 里的 `.md-opt-list` / `.md-opt` / `.md-opt-key` / `.md-tf` /
+  `.md-tf-btn` / `.md-feedback`，状态语义统一为 `selected` → `correct` → `wrong`。
+  顺带修掉四处不一致：分类考试选项没有 `:focus-visible` 焦点环、`:hover` 在禁用态仍生效、
+  判断题按钮在分类考试里是另一套 `.btn good/bad` + `picked`（现与其它模式同款中性按钮 +
+  `selected`，`picked` 规则随之成为死代码并删除）、反馈条 `.feedback.ok` 的边框与背景同色
+  （等于没有边框，现改用 `--success-border` / `--danger-border`）。
+- 断点覆盖整理（部分）：作答控件的移动端紧凑档从 `pages.css` 移进 `responsive.css`，与共享
+  组件的分工对齐；新组件的颜色全部走 token，无一处硬编码。`pages.css` 仍留 3 处页面级
+  `@media`（首页 / 学习 / 考试），逐条核对过没有被后面的基础规则同特异度顶掉，要不要一并
+  收拢待定。
 - 会话计时器 `makeSessionTimer`、滑动手势 `makeSwipe` 各收敛为一份实现（原本三处、两处）。
 - `examSession:v1` 内部结构由单槽升级为按模式分桶（`version: 2`），旧数据读取时自动归位，
   不需要手动迁移；`touchResumePoint()` 增加必填的 mode 参数。新增 3 项用例覆盖分桶隔离、
