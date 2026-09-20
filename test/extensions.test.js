@@ -379,6 +379,28 @@ test('buildDashboard 聚合正确', () => {
   eq(d.wrongByStatus.learning, 1);
   eq(d.wrongByStatus.new, 1);
   eq(d.weekTrend.length, 7); // 默认 7 天
+  // 状态四分类互斥：待复习 = learning + review，不能叠加 due（重叠维度）
+  eq(d.weak, 1);
+  eq(d.weak, d.learned - d.mastered);
+  assert(d.weak <= d.total, 'weak 不应超过题库总数');
+});
+
+test('_dayKey 按本地日历日归桶，不按 UTC 日界', () => {
+  const now = new Date();
+  const today = Stats._todayKey();
+  eq(Stats._dayKey(now), today);
+  // 本地今天 00:30 —— UTC 口径会掉到前一天（东八区 00:00–07:59 全部记错）
+  const earlyMorning = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 30, 0);
+  eq(Stats._dayKey(earlyMorning), today);
+  // 本地昨天 23:30 必须仍算昨天
+  const lateNight = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 30, 0);
+  const keys = Stats._pastDayKeys(2);
+  eq(Stats._dayKey(lateNight), keys[0]);
+  eq(Stats._dayKey(earlyMorning), keys[1]);
+  // ISO 字符串入参与 Date 入参等价（往返同一时刻，本地日不变）
+  eq(Stats._dayKey(earlyMorning.toISOString()), today);
+  eq(Stats._dayKey(null), '');
+  eq(Stats._dayKey('not-a-date'), '');
 });
 
 test('computeWeekTrend 返回指定天数的桶', () => {

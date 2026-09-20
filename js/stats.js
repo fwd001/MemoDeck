@@ -20,15 +20,19 @@
   //  日期工具（私有，方便单测时替换）
   // =====================================================
 
-  function _dayKey(iso) {
-    // '2026-09-15' 形式
-    if (!iso) return '';
-    const d = new Date(iso);
+  function _dayKey(isoOrDate) {
+    // 本地日历日 'YYYY-MM-DD'。不能用 toISOString()：那是 UTC，
+    // 东八区用户 00:00–07:59 的学习会被记到前一天。
+    if (!isoOrDate) return '';
+    const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate);
     if (isNaN(d.getTime())) return '';
-    return d.toISOString().slice(0, 10);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
   }
 
-  function _todayKey() { return _dayKey(new Date().toISOString()); }
+  function _todayKey() { return _dayKey(new Date()); }
 
   function _pastDayKeys(n) {
     // 返回最近 n 天（含今天）的 dayKey 数组，从远到近
@@ -37,7 +41,7 @@
     for (let i = n - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      out.push(_dayKey(d.toISOString()));
+      out.push(_dayKey(d));
     }
     return out;
   }
@@ -154,8 +158,8 @@
    *     total,        // 总题数
    *     learned,      // 已学习（至少做过一次，attempts > 0）
    *     mastered,     // 已掌握
-   *     weak,         // 待复习（learning + review + due）
-   *     due,          // 今天需要复习的数量
+   *     weak,         // 待复习 = learning + review（学过但未掌握）
+   *     due,          // 今天到期的数量（与 status 是不同维度，可与 weak 重叠）
    *
    *     // 错题本概览
    *     wrongTotal,   // 错题总数
@@ -191,7 +195,9 @@
       total: byStatus.total,
       learned: byStatus.total - byStatus.new,
       mastered: byStatus.mastered,
-      weak: byStatus.learning + byStatus.review + byStatus.due,
+      // due 与 learning / review 是重叠的两个维度（一道 learning 状态的到期题会同时
+      // 计入两者），相加会让「待复习」超过题库总题数。状态四分类互斥，取 learning + review。
+      weak: byStatus.learning + byStatus.review,
       due: byStatus.due,
 
       wrongTotal: wrongByStatus.total,
