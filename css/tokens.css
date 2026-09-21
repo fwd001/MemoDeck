@@ -245,10 +245,17 @@ select {
 }
 
 /* ============ App Layout ============ */
-html, body {
-  height: 100%;
-  overflow-x: hidden;
-}
+/* ⚠️ 横向溢出用 overflow-x: clip 裁，不要用 hidden。
+   `hidden` 会把该元素变成滚动容器：写在 body 上 → document 不再滚动、滚动条跑到
+   body 上；写在 #app 上 → #app 成为「内容比自身高、自己却滚不动」的滚动容器，
+   于是所有 position: sticky 的后代都拿它的 scrollport 当参照、永远不吸附。
+   实测改之前吸顶元素在 body.scrollTop=300 时 top = -276（完全跟着滚走；
+   旧版 .tab-nav 写着 position: sticky; top: 12px，其实也从没生效过）。
+   `clip` 只裁横向溢出、不建立滚动容器，viewport 仍是滚动主体。
+   前一行 hidden 是给 Safari < 16 的退路：那个版本忽略 clip，宁可退回
+   「sticky 不吸附」也不要一条横向滚动条。 */
+html { height: 100%; overflow-x: hidden; overflow-x: clip; }
+body { height: 100%; }
 
 /* ============ 原生观感基线 ============
    这一节只负责「去掉浏览器默认 behaviors 留下的网页痕迹」，不改任何布局。
@@ -310,6 +317,7 @@ html {
   flex-direction: column;
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-x: clip;   /* 见上方 App Layout 注释：hidden 会杀掉全站 sticky */
   overflow-wrap: break-word;
   word-break: break-word;
 }

@@ -104,6 +104,16 @@
   填空/简答输入框、若干小徽标全是透明底。`.toast` 同理引用了未定义的 `--on-primary`，
   浅色主题下蓝底上顶着继承来的深色文字。两个 token 补进 `tokens.css`
   （`--surface-sub` 走 `--fill-secondary`，明暗两套自动跟随），CI 新增「CSS 变量必须有定义」检查。
+- **`position: sticky` 全站从未生效**：`html, body { overflow-x: hidden }` 与
+  `#app { overflow-x: hidden }` 把 body 变成了真正的滚动容器（实测 `body.scrollHeight`
+  1575 / `clientHeight` 900，而 `document` 侧 `scrollHeight === clientHeight === 900`，
+  `window.scrollTo()` 完全不动），`#app` 则成为一个「内容比自身高、自己却滚不动」的滚动容器，
+  于是所有 sticky 后代都拿它的 scrollport 当参照 —— 实测旧 `.tab-nav`（写着
+  `position: sticky; top: 12px`）在 `body.scrollTop = 300` 时 `top` 是 -276，即完全跟着滚走。
+  横向溢出改用 `overflow-x: clip` 裁（只裁剪、不建立滚动容器），前一行保留 `hidden`
+  作为 Safari < 16 的退路。改后 `document` 恢复滚动，吸顶元素在 `scrollY` 300/675 时
+  稳定停在 `top: 8px`，`scrollWidth - clientWidth` 仍为 0（没有横向溢出）。
+  这条是吸顶应用栏的前置修复 —— 在此之前「导航栏常驻」这个想法在本项目里根本做不到。
 - **题号标签压住题干**（我上一轮引入的回归）：删除确认无用的 `.md-exercise-card-head .tag`
   时只删了选择器列表里的一行，留下悬空逗号，`.tag { position: static }` 被并给了下一条的
   `.question`，标签退回绝对定位 —— 实测「填空题」标签与「第 1 题」重叠 41%，PC 与移动端都在。

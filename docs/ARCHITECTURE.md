@@ -295,6 +295,12 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   同一条也适用于元素级基础档：`input[type="text"] / textarea / select` 的默认样式现在包在
   `:where(...)` 里（特异度归 0），否则 `(0,1,1)` 会反过来吃掉 `.md-field` 这类 `(0,1,0)`
   组件的边框与禁用态 —— 同一个坑的第二个变体
+- **裁横向溢出只能用 `overflow-x: clip`，不能用 `hidden`**：`hidden` 会把该元素变成滚动容器。
+   写在 `html/body` 上 → document 不再滚动、滚动条跑到 body 上，`window.scrollTo()` 失效；
+   写在 `#app` 上 → 它成为「内容比自身高、自己滚不动」的滚动容器，所有 `position: sticky`
+   后代都拿它的 scrollport 当参照而永不吸附（旧 `.tab-nav` 的 sticky 就这样白写了几个版本）。
+   `clip` 只裁不滚，viewport 仍是滚动主体；`hidden` 保留在前一行作为 Safari < 16 的退路。
+   新增吸顶元素前先确认这条：`getComputedStyle(祖先).overflowX !== 'hidden'`
 - **界面外壳（chrome）不用 emoji 图标**：矢量符号集中在 `index.html` 顶部的
   `<svg class="icon-defs">` 符号表，按 `#i-<tabKey>` 命名，用 `<use>` 引用、`stroke: currentColor`
   跟随主题。新增入口只要补一个 `<symbol>` 就能被 Tab 自动取到。题库
