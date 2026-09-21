@@ -138,6 +138,47 @@
   font-size: var(--font-sm); color: var(--text-tertiary);
 }
 
+/* ============ 浮层 Sheet（数据管理） ============ */
+/* 移动端从底部滑出、≥601px 居中成对话框。背板用 v-show（= display:none），
+   不用 opacity 隐藏 —— 项目里已经踩过「透明层继续拦截点击」的坑。 */
+.sheet-scrim {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(20, 31, 45, 0.4);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  animation: modalFade .18s var(--ease-out);
+}
+.sheet {
+  width: 100%; max-width: 560px; margin: 0;
+  max-height: calc(88vh - env(safe-area-inset-top, 0px));
+  overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--elevated-bg);
+  box-shadow: var(--shadow-modal);
+  animation: sheetUp .28s var(--ease-out);
+}
+.sheet-grabber {
+  width: 36px; height: 5px; margin: 0 auto 12px;
+  border-radius: var(--radius-full); background: var(--fill-primary);
+}
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sheet-title { margin: 0; font-size: var(--font-3xl); font-weight: 700; letter-spacing: -0.02em; }
+.sheet-sub {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 6px; font-size: var(--font-sm); color: var(--text-muted);
+}
+.sheet-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+@keyframes sheetUp {
+  from { transform: translateY(28px); opacity: .5; }
+  to { transform: none; opacity: 1; }
+}
+@media (min-width: 601px) {
+  .sheet-scrim { align-items: center; padding: 24px; }
+  .sheet { border-radius: var(--radius-xl); max-height: 86vh; }
+  .sheet-grabber { display: none; }   /* 拖拽指示条是底部抽屉的暗示，居中对话框没有这回事 */
+}
+
 .src-badge {
   font-size: 12px; font-weight: 600; padding: 3px 10px;
   border-radius: var(--radius-lg2);

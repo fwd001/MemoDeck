@@ -37,7 +37,8 @@
       const remoteUrl = ref('');
       const pasteText = ref('');
       const managerUrl = ref(JSON_MANAGER_URL);
-      const showDataPanel = ref(localStorage.getItem('memo:showDataPanel') !== '0');
+      // 默认收起：内联展开的数据面板曾把整屏内容顶下去，手机首屏只剩后台表单。
+      const showDataPanel = ref(localStorage.getItem('memo:showDataPanel') === '1');
       const confirmClearAll = ref(false); // 备份区二次确认
       const dataBusy = ref(false);
       const dragActive = ref(false);
@@ -438,9 +439,16 @@
         return el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable === true;
       }
 
+      // 浮层（数据管理 sheet / AI 提示词）打开时，背景页的快捷键全部让路 ——
+      // 否则在 sheet 里按 Enter 会把背后的学习卡翻过去，考试里按 Esc 会直接交卷。
+      function overlayIsOpen() {
+        return showDataPanel.value === true || showAiModal.value === true;
+      }
+
       // 桌面端也支持：点击"记住了/还不会"按钮 或 键盘 1/2 或 ←/→
       function studyKeyDown(e) {
         if (isEditableTarget(e)) return;
+        if (overlayIsOpen()) return;
         if (activeTab.value !== 'study') return;
         if (studyMode.value !== 'running') return;
         if (e.key === ' ' || e.key === 'Enter') {
@@ -729,6 +737,7 @@
       // 键盘
       function exerciseKeyDown(e) {
         if (isEditableTarget(e)) return;
+        if (overlayIsOpen()) return;
         if (activeTab.value !== 'exercise') return;
         if (exerciseMode.value !== 'running') return;
         if (exerciseAnswerSubmitted.value) {
@@ -1059,6 +1068,7 @@
       // 键盘（考试中 Enter = 下一题，方便快速跳过）
       function examKeyDown(e) {
         if (isEditableTarget(e)) return;
+        if (overlayIsOpen()) return;
         if (activeTab.value !== 'exam') return;
         if (examMode.value !== 'running' || examSubmitted.value) return;
         if (e.key === 'Enter') { examNext(); e.preventDefault(); }
@@ -1073,6 +1083,7 @@
         window.addEventListener('keydown', studyKeyDown);
         window.addEventListener('keydown', exerciseKeyDown);
         window.addEventListener('keydown', examKeyDown);
+        window.addEventListener('keydown', overlayKeyDown);
         // 刷新 / 关标签页前落一次考试答案，弥补「键入不即时写」的窗口
         window.addEventListener('beforeunload', _examPersist);
         window.addEventListener('hashchange', onHashChange);
@@ -1083,6 +1094,7 @@
         window.removeEventListener('keydown', studyKeyDown);
         window.removeEventListener('keydown', exerciseKeyDown);
         window.removeEventListener('keydown', examKeyDown);
+        window.removeEventListener('keydown', overlayKeyDown);
         window.removeEventListener('beforeunload', _examPersist);
         window.removeEventListener('hashchange', onHashChange);
         studyClock.stop();
@@ -1092,6 +1104,13 @@
 
       /* ============ AI 提示词（弹窗） ============ */
       const showAiModal = ref(false);
+
+      // Esc 关闭最上层浮层（原生对话框的惯例）：先关模态，再关数据管理 sheet
+      function overlayKeyDown(e) {
+        if (e.key !== 'Escape') return;
+        if (showAiModal.value) { showAiModal.value = false; e.preventDefault(); }
+        else if (showDataPanel.value) { showDataPanel.value = false; e.preventDefault(); }
+      }
       const aiCopied = ref(false);
 
       /* ============ 计算属性 ============ */

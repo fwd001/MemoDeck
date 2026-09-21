@@ -52,6 +52,7 @@
     <symbol id="i-display" viewBox="0 0 24 24"><rect x="2.9" y="5" width="18.2" height="12" rx="1.8"/><path d="M9 20.4h6M12 17v3.4"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.1"/><path d="M12 2.9v2.2M12 18.9v2.2M2.9 12h2.2M18.9 12h2.2M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.2 14.6A8.6 8.6 0 1 1 9.6 4a7.1 7.1 0 0 0 10.6 10.6z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"/></symbol>
   </defs></svg>
 
   <div id="app" v-cloak>
@@ -88,18 +89,25 @@
         </nav>
       </div>
 
-      <section class="panel" v-show="showDataPanel" @dragover="onDragOver" @dragleave="onDragLeave" @drop="onDrop">
-        <div class="panel-head">
-          <div>
-            <span class="src-badge" :class="sourceMeta.cls">{{ sourceMeta.label }}</span>
-            <span v-if="currentBank.meta.title" class="sub" style="margin-left:8px;">{{ currentBank.meta.title }}</span>
+      <!-- 「数据管理」原来是一块内联展开的大面板，会把下面所有内容顶下去（而且默认就是展开的，
+           手机首屏整屏都是后台表单）。改成浮层 sheet：移动端从底部滑出、桌面居中。 -->
+      <div class="sheet-scrim" v-show="showDataPanel" @click.self="showDataPanel = false">
+        <section class="panel sheet" role="dialog" aria-modal="true" aria-label="数据管理"
+                 @dragover="onDragOver" @dragleave="onDragLeave" @drop="onDrop">
+          <div class="sheet-grabber" aria-hidden="true"></div>
+          <div class="sheet-head">
+            <h2 class="sheet-title">数据管理</h2>
+            <button class="icon-btn" @click="showDataPanel = false" aria-label="关闭" title="关闭"><svg class="icon"><use href="#i-x"/></svg></button>
           </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div class="sheet-sub">
+            <span class="src-badge" :class="sourceMeta.cls">{{ sourceMeta.label }}</span>
+            <span v-if="currentBank.meta.title">{{ currentBank.meta.title }}</span>
+          </div>
+          <div class="sheet-actions">
             <button class="btn btn-text small" @click="downloadCurrent">⬇️ 下载 JSON</button>
             <button class="btn btn-text small" @click="copyCurrent">📋 复制 JSON</button>
             <button class="btn btn-text small" @click="downloadRules">📘 JSON 规则</button>
           </div>
-        </div>
         <div class="src-meta" v-if="sourceMeta.detail">{{ sourceMeta.detail }}</div>
 
         <div class="src-actions">
@@ -154,6 +162,7 @@
         <!-- 原来挂在首屏标题下的宣传语：讲的是数据格式与来源，属于这里，不属于导航栏 -->
         <div class="panel-foot">数据格式：试卷 JSON View 标准 v1.0 · 纯离线运行 · 支持远程导入与本地缓存</div>
       </section>
+      </div>
 
       <!-- ============ 阶段 1：首页 ============ -->
       <section v-show="activeTab === 'home'" class="md-home">

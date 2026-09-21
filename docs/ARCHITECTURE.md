@@ -301,6 +301,10 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
    后代都拿它的 scrollport 当参照而永不吸附（旧 `.tab-nav` 的 sticky 就这样白写了几个版本）。
    `clip` 只裁不滚，viewport 仍是滚动主体；`hidden` 保留在前一行作为 Safari < 16 的退路。
    新增吸顶元素前先确认这条：`getComputedStyle(祖先).overflowX !== 'hidden'`
+- **「数据管理」是浮层 Sheet，不是内联面板**：`.sheet-scrim`（`v-show` 控制，关闭即
+  `display:none`）+ `.panel.sheet`。≤600px 底部滑出、≥601px 居中对话框，点背板 / `Esc` 关闭。
+  新增这类模态编辑时照这一套走，并且**必须**在三个 `*KeyDown` 的 `overlayIsOpen()` 里登记，
+  否则背景页的快捷键会在浮层开着时抢走事件（学习卡被翻走 / 考试被交卷）
 - **界面外壳只有 `.appchrome` 一块**：吸顶的 `.appchrome`（毛玻璃 + `--chrome-bg`）里装
   `.appbar`（标题 = 当前入口名 `activeTabLabel`，不是应用名；右侧只放 `.icon-btn` 图标按钮）
   和 `.tab-nav`。导航栏不放宣传语、不放带文字的灰胶囊 —— iOS 的 nav bar 只回答「你在哪个屏」。
