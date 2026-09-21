@@ -79,6 +79,12 @@
   `.toast` 的 `bottom` 全部补上 `+ env(safe-area-inset-bottom, 0px)`，两处底部留白
   （`.md-study-stage` / `.md-exam-main` 的 `padding-bottom`）同步跟上 —— `body` 上的
   `padding-bottom: env(...)` 对 `position: fixed` 无效，而 manifest 是 `display: standalone`。
+- **移动端答题卡题号格子只有 20–27px**：`@media` 里把网格固定成 `repeat(10, 1fr)`，
+  实测格子 27.5px（390 宽）/ 20.5px（320 宽），远低于项目自己声明的 44px 触摸目标。
+  改为 `repeat(auto-fill, minmax(44px, 1fr))`，列数随宽度自适应 —— 实测格子
+  46.8px（390）/ 51px（358）/ 55.8px（320）。
+  （顺带纠正我上一版写进 ARCHITECTURE 的错误结论：我当时说移动端「5 列会自然长到
+  48–53px」，实际上移动端早被改成 10 列了，那句话是错的，现已按实测改写。）
 - 移动端全量复查（390px 与 320px 两档，各功能都在**运行态**下扫）：8 个入口无横向溢出
   （`scrollWidth` 与容器等宽）、无其它「列方向不拉伸」错位；错题本含数据时来源 Tab 与状态
   分布正常；考试交卷后的成绩卡纵向排布、130px 环形正确率、未作答单列均正常。

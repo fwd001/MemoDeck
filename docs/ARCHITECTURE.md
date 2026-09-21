@@ -261,8 +261,9 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   `.btn.small` / `.btn-text` / `.wb-tabs button` / `.per-chip` / `.tab-nav button` 的 44px
   补偿统一写在 `responsive.css` 的 600px 块；表单控件（`.paper-switch select`、
   `.cat-type-select`）与 `.btn` / `.src-actions input` 一样直接按 44px 全局设。
-  唯一例外是答题卡题号：桌面侧栏 5 列约 32px（指针操作可接受），移动端面板变宽后
-  同样 5 列会自然长到 48–53px，无需特例
+  唯一例外是答题卡题号：桌面侧栏 5 列约 32px（指针操作可接受）。移动端**不是**自然达标 ——
+  `@media` 里原本固定 10 列，实测格子只有 27.5px（390 宽）/ 20.5px（320 宽），
+  现已改成 `repeat(auto-fill, minmax(44px, 1fr))`，格子恒 ≥44px、列数随宽度自适应
 - **可见焦点态**：统一 `:focus-visible` 描边，键盘可达一切交互元素
 - **尊重 `prefers-reduced-motion`**：动画降级为无过渡
 - **背景不用纯白/纯灰**：渐变打底营造纵深

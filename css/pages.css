@@ -807,7 +807,9 @@
     transition: transform .3s cubic-bezier(.4,.1,.3,1), opacity .2s ease,
                 visibility 0s linear 0s;
   }
-  .md-exam-sheet-grid { grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  /* 原来固定 10 列，实测格子只有 27.5px（390 宽）/ 20.5px（320 宽），
+     远低于 44pt 触摸目标。auto-fill + minmax 让格子不小于 44px、列数随宽度自适应 */
+  .md-exam-sheet-grid { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
   .md-exam-sheet-num { font-size: 11px; }
   .md-exam-sheet-legend { display: none; }
 
