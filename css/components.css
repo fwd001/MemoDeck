@@ -18,6 +18,8 @@
   /* 与相邻文字保持视觉基线，emoji 原本靠字形自带的光学居中 */
   vertical-align: -0.18em;
 }
+/* 按钮里的图标与文字之间留缝（.btn 保持 inline-block，不改 display 以免影响 57 处既有用法） */
+.btn .icon, .btn-text .icon { margin-right: 6px; }
 
 /* ============ 吸顶应用栏（iOS nav bar） ============ */
 /* 一整块浮动的毛玻璃条：标题行 + Tab 分段控件。原来 header 与 tab-nav 各滚各的，

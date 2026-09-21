@@ -53,6 +53,10 @@
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.1"/><path d="M12 2.9v2.2M12 18.9v2.2M2.9 12h2.2M18.9 12h2.2M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.2 14.6A8.6 8.6 0 1 1 9.6 4a7.1 7.1 0 0 0 10.6 10.6z"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.4" y="5.2" width="17.2" height="15.4" rx="2.2"/><path d="M3.4 9.8h17.2M8.2 3.4v3.6M15.8 3.4v3.6"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20.2h16"/><path d="M6.8 20.2v-7.4M12 20.2V5.6M17.2 20.2v-9.8"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.8" y="3.8" width="7.2" height="7.2" rx="1.8"/><rect x="13" y="3.8" width="7.2" height="7.2" rx="1.8"/><rect x="3.8" y="13" width="7.2" height="7.2" rx="1.8"/><rect x="13" y="13" width="7.2" height="7.2" rx="1.8"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3.4 16.6 9.2 10.8l3.6 3.6 7.8-8.2"/><path d="M15.4 6.2h5.2v5.2"/></symbol>
   </defs></svg>
 
   <div id="app" v-cloak>
@@ -183,14 +187,14 @@
             </g>
           </svg>
           <div class="md-home-empty-title">还没有题库</div>
-          <div class="md-home-empty-sub">请通过上方「⚙️ 数据管理」导入 JSON，或拖拽文件到虚线框。</div>
+          <div class="md-home-empty-sub">请点右上角的「数据管理」导入 JSON，或拖拽文件到虚线框。</div>
         </div>
 
         <template v-else>
           <!-- 今日学习卡 -->
           <div class="md-home-card md-home-today">
             <div class="md-home-card-head">
-              <span class="md-home-card-title">📅 今日学习</span>
+              <span class="md-home-card-title"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>今日学习</span>
               <!-- 到期徽章（仅当有待复习时显示，红色气泡带数字） -->
               <span class="md-home-due-badge" v-if="(dailyTask.stats.due || dashboard.due || 0) > 0">
                 {{ dailyTask.stats.due || dashboard.due }} 道待复习
@@ -210,16 +214,16 @@
               <span v-else>加载中...</span>
             </div>
             <div class="md-home-today-actions">
-              <button class="btn" @click="switchTab('study')">📖 开始学习</button>
-              <button class="btn gray small" @click="switchTab('practice')">🕹️ 记忆闯关</button>
-              <button class="btn ghost small" @click="switchTab('wrongbook')" v-if="wrongCount">📕 复习错题 ({{ wrongCount }})</button>
+              <button class="btn" @click="switchTab('study')"><svg class="icon" aria-hidden="true"><use href="#i-study"/></svg>开始学习</button>
+              <button class="btn gray small" @click="switchTab('practice')"><svg class="icon" aria-hidden="true"><use href="#i-practice"/></svg>记忆闯关</button>
+              <button class="btn ghost small" @click="switchTab('wrongbook')" v-if="wrongCount"><svg class="icon" aria-hidden="true"><use href="#i-wrongbook"/></svg>复习错题 ({{ wrongCount }})</button>
             </div>
           </div>
 
           <!-- 学习统计 -->
           <div class="md-home-card md-home-stats">
             <div class="md-home-card-head">
-              <span class="md-home-card-title">📊 学习统计</span>
+              <span class="md-home-card-title"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg>学习统计</span>
               <span class="md-home-card-sub">题库共 {{ dashboard.total }} 题</span>
             </div>
             <div class="md-home-stats-grid">
@@ -245,20 +249,20 @@
           <!-- 快捷入口 -->
           <div class="md-home-card">
             <div class="md-home-card-head">
-              <span class="md-home-card-title">🚀 快捷入口</span>
+              <span class="md-home-card-title"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg>快捷入口</span>
             </div>
             <div class="md-home-quick-grid">
               <button class="md-home-quick-btn" @click="switchTab('practice')">
-                <span class="q-icon">🕹️</span><span class="q-label">记忆闯关</span>
+                <svg class="icon q-icon" aria-hidden="true"><use href="#i-practice"/></svg><span class="q-label">记忆闯关</span>
               </button>
               <button class="md-home-quick-btn" @click="switchTab('exam')">
-                <span class="q-icon">🎓</span><span class="q-label">模拟考试</span>
+                <svg class="icon q-icon" aria-hidden="true"><use href="#i-exam"/></svg><span class="q-label">模拟考试</span>
               </button>
               <button class="md-home-quick-btn" @click="switchTab('wrongbook')">
-                <span class="q-icon">📕</span><span class="q-label">错题本</span>
+                <svg class="icon q-icon" aria-hidden="true"><use href="#i-wrongbook"/></svg><span class="q-label">错题本</span>
               </button>
               <button class="md-home-quick-btn" @click="switchTab('preview')">
-                <span class="q-icon">📝</span><span class="q-label">摸底速览</span>
+                <svg class="icon q-icon" aria-hidden="true"><use href="#i-preview"/></svg><span class="q-label">摸底速览</span>
               </button>
             </div>
           </div>
@@ -266,7 +270,7 @@
           <!-- 最近 7 天趋势 -->
           <div class="md-home-card" v-if="dashboard.weekTrend && dashboard.weekTrend.length">
             <div class="md-home-card-head">
-              <span class="md-home-card-title">📈 最近 7 天</span>
+              <span class="md-home-card-title"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg>最近 7 天</span>
             </div>
             <div class="md-home-trend-grid">
               <div class="md-home-trend-bar" v-for="(d, idx) in dashboard.weekTrend" :key="idx">
@@ -301,7 +305,7 @@
       <section v-show="activeTab === 'study'" class="md-study">
         <div class="md-study-empty" v-if="!bank.length">
           <div class="md-home-empty-title">还没有题库</div>
-          <div class="md-home-empty-sub">请通过上方「⚙️ 数据管理」导入 JSON，或拖拽文件到虚线框。</div>
+          <div class="md-home-empty-sub">请点右上角的「数据管理」导入 JSON，或拖拽文件到虚线框。</div>
         </div>
 
         <!-- ===== 模式 A：setup ===== -->
@@ -523,7 +527,7 @@
       <section v-show="activeTab === 'exercise'" class="md-exercise">
         <div class="md-study-empty" v-if="!bank.length">
           <div class="md-home-empty-title">还没有题库</div>
-          <div class="md-home-empty-sub">请通过上方「⚙️ 数据管理」导入 JSON。</div>
+          <div class="md-home-empty-sub">请点右上角的「数据管理」导入 JSON。</div>
         </div>
 
         <!-- ===== setup ===== -->
@@ -810,7 +814,7 @@
       <section v-show="activeTab === 'exam'" class="md-exam">
         <div class="md-study-empty" v-if="!bank.length">
           <div class="md-home-empty-title">还没有题库</div>
-          <div class="md-home-empty-sub">请通过上方「⚙️ 数据管理」导入 JSON。</div>
+          <div class="md-home-empty-sub">请点右上角的「数据管理」导入 JSON。</div>
         </div>
 
         <!-- ===== setup ===== -->

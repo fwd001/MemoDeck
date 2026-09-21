@@ -25,13 +25,18 @@
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 14px; flex-wrap: wrap; gap: 6px;
 }
-.md-home-card-title { font-weight: 600; font-size: 15px; color: var(--text-main); }
+.md-home-card-title {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 600; font-size: 15px; color: var(--text-main);
+}
+.md-home-card-title .icon { color: var(--text-muted); }
 .md-home-card-sub { font-size: 13px; color: var(--text-muted); }
 .md-home-card-sub b { color: var(--primary); font-weight: 600; }
 
 /* 今日学习 */
-.md-home-today { background: linear-gradient(135deg, var(--primary-bg) 0%, var(--surface) 60%); border-color: var(--primary); }
-.md-home-today .md-home-card-title { color: var(--primary); }
+/* 原来这里写着 border-color: var(--primary) + 标题变蓝，整张卡片看起来像被选中/调试高亮。
+   iOS 的分组卡片靠字号与间距分层，不给容器描边，所以只留渐变、去掉蓝框 */
+.md-home-today { background: linear-gradient(135deg, var(--primary-bg) 0%, var(--surface) 60%); }
 .md-home-big-num { display: flex; align-items: baseline; gap: 6px; margin: 6px 0 14px; }
 .md-home-big-num .num {
   font-size: 44px; font-weight: 700; color: var(--primary);
