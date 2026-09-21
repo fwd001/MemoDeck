@@ -529,9 +529,9 @@
   .md-study-card .card-inner { padding: 22px 18px; }
   .md-study-card-back .card-inner { padding: 16px; }
 
-  .md-study-footer {
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: calc(100% - 24px); gap: 8px;
-  }
+  /* 边距不再单独收窄：桌面已经是 16px 离边 + calc(100% - 32px)，
+     原来这里改成 12px 会让固定操作栏和上方 16px 的卡片左右不齐 */
+  .md-study-footer { gap: 8px; }
   .md-study-pass-btn, .md-study-fail-btn {
     padding: 14px 0; font-size: 14px; border-radius: var(--radius-sm);
   }
@@ -786,9 +786,14 @@
   /* 答题卡：fixed 底部叠层，transform + opacity 过渡（不用 display 切换） */
   .md-exam-sheet {
     position: fixed;
+    /* ⚠️ 必须显式清掉 top：桌面基线是 `position: sticky; top: 70px`，改成 fixed 后
+       top 还留着，而 top/bottom 同时指定时 top 赢 —— 实测面板贴在 y=70 而不是从底部滑出，
+       收起态的 translateY(100%) 也因此把整块面板推到屏幕中段去挡点击。 */
+    top: auto;
     /* 原来写 bottom: 60px，而操作栏顶边其实在 78px（padding 10+10 + 按钮 44 + 边框 2，
        离底 12）→ 答题卡最后一行被压在操作栏下面 18px */
-    bottom: calc(78px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0;
+    /* 操作栏离底 16 + 自身高 66（padding 10+10 + 按钮 44 + 边框 2）= 82 */
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0;
     width: 100%; max-height: 60vh;
     background: var(--card-bg); border-radius: 16px 16px 0 0;
     border: none; border-top: 1.5px solid var(--border);
@@ -822,10 +827,7 @@
   }
   .md-exam-score-card .score-circle { width: 130px; height: 130px; }
 
-  .md-exam-footer {
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding: 10px 12px; gap: 8px;
-    width: calc(100% - 24px);
-  }
+  .md-exam-footer { padding: 10px 12px; gap: 8px; }
   .md-exam-footer .btn { font-size: 13px; padding: 8px 12px; }
   .md-exam-submit-btn { padding: 10px 14px; font-size: 14px; }
 }

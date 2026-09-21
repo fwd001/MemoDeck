@@ -5,7 +5,17 @@
 
 /* ============ 响应式 ============ */
 @media (max-width: 600px) {
-  body { padding: 14px 12px 50px; font-size: 15px; }
+  /* 留白：屏幕边距只由 #app 的 --layout-gutter(16px) 负责。
+     原来这里又给 body 叠了 `14px 12px 50px`，于是单侧 = 12 + 16 = 28px，
+     再加卡片自己的 20px 内边距，正文离屏幕边 48px ≈ 390 宽度的 12.3%（两侧吃掉 24.6%），
+     而 iOS 分组列表的标准是 16 + 16 = 32px。顺带这条覆盖还把 tokens 里
+     `body { padding-bottom: env(safe-area-inset-bottom) }` 一起抹掉了。 */
+  body { font-size: 15px; }
+  /* 卡片内边距收到 16，让「屏幕边 → 正文」正好 32px */
+  .md-home-card, .panel, .md-study-group, .wb-item,
+  .md-study-resume, .md-study-summary { padding-left: 16px; padding-right: 16px; }
+  .md-home { gap: 12px; }
+  .appchrome { margin-bottom: 12px; }
   .card { padding: 26px 18px 20px; min-height: 230px; }
   .question { font-size: 17px; }
   .btn-group { gap: 10px; }
