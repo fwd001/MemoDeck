@@ -10,6 +10,36 @@
 
 ### 修复
 
+- **练习里填空题/简答题点「提交答案」整页变白，必须刷新**：`exerciseSubmit()` 对主观题
+  故意**不**设 `exerciseFeedback`（留给下面的自评块用 `!exerciseFeedback` 判定），
+  但「判分结果 + 标准答案」那段写的是 `<template v-if="exerciseAnswerSubmitted">` 里
+  无条件读 `exerciseFeedback.correct` → 渲染函数抛
+  `TypeError: Cannot read properties of null (reading 'correct')`，Vue 卸载整棵树、页面变白。
+  实测：填空题提交后 `#app` 的后代节点数从 600+ 掉到 **0**。
+  现在 `:class` 走三态（`ok` / `no` / 无 verdict 时中性条），图标加 `v-if="exerciseFeedback"`。
+  修完实测：填空题提交后保留中性反馈条 + 自评按钮、DOM 存活；客观题仍是 ok/no + 图标；
+  整局 13 题跑到底总结页正常渲染（`练习完成` + 绑定图标）。
+  ⚠️ 这是 `82bf5d0` 就存在的旧 bug，不是我这几轮改出来的 —— 我用 worktree 起了已推送版本
+  对比确认：那两行 `:class` 与 `v-if` 在两个版本里逐字相同，我只改了里面的图标行。
+  顺带说明为什么它一直没被发现：`test/` 三个套件只覆盖纯逻辑（判分/取题/扩展），
+  模板里的空值解引用没有任何防线。
+- **移动端答题卡面板从来没从底部滑出过**：桌面基线是 `position: sticky; top: 70px`，
+  ≤760px 的覆盖只改了 `position: fixed` 和 `bottom`，**没清 `top`**。fixed 元素同时指定
+  `top` 和 `bottom` 且有确定高度时 `top` 赢 —— 实测面板贴在 `y=70`（离底 268px），
+  而收起态的 `translateY(100%)` 把整块面板推到屏幕中段去挡点击（就是之前那个
+  「隐形点击层」为什么量出来总在中间）。补 `top: auto` 后实测面板
+  `bottom = 762 = 操作栏 top`，严丝合缝贴在操作栏上方。
+- **移动端四周边距过宽**：`responsive.css` 给 `body` 又叠了一层 `padding: 14px 12px 50px`，
+  而 `#app` 已经有 `--layout-gutter: 16px` —— 单侧 12+16=28px，再加卡片自身 20px 内边距，
+  正文离屏幕边 **48px ≈ 390 宽度的 12.3%**（两侧吃掉 24.6%）。iOS 分组列表的标准是
+  16 + 16 = 32px。改为：留白只由 `#app` 负责（`body` 只保留 `font-size`），
+  卡片横向内边距在移动端收到 16px。实测 390 下 `chromeLeft/cardLeft = 16`、
+  正文 `textLeft = 33`；320 宽同样 16/16 且横向溢出为 0。
+  顺带修掉这条覆盖的第二个副作用：它把 `tokens.css` 里
+  `body { padding-bottom: env(safe-area-inset-bottom) }` 一起抹平了，刘海屏底部安全区丢失。
+- **固定操作栏与卡片左右不齐**：`.md-study-footer` / `.md-exam-footer` 在移动端把离边
+  收窄成 12px，而卡片是 16px。删掉这两处重复覆盖（桌面基线本来就是 16px + `calc(100% - 32px)`），
+  实测两者都回到 16/16。
 - **`position: sticky` 全站从未生效**：`html, body { overflow-x: hidden }` 与
   `#app { overflow-x: hidden }` 把 body 变成了真正的滚动容器（实测 `body.scrollHeight`
   1575 / `clientHeight` 900，而 `document` 侧 `scrollHeight === clientHeight === 900`，

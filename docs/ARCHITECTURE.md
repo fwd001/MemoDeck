@@ -332,6 +332,17 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   判据是「这是控件还是内容」，不是元素类型。滚动条统一改成不占布局宽度的细条，
   `overscroll-behavior-y: none` 关掉橡皮筋。新增页面若出现需要选中的正文，把类名加进
   放行列表，不要在页面里另写一份 `user-select`
+- **改 `position` 时必须把不需要的轴清回 `auto`**：从 `sticky`（带 `top`）改成 `fixed`（带
+  `bottom`）时，旧的 `top` 会留着，而 fixed 元素同时有 `top`/`bottom` 和确定高度时 **`top` 赢**
+  —— 移动端答题卡因此一直贴在屏幕上方而不是从底部滑出。覆盖定位就写全 `top/left/right/bottom`
+  四个轴，或显式 `top: auto`
+- **留白只允许一个所有者**：屏幕边距归 `#app` 的 `--layout-gutter`，卡片内边距归卡片。
+  断点里不要再给 `body` 叠第二层 padding（实测叠过，单侧 28px、正文离边 48px，
+  而且顺手抹掉了 `body` 的 `env(safe-area-inset-bottom)`）。iOS 分组列表的标准是
+  屏幕 16pt + 卡片内 16pt
+- **模板里的空值解引用没有任何防线**：`test/` 三个套件只测纯逻辑（判分/取题/扩展），
+  `v-if` 条件与子节点读取的状态不一致时不会有任何报错，只会在运行时抛错并让 Vue
+  卸载整棵树（页面全白）。写 `v-if="A"` 的块里读 `B.x` 之前，先确认 `A` 为真时 `B` 必不为空
 - **横向滚动容器不能用 `justify-content: center`**：内容超宽时居中会把溢出量均分到两侧，
   而浏览器只提供正向滚动条 —— 左边那段永远滚不回去（实测移动端第一个 Tab 落在
   `left: -184.6px`，`scrollLeft` 已为 0）。`overflow-x: auto` 的 flex 容器一律显式

@@ -738,9 +738,12 @@
                   </template>
 
                   <!-- 判分结果 + 标准答案 -->
+                  <!-- ⚠️ exerciseFeedback 只有客观题会被赋值；填空/简答提交后它是 null
+                       （下面的自评块靠 !exerciseFeedback 判定）。这里曾经无条件读
+                       exerciseFeedback.correct，所以填空题点提交就整棵树抛错、页面变白。 -->
                   <template v-if="exerciseAnswerSubmitted">
-                    <div class="md-feedback" :class="exerciseFeedback.correct ? 'ok' : 'no'">
-                      <div class="md-feedback-icon"><svg class="icon" aria-hidden="true"><use :href="exerciseFeedback.correct ? '#i-check-circle' : '#i-x-circle'"/></svg></div>
+                    <div class="md-feedback" :class="exerciseFeedback ? (exerciseFeedback.correct ? 'ok' : 'no') : ''">
+                      <div class="md-feedback-icon" v-if="exerciseFeedback"><svg class="icon" aria-hidden="true"><use :href="exerciseFeedback.correct ? '#i-check-circle' : '#i-x-circle'"/></svg></div>
                       <div class="md-feedback-text">标准答案：<b>{{ exerciseCurrentItem.a }}</b></div>
                     </div>
                   </template>
