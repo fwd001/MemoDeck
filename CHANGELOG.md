@@ -34,6 +34,30 @@
 
 ### 变更
 
+- **删掉与导航栏重复的页内大标题**：吸顶应用栏已经报出「学习 / 练习 / 模拟考试 / 分类考试 /
+  错题本」，页面里又各写一遍 `<h2>📖 开始学习</h2>`、`<h3>🎯 分类考试</h3>`、
+  `<h3>📕 错题本</h3>` —— 同一屏两个标题是网页结构，iOS 一个屏只有一个导航栏标题。
+  删掉这 5 处；`.md-study-setup-head` 随之改成只在「有恢复点」时渲染（原来 h2 没了会留下
+  一个空的 space-between 容器），错题本的头部改为右对齐只放「清空全部」。
+  总结页的 `练习完成 / 本次学习完成 / 考试结束` 保留 —— 那是状态标题，不是入口名。
+- **功能页 emoji 全部换成矢量图标（外壳之外的一轮）**：`index.html` 里 71 处硬编码 emoji
+  清零（`⬇️ 下载 JSON`、`🌐 远程导入`、`🧹 清空缓存并重载`、`💾 提交答案`、`🚀 开始学习`、
+  `✅ 记住了`/`🤦 还不会`、`👀 想好了，看答案`、` 交卷`、`📚 学习中`/`💪 待巩固`/`🏆` 状态徽标…），
+  符号表从 14 个扩到 41 个（新增 download/upload/copy/doc/globe/refresh/trash/save/warn/
+  check/check-circle/x-circle/circle/plus/chevron-left/chevron-right/play/trophy/flame/
+  eye-slash/flag2/clock/x）。三处判定图标改成 `:href` 绑定
+  （`exerciseFeedback.correct ? '#i-check-circle' : '#i-x-circle'` 等），
+  带 `>` 比较的那处按项目约定抽成 `exerciseSummaryIcon` computed（模板属性值里不能出现
+  `>`/`<`，CI 有守卫）。图标与文字的留缝改为 `.icon { margin-right: .375em }` 默认生效、
+  只在 10 个 flex-gap 容器与纯图标容器里清掉。
+  矢量图标顺带解锁两件 emoji 做不到的事：反馈条图标现在跟着判定走色
+  （`.md-feedback.ok .md-feedback-icon { color: var(--success) }`），总结页大图标走
+  `--primary`、全对页奖杯走 `--warn`。
+  **`{{ passLabel }}` / `{{ failLabel }}` 两处保持原样**（`features[].icon` 同理），
+  它们是写进 `EXAM_JSON_SPEC.md` 的对外字段，按你的决定不动契约。
+  实测：符号引用 68 处全部解析成功（0 missing）、模板里 emoji 归零、
+  8 个入口 × 390/1280 两档横向溢出全为 0、无低于 44px 的可见触摸目标，
+  div/section/button/span 标签数各自配平，88 项单测 + 本地跑满的 CI 检查全绿。
 - **主题切换在移动端仍只有 28×28**：上一轮把 `.theme-btn` 加进 44px 清单时没生效 ——
   `index.html` 的加载顺序是 tokens → components → pages → responsive → **themes**，
   `themes.css` 里的 `.theme-btn { width: 28px }` 同特异度但更晚出现，把断点覆盖吃掉了。

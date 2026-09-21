@@ -315,10 +315,17 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   和 `.tab-nav`。导航栏不放宣传语、不放带文字的灰胶囊 —— iOS 的 nav bar 只回答「你在哪个屏」。
   `.tab-nav` 自己不再 sticky（嵌套 sticky 无意义，吸附交给外壳）；
   ⚠️ 不要把 `position: fixed` 的元素挪进 `.appchrome`，`backdrop-filter` 会给它们建立包含块
-- **界面外壳（chrome）不用 emoji 图标**：矢量符号集中在 `index.html` 顶部的
-  `<svg class="icon-defs">` 符号表，按 `#i-<tabKey>` 命名，用 `<use>` 引用、`stroke: currentColor`
-  跟随主题。新增入口只要补一个 `<symbol>` 就能被 Tab 自动取到。题库
-  `features[].icon` 若显式给了图标仍优先生效（外部契约不变）
+- **全站不用 emoji 图标**（2.2.0 起 `index.html` 里 emoji 归零）：矢量符号集中在
+  `index.html` 顶部的 `<svg class="icon-defs">` 符号表（41 个 24×24、`stroke: currentColor`），
+  用 `<use href="#i-xxx">` 引用。Tab 图标按 `#i-<tabKey>` 自动取，所以**新增入口只要补一个
+  同名 `<symbol>`**。题库 `features[].icon` 若显式给了图标仍优先生效（对外契约不变）。
+  两条配套约定：① `.icon { margin-right: .375em }` 默认给「图标 + 文字」留缝，
+  flex-gap 容器和纯图标容器要在后面那条重置列表里清掉，否则间距翻倍或图标偏心；
+  ② 判定/状态类图标用 `:href="cond ? '#i-a' : '#i-b'"` 绑定，**带 `>` 或 `<` 的比较必须
+  抽成 computed**（模板属性值里出现 `>` 会被 HTML 解析和 CI 守卫双重拒绝）
+- **一个屏只有一个标题**：入口名只写在吸顶应用栏（`activeTabLabel`），页面内**不再**重复
+  `<h2>开始学习</h2>` / `<h3>错题本</h3>`。状态标题（`练习完成`、`考试结束`）不算重复，保留
+- **界面外壳只有 `.appchrome` 一块**
 - **原生观感基线集中在 `tokens.css` 的「原生观感基线」一节，且必须保持零特异度**：界面外壳
   （按钮 / Tab / 标签 / 标题 / `label` / `summary`）默认 `-webkit-user-select: none` +
   `-webkit-touch-callout: none`，表单控件与题干文本用第二条 `:where(...)` 重新放行 ——

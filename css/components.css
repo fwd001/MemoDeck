@@ -17,9 +17,14 @@
   stroke-linejoin: round;
   /* 与相邻文字保持视觉基线，emoji 原本靠字形自带的光学居中 */
   vertical-align: -0.18em;
+  /* 图标与后随文字默认留缝。绝大多数站点是「图标 + 文字」，所以反过来
+     只在用 flex gap 排布的容器和纯图标容器里清掉（见下） */
+  margin-right: .375em;
 }
-/* 按钮里的图标与文字之间留缝（.btn 保持 inline-block，不改 display 以免影响 57 处既有用法） */
-.btn .icon, .btn-text .icon { margin-right: 6px; }
+.tab-nav button .icon, .md-home-card-title .icon, .md-home-quick-btn .icon,
+.icon-btn .icon, .theme-btn .icon, .md-feedback-icon .icon,
+.md-study-summary-emoji .icon, .perfect-emoji .icon, .resume-icon .icon,
+.wb-status-chip.small .icon { margin-right: 0; }
 
 /* ============ 吸顶应用栏（iOS nav bar） ============ */
 /* 一整块浮动的毛玻璃条：标题行 + Tab 分段控件。原来 header 与 tab-nav 各滚各的，
@@ -453,6 +458,9 @@ background: var(--danger-fill); color: var(--on-accent); font-size: 11px; line-h
 .md-feedback.ok { background: var(--success-bg); border: 1px solid var(--success-border); }
 .md-feedback.no { background: var(--danger-bg); border: 1px solid var(--danger-border); }
 .md-feedback-icon { font-size: 22px; }
+/* 换成矢量图标后终于可以跟着判定走色了（emoji 是彩色字形，染不了） */
+.md-feedback.ok .md-feedback-icon { color: var(--success); }
+.md-feedback.no .md-feedback-icon { color: var(--danger); }
 .md-feedback-text { color: var(--text-main); }
 .md-feedback-text b { color: var(--primary); }
 
@@ -511,6 +519,8 @@ textarea.md-field { resize: vertical; }
 .wb-streak { font-size: 11px; color: var(--success); font-weight: 600; }
 
 .wb-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 12px; }
+/* 错题本页删掉了重复的 <h3>错题本</h3>（应用栏已经报过），头部只剩右侧的「清空全部」 */
+.wb-head { justify-content: flex-end; }
 .wb-item .src-tag { font-size: 12px; padding: 2px 8px; border-radius: var(--radius-sm); font-weight: 600; }
 .wb-item .src-tag.study { background: var(--success-bg); color: var(--success); }
 .wb-item .src-tag.exercise { background: var(--info-bg); color: var(--info); }

@@ -1201,6 +1201,12 @@
       const practiceMastered = computed(() => totalQuestions.value - practiceQueue.value.length);
       const practiceProgress = computed(() => totalQuestions.value === 0 ? 0 : ((totalQuestions.value - practiceQueue.value.length) / totalQuestions.value) * 100);
 
+      // 模板属性值里不能出现 > / <（HTML 解析与 CI 守卫都不允许），
+      // 所以「按通过/失败比例选图标」这种带比较的表达式必须抽成 computed。
+      const exerciseSummaryIcon = computed(() =>
+        exerciseFailCount.value > exercisePassCount.value ? '#i-flame'
+        : exerciseFailCount.value === 0 ? '#i-trophy' : '#i-category');
+
       const catCurrent = computed(() => catPool.value[catIndex.value] || null);
       const catNextLabel = computed(() => (catIndex.value + 1 < catStats.total) ? '下一题 →' : '查看成绩');
       const hasPrevCat = computed(() => catIndex.value > 0);
@@ -1896,7 +1902,7 @@
         exerciseIndex,
         exerciseAnswerSubmitted, exerciseChoice, exerciseMultiSel, exerciseInput,
         exerciseFeedback,
-        exercisePassCount, exerciseFailCount, exerciseNewWrong, exerciseNewMastered, exerciseElapsedSec,
+        exercisePassCount, exerciseFailCount, exerciseSummaryIcon, exerciseNewWrong, exerciseNewMastered, exerciseElapsedSec,
         exerciseSwipeX, exerciseSwipeActive,
         exerciseCurrentItem, exerciseNextItem, exerciseTotal, exerciseProgressPct,
         exerciseCurrentProgress, exercisePrevHint, exerciseBadgeCount, exerciseWrongbookCount,
