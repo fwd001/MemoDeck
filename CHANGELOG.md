@@ -67,6 +67,21 @@
   CI 新增第 9 步「检查对比度不变量」：禁止硬编码白色前景（必须 `--on-accent`）、禁止把
   `--success` / `--danger` 直接当填充底（纯装饰条走白名单）。正向通过；在临时副本里注入
   两处违规均被准确报出并 exit 1。
+- **移动端模拟考试卡片错位**：`.md-exam-main` 在 `@media (max-width: 760px)` 里改成
+  `flex-direction: column`，但行方向遗留的 `align-items: flex-start` 没跟着改 —— 列方向下它
+  的意思是「不拉伸交叉轴」，实测题目卡只有 309.6px 而容器 358px 且左贴边。改为 `stretch`
+  （卡片与答题卡切换条都撑满 358px）；同时 `.md-exam-question` 的 `flex: 1`（= `flex-basis:0`）
+  在列方向压的是高度，改成 `flex: 1 1 auto`。
+- **移动端答题卡最后一行被操作栏盖住**：`.md-exam-sheet` 写死 `bottom: 60px`，而底部操作栏
+  实际占到底边 78px（padding 10+10 + 按钮 44 + 边框 2 + 离底 12），且操作栏 z-index 更高。
+  改为 `bottom: calc(78px + env(safe-area-inset-bottom, 0px))`。
+- **固定底栏没做刘海屏安全区**：`.md-study-footer` / `.md-exam-footer` / `.md-exam-sheet` /
+  `.toast` 的 `bottom` 全部补上 `+ env(safe-area-inset-bottom, 0px)`，两处底部留白
+  （`.md-study-stage` / `.md-exam-main` 的 `padding-bottom`）同步跟上 —— `body` 上的
+  `padding-bottom: env(...)` 对 `position: fixed` 无效，而 manifest 是 `display: standalone`。
+- 移动端全量复查（390px 与 320px 两档，各功能都在**运行态**下扫）：8 个入口无横向溢出
+  （`scrollWidth` 与容器等宽）、无其它「列方向不拉伸」错位；错题本含数据时来源 Tab 与状态
+  分布正常；考试交卷后的成绩卡纵向排布、130px 环形正确率、未作答单列均正常。
 - **系统深色 + 手动选浅色时，深色底色漏进浅色界面**：`tokens.css` 的
   `@media (prefers-color-scheme: dark)` 组件硬编码块没有 `data-theme` 守卫，里面是写死的
   深色 rgba，于是远程导入输入框、粘贴框、切卷下拉、今日进度条、拖拽区在「系统 dark +

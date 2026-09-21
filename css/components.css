@@ -471,7 +471,7 @@ textarea.ai-prompt:focus-visible { outline: none; border-color: var(--primary); 
 
 /* ============ Toast ============ */
 .toast {
-  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+  position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
   background: var(--primary); color: var(--on-accent); padding: 12px 20px; border-radius: var(--radius-sm); font-size: 14px;
   box-shadow: var(--shadow-popover); z-index: 100; max-width: 90vw;
 }

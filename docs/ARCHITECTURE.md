@@ -278,6 +278,14 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   `.md-tf-btn` 14px 集中在那里，跟组件定义分处两地但按「断点改尺寸」这一条规则可寻。
   页面级断点目前仍有 3 处留在 `pages.css`（首页 / 学习 / 考试），实测没有被后面的基础规则
   同特异度顶掉，属可选整理
+- **断点里翻转 `flex-direction` 时，必须同时复核 `align-items`**：行方向的
+  `align-items: flex-start`（本意是「两列顶部对齐」）到了列方向就变成「不拉伸交叉轴」，
+  卡片会缩到内容宽度并左贴边 —— 模拟考试移动端就这么错位过（实测卡片 309.6px / 容器 358px）。
+  同理 `flex: 1` 等于 `flex-basis: 0`，翻成列方向后压的是高度，要写成 `flex: 1 1 auto`
+- **`position: fixed` 的底栏必须加安全区**：`bottom: calc(12px + env(safe-area-inset-bottom, 0px))`。
+  `body` 上的 `padding-bottom: env(...)` 对 fixed 元素无效；`display: standalone` 的 PWA
+  在刘海机上不加就会被 home indicator 压住。同理，浮层的 `bottom` 要按**被遮挡物的实际高度**算
+  （答题卡原来写 `bottom: 60px`，而操作栏顶边在 78px，最后一行题号被盖）
 - **靠 `opacity` + `transform` 隐藏的浮层必须同时置 `visibility: hidden`**，
   否则它会以透明状态继续拦截点击并留在键盘 Tab 序列里（移动端答题卡踩过这个坑）
 - **全局兜底规则必须保持零特异度**：防 flex 溢出的 `min-width: 0` 早先写成 `#app *`
