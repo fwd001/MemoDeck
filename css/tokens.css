@@ -250,11 +250,62 @@ html, body {
   overflow-x: hidden;
 }
 
+/* ============ 原生观感基线 ============
+   这一节只负责「去掉浏览器默认 behaviors 留下的网页痕迹」，不改任何布局。
+   全部走零特异度选择器（:where / *），组件规则随时可以覆盖 —— 与
+   `* > *` 那条是同一个约定（见 §6 样式约定）。 */
+html {
+  /* iOS Safari 会按视口宽度自动放大正文字号，原生 app 没有这回事 */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* 关闭橡皮筋回弹与下拉刷新：桌面浏览器里它等价于「这是一张网页」的宣告 */
+  overscroll-behavior-y: none;
+}
+
+/* 滚动条：Windows/Linux Chrome 的 17px 常驻轨道是最难藏的网页痕迹。
+   统一改为悬在内容边缘的细条，不占布局宽度、不画轨道（macOS/iOS overlay 样式）。
+   滚动能力不受影响，只是不再显示"滚到哪里了"—— 单列 app 里可接受。 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-disabled) transparent;
+}
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--text-disabled);
+  border-radius: var(--radius-full);
+}
+
+/* 点击、长按都不该出现高亮块或系统菜单：原生控件没有这两样 */
+* { -webkit-tap-highlight-color: transparent; }
+
+:where(button, a, label, summary, .btn, .btn-text, .tag, .src-badge,
+       .tab-nav, .theme-switch, .per-chip, .md-opt-key, .md-study-badge,
+       .stat-lbl, .sum-lbl, .q-label, .md-study-group-title, .header,
+       h1, h2, h3, h4, th, dt) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;   /* iOS 长按不弹「复制/预览」 */
+}
+
+/* 例外：表单里必须能选词、双击全选、拖拽改写 */
+:where(input, textarea, select, [contenteditable="true"],
+       .md-field, .paste-box) {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* 图片/文件不被拖出浏览器变成文件 */
+:where(img, svg) { -webkit-user-drag: none; user-drag: none; }
+
 #app {
   width: 100%;
   max-width: var(--layout-max-content);
   margin: 0 auto;
-  padding: 16px var(--layout-gutter) 80px;
+  /* viewport-fit=cover + display:standalone 下内容会顶进状态条/刘海，
+     底部同类问题已在 v2.1 修过，顶部漏了 */
+  padding: calc(16px + env(safe-area-inset-top, 0px)) var(--layout-gutter) 80px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;

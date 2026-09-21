@@ -295,6 +295,12 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   同一条也适用于元素级基础档：`input[type="text"] / textarea / select` 的默认样式现在包在
   `:where(...)` 里（特异度归 0），否则 `(0,1,1)` 会反过来吃掉 `.md-field` 这类 `(0,1,0)`
   组件的边框与禁用态 —— 同一个坑的第二个变体
+- **原生观感基线集中在 `tokens.css` 的「原生观感基线」一节，且必须保持零特异度**：界面外壳
+  （按钮 / Tab / 标签 / 标题 / `label` / `summary`）默认 `-webkit-user-select: none` +
+  `-webkit-touch-callout: none`，表单控件与题干文本用第二条 `:where(...)` 重新放行 ——
+  判据是「这是控件还是内容」，不是元素类型。滚动条统一改成不占布局宽度的细条，
+  `overscroll-behavior-y: none` 关掉橡皮筋。新增页面若出现需要选中的正文，把类名加进
+  放行列表，不要在页面里另写一份 `user-select`
 - **横向滚动容器不能用 `justify-content: center`**：内容超宽时居中会把溢出量均分到两侧，
   而浏览器只提供正向滚动条 —— 左边那段永远滚不回去（实测移动端第一个 Tab 落在
   `left: -184.6px`，`scrollLeft` 已为 0）。`overflow-x: auto` 的 flex 容器一律显式

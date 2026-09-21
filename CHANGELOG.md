@@ -79,6 +79,9 @@
   `.toast` 的 `bottom` 全部补上 `+ env(safe-area-inset-bottom, 0px)`，两处底部留白
   （`.md-study-stage` / `.md-exam-main` 的 `padding-bottom`）同步跟上 —— `body` 上的
   `padding-bottom: env(...)` 对 `position: fixed` 无效，而 manifest 是 `display: standalone`。
+- **顶部没有让出刘海/状态条安全区**：`viewport-fit=cover` + `display: standalone` 下首屏
+  header 会顶进状态条。`#app` 的 `padding-top` 改为 `calc(16px + env(safe-area-inset-top, 0px))`
+  （底部同类问题上一轮已修，顶部是漏掉的另一半）。
 - **移动端答题卡题号格子只有 20–27px**：`@media` 里把网格固定成 `repeat(10, 1fr)`，
   实测格子 27.5px（390 宽）/ 20.5px（320 宽），远低于项目自己声明的 44px 触摸目标。
   改为 `repeat(auto-fill, minmax(44px, 1fr))`，列数随宽度自适应 —— 实测格子
@@ -172,6 +175,15 @@
   与摸底速览/分类考试两条）：Vue 把 `v-show` 编译成 `style`，DOM 里根本没有该属性
   （实测 `document.querySelectorAll('[v-show]').length === 0`），所以那三个场景的专属插画
   从未出现过，只剩默认的书本图标。默认图标保留。
+- **原生感基线（第一轮：去掉浏览器默认行为留下的网页痕迹）**，集中在 `tokens.css` 新增的
+  「原生观感基线」一节，全部走零特异度选择器（`:where` / `*`），组件规则随时可覆盖：
+  界面外壳不可选中与长按（按钮 / Tab / 标签 / 表头 / 标题 / `label` / `summary`，并配
+  `-webkit-touch-callout: none`），表单控件与题干文本重新放行（实测 `.btn`/`.header h1`/
+  `.tab-nav button`/`.tag` 计算值为 `none`，`input`/`textarea` 为 `text`，`.question` 为 `auto`）；
+  滚动条改为悬在内容边缘的 3px 细条、不占布局宽度（Windows Chrome 的 17px 常驻轨道是最难藏的
+  网页痕迹，`.tab-nav` 原有的完全隐藏仍生效）；`overscroll-behavior-y: none` 关掉橡皮筋与
+  下拉刷新；`text-size-adjust: 100%` 关掉 iOS 的自动字号放大；全局 `-webkit-tap-highlight-color:
+  transparent`（原来只有 `.btn` 和两个作答控件有）。
 - `setup()` 返回值瘦身：删掉 18 个模板从不引用的绑定（返回值只服务模板，应用没有 `this.`，
   用不上就是死重），含 write-only 的 `exerciseStudentAnswer` 与只声明未使用的 `showCustomForm`。
 - 深色模式的重复覆盖收拢：`tokens.css` 的 `@media dark` 块与 `themes.css` 的手动 dark 块里，
