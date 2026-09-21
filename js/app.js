@@ -1152,16 +1152,18 @@
 
       const tabs = computed(() => {
         // 阶段 3：home + study + exercise + 原功能 tab
+        // 图标不再内置 emoji：外壳图标走 index.html 的 SVG 符号表（按 tab key 取 #i-<key>），
+        // 只有题库 features[].icon 显式给了图标时才覆盖它。
         const list = [];
-        list.push({ key: 'home', label: '首页', icon: '🏠', mode: 'all' });
-        list.push({ key: 'study', label: '学习', icon: '📖' });
-        list.push({ key: 'exercise', label: '练习', icon: '✍️' });
+        list.push({ key: 'home', label: '首页', mode: 'all' });
+        list.push({ key: 'study', label: '学习' });
+        list.push({ key: 'exercise', label: '练习' });
         const f = features.value;
-        if (!f.practice || f.practice.enabled) list.push({ key: 'practice', label: (f.practice && f.practice.label) || '记忆闯关', icon: (f.practice && f.practice.icon) || '🕹️' });
-        if (!f.preview || f.preview.enabled) list.push({ key: 'preview', label: (f.preview && f.preview.label) || '摸底速览', icon: (f.preview && f.preview.icon) || '📝' });
-        list.push({ key: 'exam', label: '模拟考试', icon: '🎓' });
-        list.push({ key: 'category', label: '分类考试', icon: '🎯' });
-        list.push({ key: 'wrongbook', label: '错题本', icon: '📕' });
+        if (!f.practice || f.practice.enabled) list.push({ key: 'practice', label: (f.practice && f.practice.label) || '记忆闯关', icon: f.practice && f.practice.icon });
+        if (!f.preview || f.preview.enabled) list.push({ key: 'preview', label: (f.preview && f.preview.label) || '摸底速览', icon: f.preview && f.preview.icon });
+        list.push({ key: 'exam', label: '模拟考试' });
+        list.push({ key: 'category', label: '分类考试' });
+        list.push({ key: 'wrongbook', label: '错题本' });
         return list;
       });
 

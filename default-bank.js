@@ -11,7 +11,6 @@
     "practice": {
       "enabled": true,
       "label": "记忆闯关",
-      "icon": "🕹️",
       "config": {
         "shuffle": true,
         "passLabel": "😎 记住了 (剔除)",

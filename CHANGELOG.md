@@ -175,6 +175,15 @@
   与摸底速览/分类考试两条）：Vue 把 `v-show` 编译成 `style`，DOM 里根本没有该属性
   （实测 `document.querySelectorAll('[v-show]').length === 0`），所以那三个场景的专属插画
   从未出现过，只剩默认的书本图标。默认图标保留。
+- **外壳图标从 emoji 换成矢量符号表**：`index.html` 新增 `<svg class="icon-defs">` 符号表
+  （13 个 24×24 线性图标，`stroke: currentColor`，与首页空状态插画同一套画法），Tab 栏 8 个
+  入口与主题切换三枚按钮改用 `<use href="#i-<tabKey>">`。彩色 emoji 是「这是个网页 / 这是个
+  原型」最强的信号之一，而且 emoji 不跟随主题与文字色（深色模式下截图里那排彩色图标明显浮在
+  界面上）。题库 `features[].icon` 仍然优先（给了就用，没给才用矢量图标），所以外部题库的
+  自定义入口名/图标契约没变；`default-bank.js` 的 `features.practice.icon: "🕹️"` 删掉，
+  否则 8 个 Tab 里 7 个线性 + 1 个彩色 emoji 比全用 emoji 更难看。
+  实测 1280×900 明/暗两档：8 个 Tab 全部渲染 `<svg>`、`emojiLeft: false`、图标 16.1px、
+  条高 44px；`npm test` 88 项全绿。
 - **原生感基线（第一轮：去掉浏览器默认行为留下的网页痕迹）**，集中在 `tokens.css` 新增的
   「原生观感基线」一节，全部走零特异度选择器（`:where` / `*`），组件规则随时可覆盖：
   界面外壳不可选中与长按（按钮 / Tab / 标签 / 表头 / 标题 / `label` / `summary`，并配

@@ -4,6 +4,21 @@
  * ============================================================ */
 
 
+/* ============ 图标 ============ */
+/* 符号表本体不参与布局；<use> 引用仍可渲染 */
+.icon-defs { display: none; }
+.icon {
+  width: 1.15em; height: 1.15em;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 与相邻文字保持视觉基线，emoji 原本靠字形自带的光学居中 */
+  vertical-align: -0.18em;
+}
+
 /* ============ 头部 ============ */
 .header {
   display: flex;
@@ -191,6 +206,7 @@ position: sticky; top: 12px; z-index: 10;
 }
 .tab-nav button {
 flex: 0 1 auto;
+display: inline-flex; align-items: center; gap: 6px;
 min-height: 36px;
 padding: 6px 12px;
 border-radius: var(--radius-md);

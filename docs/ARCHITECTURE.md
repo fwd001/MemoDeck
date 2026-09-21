@@ -295,6 +295,10 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   同一条也适用于元素级基础档：`input[type="text"] / textarea / select` 的默认样式现在包在
   `:where(...)` 里（特异度归 0），否则 `(0,1,1)` 会反过来吃掉 `.md-field` 这类 `(0,1,0)`
   组件的边框与禁用态 —— 同一个坑的第二个变体
+- **界面外壳（chrome）不用 emoji 图标**：矢量符号集中在 `index.html` 顶部的
+  `<svg class="icon-defs">` 符号表，按 `#i-<tabKey>` 命名，用 `<use>` 引用、`stroke: currentColor`
+  跟随主题。新增入口只要补一个 `<symbol>` 就能被 Tab 自动取到。题库
+  `features[].icon` 若显式给了图标仍优先生效（外部契约不变）
 - **原生观感基线集中在 `tokens.css` 的「原生观感基线」一节，且必须保持零特异度**：界面外壳
   （按钮 / Tab / 标签 / 标题 / `label` / `summary`）默认 `-webkit-user-select: none` +
   `-webkit-touch-callout: none`，表单控件与题干文本用第二条 `:where(...)` 重新放行 ——
