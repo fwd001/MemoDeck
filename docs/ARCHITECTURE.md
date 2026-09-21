@@ -295,6 +295,10 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   同一条也适用于元素级基础档：`input[type="text"] / textarea / select` 的默认样式现在包在
   `:where(...)` 里（特异度归 0），否则 `(0,1,1)` 会反过来吃掉 `.md-field` 这类 `(0,1,0)`
   组件的边框与禁用态 —— 同一个坑的第二个变体
+- **横向滚动容器不能用 `justify-content: center`**：内容超宽时居中会把溢出量均分到两侧，
+  而浏览器只提供正向滚动条 —— 左边那段永远滚不回去（实测移动端第一个 Tab 落在
+  `left: -184.6px`，`scrollLeft` 已为 0）。`overflow-x: auto` 的 flex 容器一律显式
+  回到 `flex-start`，首尾留白交给 `padding` / `scroll-padding-inline`
 - **删 CSS 规则只能整块删，不能只删选择器列表里的一行**：`.a, .b { … }` 中只删掉 `.b` 那行
   会留下悬空的逗号，下一条规则的头部被并进选择器列表 —— 声明看似删掉了，其实悄悄套到了
   相邻的组件上（`.md-exercise-card-head .tag` 删除后，`.tag { position: static }` 被并给了

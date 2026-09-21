@@ -105,6 +105,10 @@
   时只删了选择器列表里的一行，留下悬空逗号，`.tag { position: static }` 被并给了下一条的
   `.question`，标签退回绝对定位 —— 实测「填空题」标签与「第 1 题」重叠 41%，PC 与移动端都在。
   已整块还原为独立规则，重叠检测恢复为空。教训写进 ARCHITECTURE §6
+- **移动端顶部 Tab 首尾各被切一刀**：`.tab-nav` 在横向滚动态下仍保留基线的
+  `justify-content: center`，溢出量被均分到两侧、负方向滚不回去（实测第一个 Tab 在
+  `scrollLeft=0` 时位于 `left: -184.6px`，容器宽 358 而内容宽 575）。改为 `flex-start`
+  并加 `scroll-padding-inline`，实测首尾均完整可见、最后一个 Tab 可滚到。
 
 ### 新增
 

@@ -15,9 +15,14 @@
      否则 8 个 Tab 按 flex 1 1 40% 会折成 4 行、把手机首屏吃掉一大截 */
   .tab-nav {
     flex-wrap: nowrap; gap: 4px;
+    /* 基线的 justify-content:center 在 nowrap + 溢出时会让内容向两侧均分溢出，
+       左侧那段滚不回去（实测第一个 tab 落在 left:-184.6px）→ 首尾都被切。
+       横向滚动容器必须回到 flex-start。 */
+    justify-content: flex-start;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
+    scroll-padding-inline: 4px;
   }
   .tab-nav::-webkit-scrollbar { display: none; }
   .tab-nav button {
