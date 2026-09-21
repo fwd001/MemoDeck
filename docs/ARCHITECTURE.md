@@ -301,6 +301,11 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
    后代都拿它的 scrollport 当参照而永不吸附（旧 `.tab-nav` 的 sticky 就这样白写了几个版本）。
    `clip` 只裁不滚，viewport 仍是滚动主体；`hidden` 保留在前一行作为 Safari < 16 的退路。
    新增吸顶元素前先确认这条：`getComputedStyle(祖先).overflowX !== 'hidden'`
+- **界面外壳只有 `.appchrome` 一块**：吸顶的 `.appchrome`（毛玻璃 + `--chrome-bg`）里装
+  `.appbar`（标题 = 当前入口名 `activeTabLabel`，不是应用名；右侧只放 `.icon-btn` 图标按钮）
+  和 `.tab-nav`。导航栏不放宣传语、不放带文字的灰胶囊 —— iOS 的 nav bar 只回答「你在哪个屏」。
+  `.tab-nav` 自己不再 sticky（嵌套 sticky 无意义，吸附交给外壳）；
+  ⚠️ 不要把 `position: fixed` 的元素挪进 `.appchrome`，`backdrop-filter` 会给它们建立包含块
 - **界面外壳（chrome）不用 emoji 图标**：矢量符号集中在 `index.html` 顶部的
   `<svg class="icon-defs">` 符号表，按 `#i-<tabKey>` 命名，用 `<use>` 引用、`stroke: currentColor`
   跟随主题。新增入口只要补一个 `<symbol>` 就能被 Tab 自动取到。题库

@@ -15,7 +15,6 @@
   padding: 3px;
   background: var(--fill-primary);
   border-radius: var(--radius-full);
-  margin-right: 8px;
 }
 .theme-btn {
   display: inline-flex;
@@ -56,6 +55,7 @@ html[data-theme="dark"] {
   --bg:#000000;--surface:#1C1C1E;--surface-2:#2C2C2E;--surface-3:#3A3A3C;
   --surface-elevated:#2C2C2E;--surface-hover:#3A3A3C;--surface-pressed:#48484A;
   --card-bg:#1C1C1E;--elevated-bg:#2C2C2E;
+  --chrome-bg:rgba(0,0,0,0.72);--chrome-line:rgba(84,84,88,0.55);
   --border:rgba(84,84,88,0.60);--border-opaque:#38383A;--border-sub:rgba(84,84,88,0.40);
   --fill-primary:rgba(118,118,128,0.24);--fill-secondary:rgba(118,118,128,0.18);--fill-tertiary:rgba(118,118,128,0.12);
   --shadow-card:0 0 0 0.5px rgba(255,255,255,0.06),0 1px 0 rgba(0,0,0,0.4),0 8px 28px -12px rgba(0,0,0,0.8);
@@ -84,6 +84,7 @@ html[data-theme="dark"] {
     --bg:#000000;--surface:#1C1C1E;--surface-2:#2C2C2E;--surface-3:#3A3A3C;
     --surface-elevated:#2C2C2E;--surface-hover:#3A3A3C;--surface-pressed:#48484A;
     --card-bg:#1C1C1E;--elevated-bg:#2C2C2E;
+    --chrome-bg:rgba(0,0,0,0.72);--chrome-line:rgba(84,84,88,0.55);
     --border:rgba(84,84,88,0.60);--border-opaque:#38383A;--border-sub:rgba(84,84,88,0.40);
     --fill-primary:rgba(118,118,128,0.24);--fill-secondary:rgba(118,118,128,0.18);--fill-tertiary:rgba(118,118,128,0.12);
     --shadow-card:0 0 0 0.5px rgba(255,255,255,0.06),0 1px 0 rgba(0,0,0,0.4),0 8px 28px -12px rgba(0,0,0,0.8);
@@ -127,6 +128,7 @@ html[data-theme="dark"] .md-home-week-ring svg circle:first-child {
     --bg:#F2F2F7;--surface:#FFFFFF;--surface-2:#F2F2F7;--surface-3:#FFFFFF;
     --surface-elevated:#FFFFFF;--surface-hover:#E8E8ED;--surface-pressed:#D1D1D6;
     --card-bg:#FFFFFF;--elevated-bg:#FFFFFF;
+    --chrome-bg:rgba(242,242,247,0.78);--chrome-line:rgba(60,60,67,0.16);
     --border:rgba(60,60,67,0.12);--border-opaque:#C6C6C8;--border-sub:rgba(60,60,67,0.08);
     --fill-primary:rgba(120,120,128,0.16);--fill-secondary:rgba(120,120,128,0.08);--fill-tertiary:rgba(120,120,128,0.04);
     --shadow-card:0 0 0 0.5px rgba(60,60,67,0.08),0 1px 0 rgba(0,0,0,0.02),0 4px 16px -8px rgba(28,28,30,0.08);

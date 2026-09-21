@@ -6,7 +6,6 @@
 /* ============ 响应式 ============ */
 @media (max-width: 600px) {
   body { padding: 14px 12px 50px; font-size: 15px; }
-  .header h1 { font-size: 22px; }
   .card { padding: 26px 18px 20px; min-height: 230px; }
   .question { font-size: 17px; }
   .btn-group { gap: 10px; }
@@ -32,7 +31,10 @@
   /* 触摸目标 ≥ 44×44pt（iOS HIG）。桌面用指针可以更小，所以只在移动端补偿，
      与上面的 .tab-nav button 同一套做法。 */
   .btn.small, .btn-text, .wb-tabs button,
-  .md-study-per .per-chip { min-height: 44px; }
+  .md-study-per .per-chip, .icon-btn { min-height: 44px; }
+  .icon-btn { width: 44px; }
+  /* 主题切换三枚分段同样要够 44pt（原来只有 28px，是漏网的旧账） */
+  .theme-btn { width: 44px; height: 44px; }
 
   /* 作答控件紧凑档（共享组件，见 components.css） */
   .md-opt { font-size: 14px; gap: 10px; min-height: 46px; }

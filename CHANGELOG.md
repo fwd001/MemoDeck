@@ -185,6 +185,19 @@
   与摸底速览/分类考试两条）：Vue 把 `v-show` 编译成 `style`，DOM 里根本没有该属性
   （实测 `document.querySelectorAll('[v-show]').length === 0`），所以那三个场景的专属插画
   从未出现过，只剩默认的书本图标。默认图标保留。
+- **首屏 hero 改为吸顶应用栏**：原来的 `<h1>📚 MemoDeck · 考试记忆系统</h1>` + 灰色宣传语
+  + 蓝色「✅ 数据源」横幅 + 三个带 emoji 的灰胶囊按钮，在 390px 下占掉首屏 **211px**
+  （约 25% 高度）才见到第一个功能。iOS 的 nav bar 只报「你在哪个屏」，所以标题改成当前入口名
+  （`activeTabLabel`，首页/学习/模拟考试…），数据源缩成标题旁一枚 `src-badge`，右侧只留
+  三枚 36px 图标按钮（数据管理 / AI 提示词 / 外部服务，`aria-label` + `title` 保留文案），
+  宣传语挪进「数据管理」面板底部（它讲的是数据格式，本来就属于那里）。
+  标题行与 Tab 栏合成一块 `.appchrome` 吸顶（`top: 8px` + `backdrop-filter: blur(20px)`
+  毛玻璃 + `--chrome-bg` 半透明底，明暗三套主题各一份），实测 `scrollY` 300/675 时稳定
+  停在 8px、`scrollWidth - clientWidth` 为 0。`.tab-nav` 自己的 sticky 随之删除（嵌套
+  sticky 无意义），`.header` / `.header h1` / `.security-notice` / `.header-actions` 四条
+  规则整块删除（这次是整块删，不是删选择器列表的一行）。
+  移动端 `.icon-btn` 与 `.theme-btn` 补进 44px 触摸目标清单 —— 主题切换原本只有 28×28，
+  是上一轮补 44px 时漏掉的旧账。
 - **外壳图标从 emoji 换成矢量符号表**：`index.html` 新增 `<svg class="icon-defs">` 符号表
   （13 个 24×24 线性图标，`stroke: currentColor`，与首页空状态插画同一套画法），Tab 栏 8 个
   入口与主题切换三枚按钮改用 `<use href="#i-<tabKey>">`。彩色 emoji 是「这是个网页 / 这是个

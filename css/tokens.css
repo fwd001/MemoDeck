@@ -72,6 +72,10 @@
   --surface-pressed: #D1D1D6;
   /* 卡片内的次级底：走半透明 fill，明暗两套主题各自覆盖 --fill-*，这里不必重复声明 */
   --surface-sub:     var(--fill-secondary);
+  /* 吸顶应用栏的半透明底：配 backdrop-filter 做 iOS nav bar 的毛玻璃，
+     内容从栏下面滚过时是「透过来」而不是被一块实心板切断 */
+  --chrome-bg:       rgba(242, 242, 247, 0.78);
+  --chrome-line:     rgba(60, 60, 67, 0.16);
 
   /* Legacy aliases */
   --card-bg:         #FFFFFF;
@@ -288,7 +292,8 @@ html {
 
 :where(button, a, label, summary, .btn, .btn-text, .tag, .src-badge,
        .tab-nav, .theme-switch, .per-chip, .md-opt-key, .md-study-badge,
-       .stat-lbl, .sum-lbl, .q-label, .md-study-group-title, .header,
+       .stat-lbl, .sum-lbl, .q-label, .md-study-group-title,
+       .appbar, .appbar-title,
        h1, h2, h3, h4, th, dt) {
   -webkit-user-select: none;
   user-select: none;

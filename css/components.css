@@ -19,40 +19,53 @@
   vertical-align: -0.18em;
 }
 
-/* ============ 头部 ============ */
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 0 0;
-  margin-bottom: 16px;
+/* ============ 吸顶应用栏（iOS nav bar） ============ */
+/* 一整块浮动的毛玻璃条：标题行 + Tab 分段控件。原来 header 与 tab-nav 各滚各的，
+   滚下去就没有导航了；合成一块 sticky 后导航常驻，且内容从它下面穿过去。
+   ⚠️ backdrop-filter 会给后代的 position:fixed 建立包含块 —— 这里只包 header 和 nav，
+   没有固定元素，所以安全；别把 .md-exam-footer / .toast 之类挪进来。 */
+.appchrome {
+  position: sticky; top: 8px; z-index: 20;
   width: 100%;
+  padding: 6px;
+  margin-bottom: 14px;
+  background: var(--chrome-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
 }
-.header h1 {
+.appbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap;
+  padding: 2px 4px 6px;
+}
+.appbar-lead { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.appbar-title {
   margin: 0;
-  font-size: var(--font-2xl);
+  font-size: var(--font-xl);
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
+.appbar-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+
+/* 图标按钮：导航栏右侧只放图标，不放「⚙️ 数据管理」这种带文字的灰胶囊 */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border: none; border-radius: var(--radius-full);
+  background: transparent; color: var(--text-muted);
+  font-size: var(--font-xl); cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.icon-btn:hover { background: var(--fill-primary); color: var(--text-main); }
+.icon-btn:active { background: var(--fill-secondary); }
+.icon-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.icon-btn.active { background: var(--primary-bg); color: var(--primary); }
+
 .sub { color: var(--text-muted); font-size: var(--font-sm); }
-.security-notice {
-  font-size: var(--font-sm);
-  color: var(--primary);
-  background: var(--primary-bg);
-  padding: 6px 12px;
-  border-radius: var(--radius-lg2);
-  display: inline-block;
-  align-self: flex-start;
-}
-.header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  margin-top: 2px;
-}
 
 /* ============ 按钮（iOS 原生风格） ============ */
 .btn {
@@ -117,6 +130,12 @@
 .panel-head {
   display: flex; flex-wrap: wrap; gap: 10px;
   align-items: center; justify-content: space-between;
+}
+/* 面板末尾的说明行：与上方内容用一条 hairline 分开，不靠字号硬凹 */
+.panel-foot {
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--border-sub);
+  font-size: var(--font-sm); color: var(--text-tertiary);
 }
 
 .src-badge {
@@ -196,13 +215,12 @@ textarea.paste-box:focus-visible { outline: none; box-shadow: var(--focus-ring);
 /* ============ Tab 导航（iOS Segmented + Tab Bar 双模式） ============ */
 .tab-nav {
 display: flex; flex-wrap: wrap; gap: 4px;
-justify-content: center; margin: 8px 0 16px;
+justify-content: center;
 padding: 4px;
 background: var(--surface-3);
 box-shadow: var(--shadow-inset);
 border-radius: var(--radius-lg2);
 width: 100%;
-position: sticky; top: 12px; z-index: 10;
 }
 .tab-nav button {
 flex: 0 1 auto;

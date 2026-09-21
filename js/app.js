@@ -1167,6 +1167,12 @@
         return list;
       });
 
+      // 导航栏标题 = 当前入口名（iOS 的 nav bar 报「你在哪个屏」，不报应用名）
+      const activeTabLabel = computed(() => {
+        const t = tabs.value.find(x => x.key === activeTab.value);
+        return (t && t.label) || 'MemoDeck';
+      });
+
       const practiceCfg = computed(() => (features.value.practice && features.value.practice.config) || {});
       const passLabel = computed(() => practiceCfg.value.passLabel || '😎 记住了');
       const failLabel = computed(() => practiceCfg.value.failLabel || '😥 没记住');
@@ -1827,7 +1833,7 @@
       loadStart();
 
       return {
-        activeTab, sourceMeta, currentBank, papers, hasMultiplePapers, features, currentPaperId, bank, dataError,
+        activeTab, activeTabLabel, sourceMeta, currentBank, papers, hasMultiplePapers, features, currentPaperId, bank, dataError,
         remoteUrl, pasteText, managerUrl, showDataPanel, dataBusy, dragActive, toastMsg, toastOk,
         themeMode, applyTheme,
         practiceQueue, practiceShowAnswer, practiceCard, practiceMastered, practiceProgress,

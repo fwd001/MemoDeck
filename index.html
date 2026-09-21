@@ -57,21 +57,36 @@
   <div id="app" v-cloak>
     <div class="container">
 
-      <header class="header">
-        <h1>📚 MemoDeck · 考试记忆系统</h1>
-        <div class="sub">试卷 JSON View 标准 v1.0 · 纯离线 · 远程导入 · 本地缓存</div>
-        <div class="security-notice">✅ 数据源：<b>{{ sourceMeta.label }}</b></div>
-        <div class="header-actions">
-          <div class="theme-switch" role="tablist" aria-label="主题">
-            <button class="theme-btn" :class="{ active: themeMode === 'auto' }" @click="themeMode='auto'; applyTheme()" title="跟随系统" aria-label="跟随系统"><svg class="icon"><use href="#i-display"/></svg></button>
-            <button class="theme-btn" :class="{ active: themeMode === 'light' }" @click="themeMode='light'; applyTheme()" title="浅色" aria-label="浅色"><svg class="icon"><use href="#i-sun"/></svg></button>
-            <button class="theme-btn" :class="{ active: themeMode === 'dark' }" @click="themeMode='dark'; applyTheme()" title="深色" aria-label="深色"><svg class="icon"><use href="#i-moon"/></svg></button>
+      <!-- 吸顶应用栏：iOS 的 nav bar 只报「你在哪个屏」，不报应用名，也不放宣传语。
+           原来的 h1 品牌名 + 副标题 + 数据源横幅 + 三个灰胶囊按钮占掉首屏 211px（390 宽下
+           约 25% 的高度），是这里最重的网页痕迹。 -->
+      <div class="appchrome">
+        <header class="appbar">
+          <div class="appbar-lead">
+            <h1 class="appbar-title">{{ activeTabLabel }}</h1>
+            <span class="src-badge" :class="sourceMeta.cls">{{ sourceMeta.label }}</span>
           </div>
-          <button class="btn gray small" @click="showDataPanel = !showDataPanel">⚙️ {{ showDataPanel ? '收起数据' : '数据管理' }}</button>
-          <button class="btn gray small" @click="showAiModal = true">🤖 AI 提示词</button>
-          <a class="btn small" v-if="managerUrl" :href="managerUrl" target="_blank" rel="noopener">🛠 JSON 管理服务</a>
-        </div>
-      </header>
+          <div class="appbar-actions">
+            <div class="theme-switch" role="tablist" aria-label="主题">
+              <button class="theme-btn" :class="{ active: themeMode === 'auto' }" @click="themeMode='auto'; applyTheme()" title="跟随系统" aria-label="跟随系统"><svg class="icon"><use href="#i-display"/></svg></button>
+              <button class="theme-btn" :class="{ active: themeMode === 'light' }" @click="themeMode='light'; applyTheme()" title="浅色" aria-label="浅色"><svg class="icon"><use href="#i-sun"/></svg></button>
+              <button class="theme-btn" :class="{ active: themeMode === 'dark' }" @click="themeMode='dark'; applyTheme()" title="深色" aria-label="深色"><svg class="icon"><use href="#i-moon"/></svg></button>
+            </div>
+            <button class="icon-btn" :class="{ active: showDataPanel }" @click="showDataPanel = !showDataPanel" aria-label="数据管理" title="数据管理"><svg class="icon"><use href="#i-sliders"/></svg></button>
+            <button class="icon-btn" @click="showAiModal = true" aria-label="AI 提示词" title="AI 提示词"><svg class="icon"><use href="#i-sparkles"/></svg></button>
+            <a class="icon-btn" v-if="managerUrl" :href="managerUrl" target="_blank" rel="noopener" aria-label="JSON 管理服务" title="JSON 管理服务"><svg class="icon"><use href="#i-arrow-forward"/></svg></a>
+          </div>
+        </header>
+
+        <nav class="tab-nav">
+          <button v-for="t in tabs" :key="t.key" :class="{ active: activeTab === t.key }" @click="switchTab(t.key)">
+            <span class="tab-emoji" v-if="t.icon">{{ t.icon }}</span><!-- 题库自带图标优先 -->
+            <svg class="icon" v-else aria-hidden="true"><use :href="'#i-' + t.key"/></svg>
+            <span class="tab-label">{{ t.label }}</span>
+            <span v-if="t.key === 'wrongbook' && wrongCount" class="badge">{{ wrongCount }}</span>
+          </button>
+        </nav>
+      </div>
 
       <section class="panel" v-show="showDataPanel" @dragover="onDragOver" @dragleave="onDragLeave" @drop="onDrop">
         <div class="panel-head">
@@ -135,16 +150,10 @@
             <button class="btn danger small" @click="doClearAll" v-if="confirmClearAll">⚠️ 确认清空全部数据？（二次确认）</button>
           </div>
         </div>
-      </section>
 
-      <nav class="tab-nav">
-        <button v-for="t in tabs" :key="t.key" :class="{ active: activeTab === t.key }" @click="switchTab(t.key)">
-          <span class="tab-emoji" v-if="t.icon">{{ t.icon }}</span><!-- 题库自带图标优先 -->
-          <svg class="icon" v-else aria-hidden="true"><use :href="'#i-' + t.key"/></svg>
-          <span class="tab-label">{{ t.label }}</span>
-          <span v-if="t.key === 'wrongbook' && wrongCount" class="badge">{{ wrongCount }}</span>
-        </button>
-      </nav>
+        <!-- 原来挂在首屏标题下的宣传语：讲的是数据格式与来源，属于这里，不属于导航栏 -->
+        <div class="panel-foot">数据格式：试卷 JSON View 标准 v1.0 · 纯离线运行 · 支持远程导入与本地缓存</div>
+      </section>
 
       <!-- ============ 阶段 1：首页 ============ -->
       <section v-show="activeTab === 'home'" class="md-home">
