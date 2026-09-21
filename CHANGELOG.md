@@ -101,6 +101,10 @@
   填空/简答输入框、若干小徽标全是透明底。`.toast` 同理引用了未定义的 `--on-primary`，
   浅色主题下蓝底上顶着继承来的深色文字。两个 token 补进 `tokens.css`
   （`--surface-sub` 走 `--fill-secondary`，明暗两套自动跟随），CI 新增「CSS 变量必须有定义」检查。
+- **题号标签压住题干**（我上一轮引入的回归）：删除确认无用的 `.md-exercise-card-head .tag`
+  时只删了选择器列表里的一行，留下悬空逗号，`.tag { position: static }` 被并给了下一条的
+  `.question`，标签退回绝对定位 —— 实测「填空题」标签与「第 1 题」重叠 41%，PC 与移动端都在。
+  已整块还原为独立规则，重叠检测恢复为空。教训写进 ARCHITECTURE §6
 
 ### 新增
 

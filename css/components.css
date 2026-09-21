@@ -240,7 +240,7 @@ background: var(--danger-fill); color: var(--on-accent); font-size: 11px; line-h
   font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
 }
 /* 在 flex 头部容器里，tag 不需要绝对定位 */
-.md-study-card-head .tag,
+.md-study-card-head .tag { position: static; flex-shrink: 0; }
 .question { font-size: 19px; font-weight: 600; margin: 20px 0 22px; white-space: pre-wrap; line-height: 1.5; }
 .btn-group { display: flex; gap: 14px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
 .btn.wide { background: var(--primary); }
