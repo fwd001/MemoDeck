@@ -33,8 +33,12 @@
   .btn.small, .btn-text, .wb-tabs button,
   .md-study-per .per-chip, .icon-btn { min-height: 44px; }
   .icon-btn { width: 44px; }
-  /* 主题切换三枚分段同样要够 44pt（原来只有 28px，是漏网的旧账） */
-  .theme-btn { width: 44px; height: 44px; }
+  /* 主题切换三枚分段同样要够 44pt（原来只有 28px，是漏网的旧账）。
+     ⚠️ 必须写成 `.theme-switch .theme-btn`（0,2,0）：加载顺序是 tokens → components →
+     pages → responsive → **themes**，themes.css 里的 `.theme-btn` 同特异度但更晚出现，
+     会把本文件的覆盖吃掉（实测写 `.theme-btn` 时移动端仍是 28×28）。
+     断点出口不是最后一份 CSS，跨文件覆盖主题层规则就得抬一档特异度。 */
+  .theme-switch .theme-btn { width: 44px; height: 44px; }
 
   /* 作答控件紧凑档（共享组件，见 components.css） */
   .md-opt { font-size: 14px; gap: 10px; min-height: 46px; }

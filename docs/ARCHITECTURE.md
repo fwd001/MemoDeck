@@ -305,6 +305,11 @@ v2.0 起为**六件套**（`index.html` 按此顺序引用）：
   `display:none`）+ `.panel.sheet`。≤600px 底部滑出、≥601px 居中对话框，点背板 / `Esc` 关闭。
   新增这类模态编辑时照这一套走，并且**必须**在三个 `*KeyDown` 的 `overlayIsOpen()` 里登记，
   否则背景页的快捷键会在浮层开着时抢走事件（学习卡被翻走 / 考试被交卷）
+- **`responsive.css` 不是最后一份 CSS，覆盖主题层规则要抬一档特异度**：加载顺序是
+  tokens → components → pages → responsive → **themes** → accessibility。所以断点里写
+  `.theme-btn { width: 44px }` 会被 `themes.css` 的 `.theme-btn { width: 28px }` 同特异度
+  后来者吃掉（实测移动端仍是 28×28）。改写成 `.theme-switch .theme-btn`（`0,2,0`）才生效。
+  往 `responsive.css` 里加覆盖前，先确认被覆盖的那条规则在不在 `themes.css`
 - **界面外壳只有 `.appchrome` 一块**：吸顶的 `.appchrome`（毛玻璃 + `--chrome-bg`）里装
   `.appbar`（标题 = 当前入口名 `activeTabLabel`，不是应用名；右侧只放 `.icon-btn` 图标按钮）
   和 `.tab-nav`。导航栏不放宣传语、不放带文字的灰胶囊 —— iOS 的 nav bar 只回答「你在哪个屏」。

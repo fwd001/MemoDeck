@@ -185,6 +185,13 @@
   与摸底速览/分类考试两条）：Vue 把 `v-show` 编译成 `style`，DOM 里根本没有该属性
   （实测 `document.querySelectorAll('[v-show]').length === 0`），所以那三个场景的专属插画
   从未出现过，只剩默认的书本图标。默认图标保留。
+- **主题切换在移动端仍只有 28×28**：上一轮把 `.theme-btn` 加进 44px 清单时没生效 ——
+  `index.html` 的加载顺序是 tokens → components → pages → responsive → **themes**，
+  `themes.css` 里的 `.theme-btn { width: 28px }` 同特异度但更晚出现，把断点覆盖吃掉了。
+  改成 `.theme-switch .theme-btn`（`0,2,0`）后实测 390 下三枚分段都是 44×44。
+  教训写进 ARCHITECTURE §6：**`responsive.css` 不是最后一份 CSS**，往它里面加覆盖之前
+  要先确认被覆盖的规则不在 `themes.css`。同时把 8 个入口 × 两档宽度的触摸目标扫了一遍：
+  现在没有任何可见交互元素低于 44px（390）/ 28px（1280），横向溢出全为 0。
 - **首页去网页痕迹**：`今日学习` 卡片原来写着 `border-color: var(--primary)` + 蓝色标题，
   整张卡看起来像被选中或调试高亮 —— iOS 的分组卡片不给容器描边，靠字号与间距分层，
   所以去掉蓝框只留渐变。卡片标题的 📅📊📈 与快捷入口的 🕹️📕📝、三个动作按钮的
