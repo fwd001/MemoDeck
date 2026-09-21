@@ -2,6 +2,97 @@
 
 本项目所有版本均遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [2.2.0] - 2026-09-21
+
+原生感改造第一轮：让它看起来像一个 app，而不是一张网页。起因是「考试界面元素重叠」和
+「重点突出原生感」两条反馈，过程中挖出两个从项目一开始就存在、且一直没被发现的结构性
+问题：`position: sticky` 全站从未生效、主题切换的 44px 触摸目标被 CSS 加载顺序吃掉。
+
+### 修复
+
+- **`position: sticky` 全站从未生效**：`html, body { overflow-x: hidden }` 与
+  `#app { overflow-x: hidden }` 把 body 变成了真正的滚动容器（实测 `body.scrollHeight`
+  1575 / `clientHeight` 900，而 `document` 侧 `scrollHeight === clientHeight === 900`，
+  `window.scrollTo()` 完全不动），`#app` 则成为一个「内容比自身高、自己却滚不动」的滚动容器，
+  于是所有 sticky 后代都拿它的 scrollport 当参照 —— 实测旧 `.tab-nav`（写着
+  `position: sticky; top: 12px`）在 `body.scrollTop = 300` 时 `top` 是 -276，即完全跟着滚走。
+  横向溢出改用 `overflow-x: clip` 裁（只裁剪、不建立滚动容器），前一行保留 `hidden`
+  作为 Safari < 16 的退路。改后 `document` 恢复滚动，吸顶元素在 `scrollY` 300/675 时
+  稳定停在 `top: 8px`，`scrollWidth - clientWidth` 仍为 0（没有横向溢出）。
+  这条是吸顶应用栏的前置修复 —— 在此之前「导航栏常驻」这个想法在本项目里根本做不到。
+- **题号标签压住题干**（我上一轮引入的回归）：删除确认无用的 `.md-exercise-card-head .tag`
+  时只删了选择器列表里的一行，留下悬空逗号，`.tag { position: static }` 被并给了下一条的
+  `.question`，标签退回绝对定位 —— 实测「填空题」标签与「第 1 题」重叠 41%，PC 与移动端都在。
+  已整块还原为独立规则，重叠检测恢复为空。教训写进 ARCHITECTURE §6
+- **移动端顶部 Tab 首尾各被切一刀**：`.tab-nav` 在横向滚动态下仍保留基线的
+  `justify-content: center`，溢出量被均分到两侧、负方向滚不回去（实测第一个 Tab 在
+  `scrollLeft=0` 时位于 `left: -184.6px`，容器宽 358 而内容宽 575）。改为 `flex-start`
+  并加 `scroll-padding-inline`，实测首尾均完整可见、最后一个 Tab 可滚到。
+- **顶部没有让出刘海/状态条安全区**：`viewport-fit=cover` + `display: standalone` 下首屏
+  header 会顶进状态条。`#app` 的 `padding-top` 改为 `calc(16px + env(safe-area-inset-top, 0px))`
+  （底部同类问题上一轮已修，顶部是漏掉的另一半）。
+
+### 变更
+
+- **主题切换在移动端仍只有 28×28**：上一轮把 `.theme-btn` 加进 44px 清单时没生效 ——
+  `index.html` 的加载顺序是 tokens → components → pages → responsive → **themes**，
+  `themes.css` 里的 `.theme-btn { width: 28px }` 同特异度但更晚出现，把断点覆盖吃掉了。
+  改成 `.theme-switch .theme-btn`（`0,2,0`）后实测 390 下三枚分段都是 44×44。
+  教训写进 ARCHITECTURE §6：**`responsive.css` 不是最后一份 CSS**，往它里面加覆盖之前
+  要先确认被覆盖的规则不在 `themes.css`。同时把 8 个入口 × 两档宽度的触摸目标扫了一遍：
+  现在没有任何可见交互元素低于 44px（390）/ 28px（1280），横向溢出全为 0。
+- **首页去网页痕迹**：`今日学习` 卡片原来写着 `border-color: var(--primary)` + 蓝色标题，
+  整张卡看起来像被选中或调试高亮 —— iOS 的分组卡片不给容器描边，靠字号与间距分层，
+  所以去掉蓝框只留渐变。卡片标题的 📅📊📈 与快捷入口的 🕹️📕📝、三个动作按钮的
+  📖🕹️📕 全部换成符号表里的矢量图标（新增 `i-calendar` / `i-chart` / `i-grid` / `i-trend`
+  四个 symbol），实测首页文本节点里 emoji 归零、横向溢出仍为 0。
+  空状态文案「请通过上方『⚙️ 数据管理』」跟着改成「请点右上角的『数据管理』」——
+  面板已经不再是"上方"的一块内联区域了（4 处）。
+- **「数据管理」由内联大面板改为浮层 Sheet**：它原本 `v-show` 展开在导航栏与 Tab 之间，
+  把下面所有内容整体顶下去，而且**默认是展开的**（`memo:showDataPanel !== '0'`）——
+  手机首屏 844px 里整整一屏都是导入/备份后台表单，看不到任何学习功能。现在改为：
+  ≤600px 从底部滑出（36px 拖拽指示条 + 22px 顶角 + 毛玻璃背板 + `sheetUp` 上移动画），
+  ≥601px 居中成 560px 对话框（隐藏拖拽指示条，那是底部抽屉的暗示）；点背板与 `Esc` 都能关闭，
+  `role="dialog" aria-modal="true"`。**默认改为收起**（`=== '1'` 才展开），首次打开的人
+  不再看到后台；已经手动展开/收起过的用户偏好照旧保留。
+  背板用 `v-show`（`display:none`）而不是 `opacity` 隐藏，避免重演「透明层继续拦截点击」。
+  实测 390：收起时 scrim `display: none`、首页内容 `top` 从 600+ 提到 195；展开时 sheet
+  高 743/844、顶角 22px、内部可滚动且 `overscroll-behavior: contain`。1280：sheet 560×626
+  居中，点背板与 Esc 均关闭。
+  顺带修一个快捷键串台：浮层打开时背景页的按键仍然生效（在 sheet 里按 Enter 会翻过背后的
+  学习卡，考试里按 Esc 会直接交卷）。三个 `*KeyDown` 现在先过 `overlayIsOpen()` 让路。
+- **首屏 hero 改为吸顶应用栏**：原来的 `<h1>📚 MemoDeck · 考试记忆系统</h1>` + 灰色宣传语
+  + 蓝色「✅ 数据源」横幅 + 三个带 emoji 的灰胶囊按钮，在 390px 下占掉首屏 **211px**
+  （约 25% 高度）才见到第一个功能。iOS 的 nav bar 只报「你在哪个屏」，所以标题改成当前入口名
+  （`activeTabLabel`，首页/学习/模拟考试…），数据源缩成标题旁一枚 `src-badge`，右侧只留
+  三枚 36px 图标按钮（数据管理 / AI 提示词 / 外部服务，`aria-label` + `title` 保留文案），
+  宣传语挪进「数据管理」面板底部（它讲的是数据格式，本来就属于那里）。
+  标题行与 Tab 栏合成一块 `.appchrome` 吸顶（`top: 8px` + `backdrop-filter: blur(20px)`
+  毛玻璃 + `--chrome-bg` 半透明底，明暗三套主题各一份），实测 `scrollY` 300/675 时稳定
+  停在 8px、`scrollWidth - clientWidth` 为 0。`.tab-nav` 自己的 sticky 随之删除（嵌套
+  sticky 无意义），`.header` / `.header h1` / `.security-notice` / `.header-actions` 四条
+  规则整块删除（这次是整块删，不是删选择器列表的一行）。
+  移动端 `.icon-btn` 与 `.theme-btn` 补进 44px 触摸目标清单 —— 主题切换原本只有 28×28，
+  是上一轮补 44px 时漏掉的旧账。
+- **外壳图标从 emoji 换成矢量符号表**：`index.html` 新增 `<svg class="icon-defs">` 符号表
+  （13 个 24×24 线性图标，`stroke: currentColor`，与首页空状态插画同一套画法），Tab 栏 8 个
+  入口与主题切换三枚按钮改用 `<use href="#i-<tabKey>">`。彩色 emoji 是「这是个网页 / 这是个
+  原型」最强的信号之一，而且 emoji 不跟随主题与文字色（深色模式下截图里那排彩色图标明显浮在
+  界面上）。题库 `features[].icon` 仍然优先（给了就用，没给才用矢量图标），所以外部题库的
+  自定义入口名/图标契约没变；`default-bank.js` 的 `features.practice.icon: "🕹️"` 删掉，
+  否则 8 个 Tab 里 7 个线性 + 1 个彩色 emoji 比全用 emoji 更难看。
+  实测 1280×900 明/暗两档：8 个 Tab 全部渲染 `<svg>`、`emojiLeft: false`、图标 16.1px、
+  条高 44px；`npm test` 88 项全绿。
+- **原生感基线（第一轮：去掉浏览器默认行为留下的网页痕迹）**，集中在 `tokens.css` 新增的
+  「原生观感基线」一节，全部走零特异度选择器（`:where` / `*`），组件规则随时可覆盖：
+  界面外壳不可选中与长按（按钮 / Tab / 标签 / 表头 / 标题 / `label` / `summary`，并配
+  `-webkit-touch-callout: none`），表单控件与题干文本重新放行（实测 `.btn`/`.header h1`/
+  `.tab-nav button`/`.tag` 计算值为 `none`，`input`/`textarea` 为 `text`，`.question` 为 `auto`）；
+  滚动条改为悬在内容边缘的 3px 细条、不占布局宽度（Windows Chrome 的 17px 常驻轨道是最难藏的
+  网页痕迹，`.tab-nav` 原有的完全隐藏仍生效）；`overscroll-behavior-y: none` 关掉橡皮筋与
+  下拉刷新；`text-size-adjust: 100%` 关掉 iOS 的自动字号放大；全局 `-webkit-tap-highlight-color:
+  transparent`（原来只有 `.btn` 和两个作答控件有）。
+
 ## [2.1.0] - 2026-09-20
 
 移动端考试体验修复 + 重复逻辑收敛。起因是手机上实测「考试点几下就不对」与
@@ -79,9 +170,6 @@
   `.toast` 的 `bottom` 全部补上 `+ env(safe-area-inset-bottom, 0px)`，两处底部留白
   （`.md-study-stage` / `.md-exam-main` 的 `padding-bottom`）同步跟上 —— `body` 上的
   `padding-bottom: env(...)` 对 `position: fixed` 无效，而 manifest 是 `display: standalone`。
-- **顶部没有让出刘海/状态条安全区**：`viewport-fit=cover` + `display: standalone` 下首屏
-  header 会顶进状态条。`#app` 的 `padding-top` 改为 `calc(16px + env(safe-area-inset-top, 0px))`
-  （底部同类问题上一轮已修，顶部是漏掉的另一半）。
 - **移动端答题卡题号格子只有 20–27px**：`@media` 里把网格固定成 `repeat(10, 1fr)`，
   实测格子 27.5px（390 宽）/ 20.5px（320 宽），远低于项目自己声明的 44px 触摸目标。
   改为 `repeat(auto-fill, minmax(44px, 1fr))`，列数随宽度自适应 —— 实测格子
@@ -104,24 +192,6 @@
   填空/简答输入框、若干小徽标全是透明底。`.toast` 同理引用了未定义的 `--on-primary`，
   浅色主题下蓝底上顶着继承来的深色文字。两个 token 补进 `tokens.css`
   （`--surface-sub` 走 `--fill-secondary`，明暗两套自动跟随），CI 新增「CSS 变量必须有定义」检查。
-- **`position: sticky` 全站从未生效**：`html, body { overflow-x: hidden }` 与
-  `#app { overflow-x: hidden }` 把 body 变成了真正的滚动容器（实测 `body.scrollHeight`
-  1575 / `clientHeight` 900，而 `document` 侧 `scrollHeight === clientHeight === 900`，
-  `window.scrollTo()` 完全不动），`#app` 则成为一个「内容比自身高、自己却滚不动」的滚动容器，
-  于是所有 sticky 后代都拿它的 scrollport 当参照 —— 实测旧 `.tab-nav`（写着
-  `position: sticky; top: 12px`）在 `body.scrollTop = 300` 时 `top` 是 -276，即完全跟着滚走。
-  横向溢出改用 `overflow-x: clip` 裁（只裁剪、不建立滚动容器），前一行保留 `hidden`
-  作为 Safari < 16 的退路。改后 `document` 恢复滚动，吸顶元素在 `scrollY` 300/675 时
-  稳定停在 `top: 8px`，`scrollWidth - clientWidth` 仍为 0（没有横向溢出）。
-  这条是吸顶应用栏的前置修复 —— 在此之前「导航栏常驻」这个想法在本项目里根本做不到。
-- **题号标签压住题干**（我上一轮引入的回归）：删除确认无用的 `.md-exercise-card-head .tag`
-  时只删了选择器列表里的一行，留下悬空逗号，`.tag { position: static }` 被并给了下一条的
-  `.question`，标签退回绝对定位 —— 实测「填空题」标签与「第 1 题」重叠 41%，PC 与移动端都在。
-  已整块还原为独立规则，重叠检测恢复为空。教训写进 ARCHITECTURE §6
-- **移动端顶部 Tab 首尾各被切一刀**：`.tab-nav` 在横向滚动态下仍保留基线的
-  `justify-content: center`，溢出量被均分到两侧、负方向滚不回去（实测第一个 Tab 在
-  `scrollLeft=0` 时位于 `left: -184.6px`，容器宽 358 而内容宽 575）。改为 `flex-start`
-  并加 `scroll-padding-inline`，实测首尾均完整可见、最后一个 Tab 可滚到。
 
 ### 新增
 
@@ -185,64 +255,6 @@
   与摸底速览/分类考试两条）：Vue 把 `v-show` 编译成 `style`，DOM 里根本没有该属性
   （实测 `document.querySelectorAll('[v-show]').length === 0`），所以那三个场景的专属插画
   从未出现过，只剩默认的书本图标。默认图标保留。
-- **主题切换在移动端仍只有 28×28**：上一轮把 `.theme-btn` 加进 44px 清单时没生效 ——
-  `index.html` 的加载顺序是 tokens → components → pages → responsive → **themes**，
-  `themes.css` 里的 `.theme-btn { width: 28px }` 同特异度但更晚出现，把断点覆盖吃掉了。
-  改成 `.theme-switch .theme-btn`（`0,2,0`）后实测 390 下三枚分段都是 44×44。
-  教训写进 ARCHITECTURE §6：**`responsive.css` 不是最后一份 CSS**，往它里面加覆盖之前
-  要先确认被覆盖的规则不在 `themes.css`。同时把 8 个入口 × 两档宽度的触摸目标扫了一遍：
-  现在没有任何可见交互元素低于 44px（390）/ 28px（1280），横向溢出全为 0。
-- **首页去网页痕迹**：`今日学习` 卡片原来写着 `border-color: var(--primary)` + 蓝色标题，
-  整张卡看起来像被选中或调试高亮 —— iOS 的分组卡片不给容器描边，靠字号与间距分层，
-  所以去掉蓝框只留渐变。卡片标题的 📅📊📈 与快捷入口的 🕹️📕📝、三个动作按钮的
-  📖🕹️📕 全部换成符号表里的矢量图标（新增 `i-calendar` / `i-chart` / `i-grid` / `i-trend`
-  四个 symbol），实测首页文本节点里 emoji 归零、横向溢出仍为 0。
-  空状态文案「请通过上方『⚙️ 数据管理』」跟着改成「请点右上角的『数据管理』」——
-  面板已经不再是"上方"的一块内联区域了（4 处）。
-- **「数据管理」由内联大面板改为浮层 Sheet**：它原本 `v-show` 展开在导航栏与 Tab 之间，
-  把下面所有内容整体顶下去，而且**默认是展开的**（`memo:showDataPanel !== '0'`）——
-  手机首屏 844px 里整整一屏都是导入/备份后台表单，看不到任何学习功能。现在改为：
-  ≤600px 从底部滑出（36px 拖拽指示条 + 22px 顶角 + 毛玻璃背板 + `sheetUp` 上移动画），
-  ≥601px 居中成 560px 对话框（隐藏拖拽指示条，那是底部抽屉的暗示）；点背板与 `Esc` 都能关闭，
-  `role="dialog" aria-modal="true"`。**默认改为收起**（`=== '1'` 才展开），首次打开的人
-  不再看到后台；已经手动展开/收起过的用户偏好照旧保留。
-  背板用 `v-show`（`display:none`）而不是 `opacity` 隐藏，避免重演「透明层继续拦截点击」。
-  实测 390：收起时 scrim `display: none`、首页内容 `top` 从 600+ 提到 195；展开时 sheet
-  高 743/844、顶角 22px、内部可滚动且 `overscroll-behavior: contain`。1280：sheet 560×626
-  居中，点背板与 Esc 均关闭。
-  顺带修一个快捷键串台：浮层打开时背景页的按键仍然生效（在 sheet 里按 Enter 会翻过背后的
-  学习卡，考试里按 Esc 会直接交卷）。三个 `*KeyDown` 现在先过 `overlayIsOpen()` 让路。
-- **首屏 hero 改为吸顶应用栏**：原来的 `<h1>📚 MemoDeck · 考试记忆系统</h1>` + 灰色宣传语
-  + 蓝色「✅ 数据源」横幅 + 三个带 emoji 的灰胶囊按钮，在 390px 下占掉首屏 **211px**
-  （约 25% 高度）才见到第一个功能。iOS 的 nav bar 只报「你在哪个屏」，所以标题改成当前入口名
-  （`activeTabLabel`，首页/学习/模拟考试…），数据源缩成标题旁一枚 `src-badge`，右侧只留
-  三枚 36px 图标按钮（数据管理 / AI 提示词 / 外部服务，`aria-label` + `title` 保留文案），
-  宣传语挪进「数据管理」面板底部（它讲的是数据格式，本来就属于那里）。
-  标题行与 Tab 栏合成一块 `.appchrome` 吸顶（`top: 8px` + `backdrop-filter: blur(20px)`
-  毛玻璃 + `--chrome-bg` 半透明底，明暗三套主题各一份），实测 `scrollY` 300/675 时稳定
-  停在 8px、`scrollWidth - clientWidth` 为 0。`.tab-nav` 自己的 sticky 随之删除（嵌套
-  sticky 无意义），`.header` / `.header h1` / `.security-notice` / `.header-actions` 四条
-  规则整块删除（这次是整块删，不是删选择器列表的一行）。
-  移动端 `.icon-btn` 与 `.theme-btn` 补进 44px 触摸目标清单 —— 主题切换原本只有 28×28，
-  是上一轮补 44px 时漏掉的旧账。
-- **外壳图标从 emoji 换成矢量符号表**：`index.html` 新增 `<svg class="icon-defs">` 符号表
-  （13 个 24×24 线性图标，`stroke: currentColor`，与首页空状态插画同一套画法），Tab 栏 8 个
-  入口与主题切换三枚按钮改用 `<use href="#i-<tabKey>">`。彩色 emoji 是「这是个网页 / 这是个
-  原型」最强的信号之一，而且 emoji 不跟随主题与文字色（深色模式下截图里那排彩色图标明显浮在
-  界面上）。题库 `features[].icon` 仍然优先（给了就用，没给才用矢量图标），所以外部题库的
-  自定义入口名/图标契约没变；`default-bank.js` 的 `features.practice.icon: "🕹️"` 删掉，
-  否则 8 个 Tab 里 7 个线性 + 1 个彩色 emoji 比全用 emoji 更难看。
-  实测 1280×900 明/暗两档：8 个 Tab 全部渲染 `<svg>`、`emojiLeft: false`、图标 16.1px、
-  条高 44px；`npm test` 88 项全绿。
-- **原生感基线（第一轮：去掉浏览器默认行为留下的网页痕迹）**，集中在 `tokens.css` 新增的
-  「原生观感基线」一节，全部走零特异度选择器（`:where` / `*`），组件规则随时可覆盖：
-  界面外壳不可选中与长按（按钮 / Tab / 标签 / 表头 / 标题 / `label` / `summary`，并配
-  `-webkit-touch-callout: none`），表单控件与题干文本重新放行（实测 `.btn`/`.header h1`/
-  `.tab-nav button`/`.tag` 计算值为 `none`，`input`/`textarea` 为 `text`，`.question` 为 `auto`）；
-  滚动条改为悬在内容边缘的 3px 细条、不占布局宽度（Windows Chrome 的 17px 常驻轨道是最难藏的
-  网页痕迹，`.tab-nav` 原有的完全隐藏仍生效）；`overscroll-behavior-y: none` 关掉橡皮筋与
-  下拉刷新；`text-size-adjust: 100%` 关掉 iOS 的自动字号放大；全局 `-webkit-tap-highlight-color:
-  transparent`（原来只有 `.btn` 和两个作答控件有）。
 - `setup()` 返回值瘦身：删掉 18 个模板从不引用的绑定（返回值只服务模板，应用没有 `this.`，
   用不上就是死重），含 write-only 的 `exerciseStudentAnswer` 与只声明未使用的 `showCustomForm`。
 - 深色模式的重复覆盖收拢：`tokens.css` 的 `@media dark` 块与 `themes.css` 的手动 dark 块里，

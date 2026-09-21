@@ -165,7 +165,7 @@ MIN_FAIL_GAP = 5   // 答错后至少埋到 5 张之后（+0~2 随机），保�
 | `examSession:v1` | 恢复点（内部 version 2：按 mode 分桶 `resumes: { study, exercise, exam }`，考试桶含逐题答案快照 `answers`） | session.js |
 | `examSettings:v1` | 每日学习量等设置 | session.js |
 | `examLeitnerQueue:v1` | 闯关队列持久化 | leitner.js |
-| `memo:theme` / `memo:showDataPanel` | 主题与数据面板开关 | app.js |
+| `memo:theme` / `memo:showDataPanel` | 主题与数据管理 Sheet 开关（后者 2.2.0 起默认收起） | app.js |
 
 > 备份（`js/backup.js`）导出的是**以上全部 `exam*` 键**，新增存储键时必须同步进去。
 >

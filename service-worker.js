@@ -6,7 +6,7 @@
 
 // ⚠️ 升级时必须与 config.js 中 APP_VERSION 保持同步！
 //    SW 是独立 worker，无法访问 window.EXAM_CONFIG，故硬编码一份
-const VERSION = "2.1.0";
+const VERSION = "2.2.0";
 const CACHE_NAME = `memodeck-v${VERSION}`;
 const PRECACHE_URLS = [
   "./",
